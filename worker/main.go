@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/joho/godotenv"
 	"metricraft/worker/enter"
-	"metricraft/worker/leave"
 	"net/http"
 	"os"
 )
@@ -13,10 +12,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	if !(os.Getenv("PORT") == "" || os.Getenv("SECRET") == "") {
-		panic("Port and secret must be set in .env file")
+	if os.Getenv("PORT") == "" || os.Getenv("SECRET") == "" || os.Getenv("DEST_PORT") == "" {
+		panic("Port and secret must be set")
 	}
-	http.HandleFunc("/enter", enter.Enter)
-	leave.Leave()
-	http.ListenAndServe(":"+os.Getenv("PORT"), nil)
+	http.HandleFunc("/", enter.Enter)
+	err = http.ListenAndServe(":"+os.Getenv("PORT"), nil)
+	if err != nil {
+		panic(err)
+	}
 }
