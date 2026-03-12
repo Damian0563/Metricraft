@@ -15,8 +15,9 @@ func main() {
 	if os.Getenv("PORT") == "" || os.Getenv("SECRET") == "" || os.Getenv("DEST_PORT") == "" {
 		panic("Port and secret must be set")
 	}
-	http.HandleFunc("/", enter.Enter)
-	err = http.ListenAndServe(":"+os.Getenv("PORT"), nil)
+	router := http.NewServeMux()
+	router.HandleFunc("/", enter.Enter)
+	err = http.ListenAndServe(":"+os.Getenv("PORT"), router)
 	if err != nil {
 		panic(err)
 	}
