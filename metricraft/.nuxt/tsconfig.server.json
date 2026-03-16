@@ -29,30 +29,6 @@
       "@@/*": [
         "../*"
       ],
-      "@unhead/vue": [
-        "../node_modules/@unhead/vue"
-      ],
-      "@nuxt/devtools": [
-        "../node_modules/@nuxt/devtools"
-      ],
-      "@vue/runtime-core": [
-        "../node_modules/@vue/runtime-core"
-      ],
-      "@vue/compiler-sfc": [
-        "../node_modules/@vue/compiler-sfc"
-      ],
-      "unplugin-vue-router/client": [
-        "../node_modules/unplugin-vue-router/client"
-      ],
-      "@nuxt/schema": [
-        "../node_modules/@nuxt/schema"
-      ],
-      "nuxt": [
-        "../node_modules/nuxt"
-      ],
-      "vite/client": [
-        "../node_modules/vite/client"
-      ],
       "nitropack/types": [
         "../node_modules/nitropack/types"
       ],
@@ -74,20 +50,35 @@
       "ofetch": [
         "../node_modules/ofetch"
       ],
-      "crossws": [
-        "../node_modules/crossws"
+      "@unhead/vue": [
+        "../node_modules/@unhead/vue"
+      ],
+      "@nuxt/devtools": [
+        "../node_modules/@nuxt/devtools"
+      ],
+      "@vue/runtime-core": [
+        "../node_modules/@vue/runtime-core"
+      ],
+      "@vue/compiler-sfc": [
+        "../node_modules/@vue/compiler-sfc"
+      ],
+      "unplugin-vue-router/client": [
+        "../node_modules/unplugin-vue-router/client"
+      ],
+      "@nuxt/schema": [
+        "../node_modules/nuxt/node_modules/@nuxt/schema"
+      ],
+      "nuxt": [
+        "../node_modules/nuxt"
+      ],
+      "vite/client": [
+        "../node_modules/vite/client"
       ],
       "#shared": [
         "../shared"
       ],
       "#shared/*": [
         "../shared/*"
-      ],
-      "#server": [
-        "../server"
-      ],
-      "#server/*": [
-        "../server/*"
       ],
       "#build": [
         "./"
@@ -96,7 +87,7 @@
         "./*"
       ],
       "#internal/nuxt/paths": [
-        "../node_modules/@nuxt/nitro-server/dist/runtime/utils/paths"
+        "../node_modules/nuxt/dist/core/runtime/nitro/utils/paths"
       ],
       "#unhead/composables": [
         "../node_modules/nuxt/dist/head/runtime/composables"
@@ -106,17 +97,15 @@
       "esnext",
       "webworker",
       "dom.iterable"
-    ],
-    "noUncheckedIndexedAccess": true,
-    "allowArbitraryExtensions": true
+    ]
   },
   "include": [
     "./types/nitro-nuxt.d.ts",
     "../node_modules/runtime/server",
     "../node_modules/dist/runtime/server",
-    "../server/**/*",
     "../shared/**/*.d.ts",
-    "./types/nitro.d.ts"
+    "./types/nitro.d.ts",
+    "../server/**/*"
   ],
   "exclude": [
     "../node_modules",
