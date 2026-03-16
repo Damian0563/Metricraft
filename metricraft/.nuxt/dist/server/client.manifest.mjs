@@ -1,4 +1,1 @@
-
-import { viteNodeFetch } from "file:///home/damian/Desktop/Metricraft/metricraft/node_modules/@nuxt/vite-builder/dist/vite-node.mjs"
-export default () => viteNodeFetch.getManifest()
-    
+export { default } from "file:///home/damian/Desktop/Metricraft/metricraft/node_modules/@nuxt/vite-builder/dist/runtime/client.manifest.mjs"

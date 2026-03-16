@@ -1,9 +1,9 @@
 {
-  "_hash": "rb4itcjcChDmhMlzA2W7mTxOy2u5b_6v-rvujmFu8C8",
+  "_hash": "PAnc3umMDYWf-43rmAjplCVqJOfnbIW2BryUshXyClA",
   "project": {
     "rootDir": "/home/damian/Desktop/Metricraft/metricraft"
   },
   "versions": {
-    "nuxt": "4.3.1"
+    "nuxt": "4.1.3"
   }
 }
