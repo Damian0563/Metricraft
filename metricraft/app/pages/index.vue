@@ -14,7 +14,6 @@ const loading = ref(true)
 const handleStatus = async () => {
 	try {
 		const result: boolean | null = await welcome()
-		console.log(result)
 		if (result == null) {
 			errorMessage.value = "Something went wrong"
 			return
@@ -28,7 +27,6 @@ const handleStatus = async () => {
 
 onMounted(async () => {
 	await handleStatus()
-	console.log(errorMessage.value)
 	loading.value = false
 })
 </script>

@@ -7,8 +7,12 @@ export default defineNuxtConfig({
 	css: ["@/assets/css/main.css"],
 	runtimeConfig: {
 		public: {
-			backendPort: process.env.PORT || 3000,
+			secret: process.env.SECRET || "",
+			backendPort: process.env.PORT || 8000,
 		},
+	},
+	devServer: {
+		port: 3000,
 	},
 	vite: {
 		plugins: [
