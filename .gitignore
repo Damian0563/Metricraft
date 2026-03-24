@@ -1,3 +1,4 @@
-.env
+**.env
 metricraft/node_modules
 metricraft/.nuxt
+metricraft/.output

@@ -647,7 +647,9 @@ const _inlineRuntimeConfig = {
       }
     }
   },
-  "public": {}
+  "public": {
+    "backendPort": "8000"
+  }
 };
 const envOptions = {
   prefix: "NITRO_",
