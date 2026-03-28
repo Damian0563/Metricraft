@@ -1,7 +1,9 @@
 <template>
-	<NuxtLayout>
-		<NuxtPage />
-	</NuxtLayout>
+	<Navbar />
+	<div class="flex items-center justify-center h-screen bg-black text-red-500">
+		YOU
+
+	</div>
 </template>
 
 
