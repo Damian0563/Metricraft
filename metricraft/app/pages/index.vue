@@ -1,8 +1,7 @@
 <template>
-	<Navbar />
-	<div class="flex items-center justify-center h-screen bg-black text-red-500">
-		YOU
-
+	<div class="bg-black h-screen">
+		<Navbar />
+		<Signup />
 	</div>
 </template>
 
