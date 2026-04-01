@@ -30,7 +30,7 @@ func main() {
 	router := http.NewServeMux()
 	port := os.Getenv("PORT")
 	router.HandleFunc("/", welcome)
-
+	router.HandleFunc("/sign", sign)
 	fmt.Println("Server started on port " + port)
 	http.ListenAndServe(":"+port, corsMiddleware(router))
 }

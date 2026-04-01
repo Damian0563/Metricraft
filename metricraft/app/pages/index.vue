@@ -1,7 +1,7 @@
 <template>
 	<div class="bg-black h-screen">
 		<Navbar />
-		<Signup :newUser="newUserStatus" @signup="handleSignup" @load="handleLoad" />
+		<Signup :newUser="newUserStatus" @signup="handleSignup" @load="handleLoad" @popup="createPop" />
 	</div>
 </template>
 
@@ -34,6 +34,9 @@ const handleSignup = () => {
 	loading.value = true
 }
 
+const createPop = (msg: string) => {
+	console.log("create pop", msg)
+}
 
 onMounted(async () => {
 	await handleStatus()
