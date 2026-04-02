@@ -2,27 +2,27 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"os"
-
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
+	"os"
+	"time"
 )
 
-func createUser(mail string, secret string, appName string) {
+func createUser(mail string, secret string, appName string) error {
 	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_URL"))
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer conn.Close(context.Background())
 	hashedSecret, err := bcrypt.GenerateFromPassword([]byte(secret), bcrypt.DefaultCost)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	_, err = conn.Exec(context.Background(), "INSERT INTO users (mail, secret, app_name) VALUES ($1, $2, $3)", mail, string(hashedSecret), appName)
+	_, err = conn.Exec(context.Background(), "INSERT INTO users (created_at, mail, secret, app_name) VALUES ($1, $2, $3, $4)", time.Now(), mail, string(hashedSecret), appName)
 	if err != nil {
-		panic(err)
+		return err
 	}
+	return nil
 }
 
 func signIn(mail string, secret string) bool {
@@ -31,7 +31,6 @@ func signIn(mail string, secret string) bool {
 		panic(err)
 	}
 	defer conn.Close(context.Background())
-
 	var hashedSecret string
 	err = conn.QueryRow(context.Background(), "SELECT secret FROM users WHERE mail = $1", mail).Scan(&hashedSecret)
 	if err != nil {
