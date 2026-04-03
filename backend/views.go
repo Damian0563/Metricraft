@@ -17,7 +17,7 @@ func welcome(w http.ResponseWriter, r *http.Request) {
 		unauthorized = true
 	}
 	if !unauthorized {
-		token := r.Header.Get("Authorization")
+		token := r.Header.Get("Session-Token")
 		jsonResponse["exists"] = token != ""
 		w.WriteHeader(http.StatusOK)
 	}
@@ -39,18 +39,18 @@ func sign(w http.ResponseWriter, r *http.Request) {
 	}
 	var jsonResponse = make(map[string]interface{})
 	if payload.AppName != "" {
-		if error_db := createUser(payload.Mail, payload.Secret, payload.AppName); error_db != nil {
-			jsonResponse["status"] = false
+		if uuid, error_db := createUser(payload.Mail, payload.Secret, payload.AppName); error_db != nil {
+			jsonResponse["token"] = ""
 			jsonResponse["err"] = "Error occured during account creation. Please try again later."
 		} else {
-			jsonResponse["status"] = true
+			jsonResponse["token"] = uuid
 		}
 	} else {
-		created := signIn(payload.Mail, payload.Secret)
-		if created {
-			jsonResponse["status"] = true
+		uuid, ok := signIn(payload.Mail, payload.Secret)
+		if ok {
+			jsonResponse["token"] = uuid
 		} else {
-			jsonResponse["status"] = false
+			jsonResponse["token"] = ""
 			jsonResponse["err"] = "Invalid credentials"
 		}
 	}

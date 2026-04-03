@@ -3,6 +3,7 @@ module backend
 go 1.26.1
 
 require (
+	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.9.1
 	github.com/joho/godotenv v1.5.1
 	golang.org/x/crypto v0.49.0

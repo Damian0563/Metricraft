@@ -5,10 +5,10 @@
 				<img src="/favicon.ico" alt="logo" class="w-24 h-24 rounded-lg" decoding="async" loading="lazy" />
 			</div>
 			<h2 class="text-2xl font-bold text-center text-gray-800 mb-6">
-				{{ newUser ? 'Create Account' : 'Welcome Back' }}
+				{{ oldUser ? 'Welcome Back' : 'Create Account' }}
 			</h2>
 			<form @submit.prevent class="flex flex-col gap-5">
-				<div v-if="newUser">
+				<div v-if="!oldUser">
 					<label for="appName" class="block text-sm font-medium text-gray-700 mb-1">App Name</label>
 					<input id="appName" type="text" v-model="appName" placeholder="Enter your app name"
 						class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00F376] focus:border-transparent transition" />
@@ -24,7 +24,8 @@
 							</svg>
 							<div
 								class="absolute right-0 bottom-full mb-2 hidden group-hover:block w-96 p-3 bg-[#00F376] text-black text-s rounded-lg shadow-lg z-10">
-								<div v-if="newUser">Your email is used to send you a recovery link if you lose your secret key. We don't
+								<div v-if="!oldUser">Your email is used to send you a recovery link if you lose your secret key. We
+									don't
 									use it for anything else. For more information refer to our documentation.</div>
 								<div v-else>Enter the email associated with your account to sign in.</div>
 								<div class="absolute right-2 -bottom-1 w-2 h-2 bg-gray-900 rotate-45"></div>
@@ -47,7 +48,7 @@
 						</svg>
 					</div>
 				</div>
-				<div v-if="newUser">
+				<div v-if="!oldUser">
 					<label for="confirmSecret" class="block text-sm font-medium text-gray-700 mb-1">Confirm Secret Key</label>
 					<div class="w-full flex">
 						<input id="confirmSecret" type="password" v-model="confirmSecret" placeholder="Confirm your secret key"
@@ -63,7 +64,7 @@
 				<button type="submit"
 					class="w-full cursor-pointer py-3 mt-2 text-black font-semibold bg-[#00F376] hover:text-white rounded-lg shadow-lg hover:bg-black transition delay-100 ease-in-out"
 					@click="handleSign()">
-					{{ newUser ? 'Sign Up' : 'Sign In' }}
+					{{ oldUser ? 'Sign In' : 'Sign Up' }}
 				</button>
 			</form>
 		</div>
@@ -74,7 +75,7 @@
 import type { signPayload } from '@/composables/types';
 import { sign } from '@/helpers/welcome';
 const props = defineProps<{
-	newUser: boolean;
+	oldUser: boolean;
 }>();
 
 const emit = defineEmits(['signup', 'load', 'popup']);
@@ -88,7 +89,7 @@ const handleSign = async () => {
 		mail: mail.value,
 		secret: secret.value,
 	}
-	if (props.newUser) {
+	if (!props.oldUser) {
 		if (secret.value !== confirmSecret.value) {
 			emit('popup', 'Secret key does not match');
 			emit('load');
@@ -106,12 +107,16 @@ const handleSign = async () => {
 			return;
 		}
 	}
-	const result = await sign(payload);
-	if (result === true) {
-		emit('signup', props.newUser);
-	} else {
-		emit('popup', result);
+	try {
+		const result = await sign(payload);
+		if (result) {
+			emit('signup', result);
+		}
+	} catch (e) {
+		emit('popup', e);
+	} finally {
+		emit('load');
 	}
-	emit('load');
+
 }
 </script>
