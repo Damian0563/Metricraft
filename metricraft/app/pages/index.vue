@@ -1,13 +1,14 @@
 <template>
 	<div class="bg-black h-screen">
 		<Navbar />
-		<Signup :oldUser="oldUserStatus" @signup="handleSignup" @load="handleLoad" @popup="createPop" />
+		<Popup :message="errorMessage" @close="errorMessage = ''" />
+		<Sign :oldUser="oldUserStatus" @signup="handleSignup" @load="handleLoad" @popup="createPop" />
 	</div>
 </template>
 
 
 <script setup lang="ts">
-import { welcome } from "@/helpers/welcome"
+import { welcome } from "~/calls/welcome"
 const oldUserStatus = ref(false)
 const errorMessage = ref("")
 const loading = ref(true)
@@ -40,7 +41,7 @@ const handleSignup = async (uuid: string) => {
 }
 
 const createPop = (msg: string) => {
-	console.log("create pop", msg)
+	errorMessage.value = msg
 }
 
 onMounted(async () => {

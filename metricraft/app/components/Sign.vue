@@ -38,28 +38,45 @@
 				<div>
 					<label for="secret" class="block text-sm font-medium text-gray-700 mb-1">Secret Key</label>
 					<div class="w-full flex">
-						<input id="secret" type="password" v-model="secret" placeholder="Enter your secret key"
+						<input id="secret" :type="showSecret ? 'text' : 'password'" v-model="secret"
+							placeholder="Enter your secret key" :keyup="oldUser ? handleTextInput : null"
 							class="w-96 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00F376] focus:border-transparent transition" />
-						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#00F376" stroke-width="2"
-							stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-gray-400 my-auto ml-2">
-							<path
+						<svg @click="showSecret = !showSecret" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+							stroke="#00F376" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+							class="w-5 h-5 text-gray-400 my-auto ml-2 cursor-pointer">
+							<path v-if="!showSecret"
 								d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" />
-							<line x1="1" y1="1" x2="23" y2="23" />
+							<line v-if="!showSecret" x1="1" y1="1" x2="23" y2="23" />
+							<template v-if="showSecret">
+								<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+								<circle cx="12" cy="12" r="3" />
+							</template>
 						</svg>
 					</div>
 				</div>
 				<div v-if="!oldUser">
 					<label for="confirmSecret" class="block text-sm font-medium text-gray-700 mb-1">Confirm Secret Key</label>
 					<div class="w-full flex">
-						<input id="confirmSecret" type="password" v-model="confirmSecret" placeholder="Confirm your secret key"
+						<input id="confirmSecret" @keyup="handleTextInput" :type="showConfirmSecret ? 'text' : 'password'"
+							v-model="confirmSecret" placeholder="Confirm your secret key"
 							class="px-4 py-2 w-96 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00F376] focus:border-transparent transition" />
-						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#00F376" stroke-width="2"
-							stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-gray-400 my-auto ml-2">
-							<path
+						<svg @click="showConfirmSecret = !showConfirmSecret" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+							fill="none" stroke="#00F376" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+							class="w-5 h-5 text-gray-400 my-auto ml-2 cursor-pointer">
+							<path v-if="!showConfirmSecret"
 								d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" />
-							<line x1="1" y1="1" x2="23" y2="23" />
+							<line v-if="!showConfirmSecret" x1="1" y1="1" x2="23" y2="23" />
+							<template v-if="showConfirmSecret">
+								<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+								<circle cx="12" cy="12" r="3" />
+							</template>
 						</svg>
 					</div>
+				</div>
+				<div v-if="!oldUser" class="flex justify-center text-sm h-8">
+					<span v-if="message" :class="message == 'Secret keys do not match.' ? 'text-red-500' : 'text-green-500'">{{
+						message
+					}}</span>
 				</div>
 				<button type="submit"
 					class="w-full cursor-pointer py-3 mt-2 text-black font-semibold bg-[#00F376] hover:text-white rounded-lg shadow-lg hover:bg-black transition delay-100 ease-in-out"
@@ -73,40 +90,38 @@
 
 <script setup lang="ts">
 import type { signPayload } from '@/composables/types';
-import { sign } from '@/helpers/welcome';
+import { sign } from '~/calls/welcome';
 const props = defineProps<{
 	oldUser: boolean;
 }>();
-
+const message = ref('');
 const emit = defineEmits(['signup', 'load', 'popup']);
 const mail = ref('');
 const secret = ref('');
 const confirmSecret = ref('');
 const appName = ref('');
+const showSecret = ref(false);
+const showConfirmSecret = ref(false);
 const handleSign = async () => {
-	emit('load');
 	let payload: signPayload = {
 		mail: mail.value,
 		secret: secret.value,
 	}
 	if (!props.oldUser) {
 		if (secret.value !== confirmSecret.value) {
-			emit('popup', 'Secret key does not match');
-			emit('load');
 			return;
 		} else if (mail.value === '' || secret.value === '' || appName.value === '' || confirmSecret.value === '') {
 			emit('popup', 'Please fill in all fields');
-			emit('load');
 			return;
 		}
 		payload.appName = appName.value;
 	} else {
 		if (mail.value === '' || secret.value === '') {
 			emit('popup', 'Please fill in all fields');
-			emit('load');
 			return;
 		}
 	}
+	emit('load');
 	try {
 		const result = await sign(payload);
 		if (result) {
@@ -118,5 +133,14 @@ const handleSign = async () => {
 		emit('load');
 	}
 
+}
+const handleTextInput = () => {
+	if (secret.value.length > 0 && confirmSecret.value.length > 0) {
+		if (secret.value !== confirmSecret.value) {
+			message.value = 'Secret keys do not match.';
+		} else {
+			message.value = 'Secret keys match. ';
+		}
+	}
 }
 </script>
