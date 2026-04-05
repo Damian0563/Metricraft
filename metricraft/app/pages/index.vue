@@ -1,8 +1,9 @@
 <template>
-	<div class="bg-black h-screen">
+	<div class="bg-black" :class="overflow ? 'h-auto' : 'h-screen'">
 		<Navbar />
 		<Popup :message="errorMessage" @close="errorMessage = ''" />
-		<Sign :oldUser="oldUserStatus" @signup="handleSignup" @load="handleLoad" @popup="createPop" />
+		<Sign :oldUser="oldUserStatus" @signup="handleSignup" @load="handleLoad" @popup="createPop"
+			@toggle="oldUserStatus = !oldUserStatus" />
 	</div>
 </template>
 
@@ -12,7 +13,20 @@ import { welcome } from "~/calls/welcome"
 const oldUserStatus = ref(false)
 const errorMessage = ref("")
 const loading = ref(true)
-
+const overflow = ref(false)
+const checkOverflow = () => {
+	overflow.value = document.documentElement.scrollHeight > window.innerHeight
+}
+watch(oldUserStatus, () => {
+	nextTick(checkOverflow)
+})
+onMounted(() => {
+	checkOverflow()
+	window.addEventListener('resize', checkOverflow)
+})
+onUnmounted(() => {
+	window.removeEventListener('resize', checkOverflow)
+})
 const handleStatus = async () => {
 	try {
 		const result: boolean | null = await welcome()

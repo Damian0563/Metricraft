@@ -1,14 +1,28 @@
 <template>
 	<div class="flex justify-center items-center py-16 px-4">
-		<div class="bg-white p-8 shadow-lg w-full max-w-lg rounded-xl">
-			<div class="flex justify-center mb-6">
+		<div class="bg-white p-8 shadow-lg w-full max-w-xl rounded-xl">
+			<div class="flex justify-end">
+				<div class="flex items-center gap-2 bg-gray-100 rounded-full p-1">
+					<button type="button" @click="emit('toggle')"
+						:class="!localOldUser ? 'bg-[#00F376] text-black shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+						class="px-3 py-1 rounded-full text-sm font-medium transition-all duration-200">
+						Sign up
+					</button>
+					<button type="button" @click="emit('toggle')"
+						:class="localOldUser ? 'bg-[#00F376] text-black shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+						class="px-3 py-1 rounded-full text-sm font-medium transition-all duration-200">
+						Sign in
+					</button>
+				</div>
+			</div>
+			<div class="flex justify-center mb-6 mt-2">
 				<img src="/favicon.ico" alt="logo" class="w-24 h-24 rounded-lg" decoding="async" loading="lazy" />
 			</div>
 			<h2 class="text-2xl font-bold text-center text-gray-800 mb-6">
-				{{ oldUser ? 'Welcome Back' : 'Create Account' }}
+				{{ localOldUser ? 'Welcome Back' : 'Create Account' }}
 			</h2>
-			<form @submit.prevent class="flex flex-col gap-5">
-				<div v-if="!oldUser">
+			<form @submit.prevent class="flex flex-col gap-5 relative">
+				<div v-if="!localOldUser">
 					<label for="appName" class="block text-sm font-medium text-gray-700 mb-1">App Name</label>
 					<input id="appName" type="text" v-model="appName" placeholder="Enter your app name"
 						class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00F376] focus:border-transparent transition" />
@@ -24,7 +38,7 @@
 							</svg>
 							<div
 								class="absolute right-0 bottom-full mb-2 hidden group-hover:block w-96 p-3 bg-[#00F376] text-black text-s rounded-lg shadow-lg z-10">
-								<div v-if="!oldUser">Your email is used to send you a recovery link if you lose your secret key. We
+								<div v-if="!localOldUser">Your email is used to send you a recovery link if you lose your secret key. We
 									don't
 									use it for anything else. For more information refer to our documentation.</div>
 								<div v-else>Enter the email associated with your account to sign in.</div>
@@ -39,7 +53,7 @@
 					<label for="secret" class="block text-sm font-medium text-gray-700 mb-1">Secret Key</label>
 					<div class="w-full flex">
 						<input id="secret" :type="showSecret ? 'text' : 'password'" v-model="secret"
-							placeholder="Enter your secret key" :keyup="oldUser ? handleTextInput : null"
+							placeholder="Enter your secret key" :keyup="localOldUser ? handleTextInput : null" autocomplete="on"
 							class="w-96 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00F376] focus:border-transparent transition" />
 						<svg @click="showSecret = !showSecret" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
 							stroke="#00F376" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -54,7 +68,7 @@
 						</svg>
 					</div>
 				</div>
-				<div v-if="!oldUser">
+				<div v-if="!localOldUser">
 					<label for="confirmSecret" class="block text-sm font-medium text-gray-700 mb-1">Confirm Secret Key</label>
 					<div class="w-full flex">
 						<input id="confirmSecret" @keyup="handleTextInput" :type="showConfirmSecret ? 'text' : 'password'"
@@ -73,7 +87,7 @@
 						</svg>
 					</div>
 				</div>
-				<div v-if="!oldUser" class="flex justify-center text-sm h-8">
+				<div v-if="!localOldUser" class="flex justify-center text-sm h-8">
 					<span v-if="message" :class="message == 'Secret keys do not match.' ? 'text-red-500' : 'text-green-500'">{{
 						message
 					}}</span>
@@ -81,7 +95,7 @@
 				<button type="submit"
 					class="w-full cursor-pointer py-3 mt-2 text-black font-semibold bg-[#00F376] hover:text-white rounded-lg shadow-lg hover:bg-black transition delay-100 ease-in-out"
 					@click="handleSign()">
-					{{ oldUser ? 'Sign In' : 'Sign Up' }}
+					{{ localOldUser ? 'Sign In' : 'Sign Up' }}
 				</button>
 			</form>
 		</div>
@@ -94,8 +108,10 @@ import { sign } from '~/calls/welcome';
 const props = defineProps<{
 	oldUser: boolean;
 }>();
+const localOldUser = ref(props.oldUser);
+watch(() => props.oldUser, (val) => localOldUser.value = val);
 const message = ref('');
-const emit = defineEmits(['signup', 'load', 'popup']);
+const emit = defineEmits(['signup', 'load', 'popup', 'toggle']);
 const mail = ref('');
 const secret = ref('');
 const confirmSecret = ref('');
@@ -107,7 +123,7 @@ const handleSign = async () => {
 		mail: mail.value,
 		secret: secret.value,
 	}
-	if (!props.oldUser) {
+	if (!localOldUser.value) {
 		if (secret.value !== confirmSecret.value) {
 			return;
 		} else if (mail.value === '' || secret.value === '' || appName.value === '' || confirmSecret.value === '') {
