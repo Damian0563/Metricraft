@@ -1,6 +1,7 @@
 <template>
 	<div class="bg-black" :class="overflow ? 'h-auto' : 'h-screen'">
 		<Navbar />
+		<Spinner :loading="loading" />
 		<Popup :message="errorMessage" @close="errorMessage = ''" />
 		<Sign :oldUser="oldUserStatus" @signup="handleSignup" @load="handleLoad" @popup="createPop"
 			@toggle="oldUserStatus = !oldUserStatus" />
