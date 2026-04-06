@@ -16,16 +16,36 @@
 			</svg>
 			<p class="text-sm text-gray-700">{{ props.message }}</p>
 		</div>
+		<div class="mt-3 h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+			<div class="h-full bg-[#00F376] rounded-full transition-all duration-50 ease-linear"
+				:style="{ width: `${progress}%` }"></div>
+		</div>
 	</div>
 </template>
 
 <script setup lang="ts">
 const emit = defineEmits(["close"])
+const progress = ref(0)
+let intervalId: ReturnType<typeof setInterval> | null = null
 const props = defineProps({
 	message: {
 		type: String,
 		required: true,
 	},
 })
-
+watch(() => props.message, (newMessage) => {
+	if (!newMessage) return
+	if (intervalId) clearInterval(intervalId)
+	progress.value = 0
+	const duration = 5000
+	const startTime = Date.now()
+	intervalId = setInterval(() => {
+		const elapsed = Date.now() - startTime
+		progress.value = Math.min((elapsed / duration) * 100, 100)
+		if (progress.value >= 100) {
+			clearInterval(intervalId!)
+			emit("close")
+		}
+	}, 50)
+}, { immediate: true })
 </script>
