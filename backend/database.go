@@ -42,3 +42,17 @@ func signIn(mail string, secret string) (string, bool) {
 	err = bcrypt.CompareHashAndPassword([]byte(hashedSecret), []byte(secret))
 	return uuid, err == nil
 }
+
+func getAppNameByToken(token string) (string, error) {
+	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_URL"))
+	if err != nil {
+		return "", err
+	}
+	defer conn.Close(context.Background())
+	var appName string
+	err = conn.QueryRow(context.Background(), "SELECT app_name FROM users WHERE uuid = $1", token).Scan(&appName)
+	if err != nil {
+		return "", err
+	}
+	return appName, nil
+}

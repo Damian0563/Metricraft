@@ -5,3 +5,9 @@ type signPayload struct {
 	Secret  string `json:"secret"`
 	AppName string `json:"appName",omitempty`
 }
+
+type dashboardInitPayload struct {
+	AppName      string `json:"appName"`
+	SignedSecret string `json:"signedSecret"`
+	Error        string `json:"error"`
+}

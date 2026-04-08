@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -28,7 +27,21 @@ func welcome(w http.ResponseWriter, r *http.Request) {
 
 func dashboardInit(w http.ResponseWriter, r *http.Request) {
 	token := r.Header.Get("Session-Token")
-	fmt.Println(token)
+	var Response = dashboardInitPayload{}
+	appName, err := getAppNameByToken(token)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		Response.Error = err.Error()
+		Response.AppName = ""
+		Response.SignedSecret = ""
+	} else {
+		w.WriteHeader(http.StatusOK)
+		Response.AppName = appName
+		Response.SignedSecret = token //for now
+		Response.Error = ""
+	}
+	response, _ := json.Marshal(Response)
+	w.Write(response)
 }
 
 func sign(w http.ResponseWriter, r *http.Request) {
