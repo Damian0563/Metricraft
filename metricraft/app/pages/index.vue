@@ -1,11 +1,11 @@
 <template>
-	<div class="bg-black" :class="overflow ? 'h-auto' : 'h-screen'">
+	<NuxtLayout>
 		<Navbar />
 		<Spinner :loading="loading" />
 		<Popup :message="errorMessage" @close="errorMessage = ''" />
 		<Sign :oldUser="oldUserStatus" @signup="handleSignup" @load="handleLoad" @popup="createPop"
 			@toggle="oldUserStatus = !oldUserStatus" />
-	</div>
+	</NuxtLayout>
 </template>
 
 
@@ -14,20 +14,7 @@ import { welcome } from "~/calls/welcome"
 const oldUserStatus = ref(false)
 const errorMessage = ref("")
 const loading = ref(true)
-const overflow = ref(false)
-const checkOverflow = () => {
-	overflow.value = document.documentElement.scrollHeight > window.innerHeight
-}
-watch(oldUserStatus, () => {
-	nextTick(checkOverflow)
-})
-onMounted(() => {
-	checkOverflow()
-	window.addEventListener('resize', checkOverflow)
-})
-onUnmounted(() => {
-	window.removeEventListener('resize', checkOverflow)
-})
+
 const handleStatus = async () => {
 	try {
 		const result: boolean | null = await welcome()
@@ -50,7 +37,7 @@ const handleLoad = () => {
 
 const handleSignup = async (uuid: string) => {
 	loading.value = true
-	document.cookie = `session-token=${uuid}; path=/`
+	document.cookie = `session-token=${uuid}; path=/;expires=${new Date(Date.now() + 3600000).toUTCString()};SameSite=None;Secure`
 	await navigateTo("/dashboard")
 	loading.value = false
 }
