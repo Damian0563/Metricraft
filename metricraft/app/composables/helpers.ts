@@ -22,3 +22,7 @@ export const getCookie = (cname: string) => {
 	}
 	return "";
 }
+
+export const updateCookie = (cvalue: string) => {
+	document.cookie = `session-token=${cvalue};path=/;expires=${new Date(Date.now() + 3600000).toUTCString()};SameSite=None;Secure`;
+}

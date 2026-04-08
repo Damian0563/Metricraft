@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -23,6 +24,11 @@ func welcome(w http.ResponseWriter, r *http.Request) {
 	}
 	response, _ := json.Marshal(jsonResponse)
 	w.Write(response)
+}
+
+func dashboardInit(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("Session-Token")
+	fmt.Println(token)
 }
 
 func sign(w http.ResponseWriter, r *http.Request) {

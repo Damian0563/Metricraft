@@ -1,0 +1,14 @@
+import type { dashboardInitPayload } from '@/composables/types';
+
+export const getDashboard = async (cookie: string): Promise<dashboardInitPayload> => {
+	const [SECRET, PORT] = useBackendUrl()
+	const response = await fetch(`http://localhost:${PORT}/dashboard/init`, {
+		headers: {
+			"Authorization": SECRET,
+			"Session-Token": cookie,
+		},
+		method: "GET",
+	})
+	const data = await response.json()
+	return data.payload || data
+}

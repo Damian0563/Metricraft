@@ -31,6 +31,7 @@ func main() {
 	port := os.Getenv("PORT")
 	router.HandleFunc("/", welcome)
 	router.HandleFunc("/sign", sign)
+	router.HandleFunc("/dashboard/init", dashboardInit)
 	fmt.Println("Server started on port " + port)
 	http.ListenAndServe(":"+port, corsMiddleware(router))
 }

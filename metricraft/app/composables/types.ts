@@ -5,3 +5,9 @@ export type signPayload = {
 	secret: string;
 	appName?: string;
 }
+
+export type dashboardInitPayload = {
+	appName: string;
+	signedSecret: string;
+	error: string;
+}
