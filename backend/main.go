@@ -9,8 +9,12 @@ import (
 )
 
 func corsMiddleware(next http.Handler) http.Handler {
+	port := os.Getenv("PORT")
+	if port == "" {
+		panic("PORT environment variable not set")
+	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:"+port)
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, session-token")
 		if r.Method == "OPTIONS" {
@@ -28,10 +32,9 @@ func main() {
 		return
 	}
 	router := http.NewServeMux()
-	port := os.Getenv("PORT")
 	router.HandleFunc("/", welcome)
 	router.HandleFunc("/sign", sign)
 	router.HandleFunc("/dashboard/init", dashboardInit)
-	fmt.Println("Server started on port " + port)
-	http.ListenAndServe(":"+port, corsMiddleware(router))
+	fmt.Println("Server started on port 8080")
+	http.ListenAndServe(":8080", corsMiddleware(router))
 }

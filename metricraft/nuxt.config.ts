@@ -8,11 +8,11 @@ export default defineNuxtConfig({
 	runtimeConfig: {
 		public: {
 			secret: process.env.SECRET || "",
-			backendPort: process.env.PORT || 8000,
+			backendPort: 8080,
 		},
 	},
 	devServer: {
-		port: 3000,
+		port: process.env.PORT || 8000,
 	},
 	vite: {
 		plugins: [
