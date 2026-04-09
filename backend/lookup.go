@@ -1,0 +1,40 @@
+package main
+
+import (
+	"context"
+	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
+	"strings"
+)
+
+func signSecret(token string) (string, error) {
+	client := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       0,
+	})
+	defer client.Close()
+	ctx := context.Background()
+	signed := token + ":" + uuid.New().String()
+	err := client.Set(ctx, token, signed, 3600).Err()
+	if err != nil {
+		return "", err
+	}
+	return signed, nil
+}
+
+func checkSecret(token string) (bool, error) {
+	client := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       0,
+	})
+	defer client.Close()
+	ctx := context.Background()
+	parts := strings.Split(token, ":")
+	signed, err := client.Get(ctx, parts[0]).Result()
+	if err != nil {
+		return false, err
+	}
+	return signed == parts[1], nil
+}

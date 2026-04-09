@@ -27,7 +27,7 @@ const handleStatus = async () => {
 			await navigateTo("/dashboard")
 		}
 	} catch (error) {
-		errorMessage.value = error as string
+		errorMessage.value = "Something went wrong, Check your internet connection and try again."
 	}
 }
 

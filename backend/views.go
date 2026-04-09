@@ -14,11 +14,19 @@ func welcome(w http.ResponseWriter, r *http.Request) {
 	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
 		w.WriteHeader(http.StatusUnauthorized)
 		jsonResponse["err"] = errors.New("Unauthorized")
+		jsonResponse["exists"] = false
 		unauthorized = true
 	}
 	if !unauthorized {
 		token := r.Header.Get("Session-Token")
-		jsonResponse["exists"] = token != ""
+		exists, err := checkSecret(token)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			jsonResponse["err"] = "Error occured during checking session token. Please try again later."
+			jsonResponse["exists"] = false
+			return
+		}
+		jsonResponse["exists"] = exists
 		w.WriteHeader(http.StatusOK)
 	}
 	response, _ := json.Marshal(jsonResponse)
@@ -37,7 +45,13 @@ func dashboardInit(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.WriteHeader(http.StatusOK)
 		Response.AppName = appName
-		Response.SignedSecret = token //for now
+		signed, error := signSecret(token)
+		if error != nil {
+			Response.Error = "Error occured during signing. Please try again later."
+			Response.SignedSecret = ""
+		} else {
+			Response.SignedSecret = signed
+		}
 		Response.Error = ""
 	}
 	response, _ := json.Marshal(Response)
