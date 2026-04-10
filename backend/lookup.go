@@ -16,7 +16,7 @@ func signSecret(token string) (string, error) {
 	defer client.Close()
 	ctx := context.Background()
 	signed := token + ":" + uuid.New().String()
-	err := client.Set(ctx, token, signed, 3600).Err()
+	err := client.Set(ctx, token, signed, 36*10^11).Err()
 	if err != nil {
 		return "", err
 	}
@@ -34,6 +34,9 @@ func checkSecret(token string) (bool, error) {
 	parts := strings.Split(token, ":")
 	signed, err := client.Get(ctx, parts[0]).Result()
 	if err != nil {
+		if err == redis.Nil {
+			return false, nil
+		}
 		return false, err
 	}
 	return signed == parts[1], nil

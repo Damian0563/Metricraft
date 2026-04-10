@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 )
 
 func welcome(w http.ResponseWriter, r *http.Request) {
@@ -34,7 +35,8 @@ func welcome(w http.ResponseWriter, r *http.Request) {
 }
 
 func dashboardInit(w http.ResponseWriter, r *http.Request) {
-	token := r.Header.Get("Session-Token")
+	signedToken := r.Header.Get("Session-Token")
+	token := strings.Split(signedToken, ":")[0]
 	var Response = dashboardInitPayload{}
 	appName, err := getAppNameByToken(token)
 	if err != nil {
