@@ -9,10 +9,15 @@
 import { getCookie, updateCookie } from "@/composables/helpers";
 import type { dashboardInitPayload } from '@/composables/types';
 import { getDashboard } from "~/calls/dashboard";
+import { handleMessage } from "@/ws/visitors"
 let cookie = getCookie("session-token");
 const loading = ref(true)
 const errorMessage = ref("")
 const appName = ref("")
+const ws = new WebSocket(`ws://localhost:8080/ws/visitors`)
+ws.onmessage = (event) => {
+	handleMessage(event)
+}
 
 const init = async () => {
 	loading.value = true
@@ -34,5 +39,8 @@ const init = async () => {
 
 onMounted(() => {
 	init()
+})
+onBeforeUnmount(() => {
+	ws.close()
 })
 </script>

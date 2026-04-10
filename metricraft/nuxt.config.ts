@@ -5,6 +5,7 @@ export default defineNuxtConfig({
 	compatibilityDate: "2025-07-15",
 	devtools: { enabled: true },
 	css: ["@/assets/css/main.css"],
+
 	runtimeConfig: {
 		public: {
 			secret: process.env.SECRET || "",
@@ -13,6 +14,11 @@ export default defineNuxtConfig({
 	},
 	devServer: {
 		port: process.env.PORT || 8000,
+	},
+	nitro: {
+		experimental: {
+			websocket: true,
+		},
 	},
 	vite: {
 		plugins: [
@@ -31,4 +37,5 @@ export default defineNuxtConfig({
 			],
 		},
 	},
+	//modules: ["@vueuse/nuxt"],
 });
