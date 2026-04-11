@@ -14,7 +14,10 @@ func corsMiddleware(next http.Handler) http.Handler {
 		panic("PORT environment variable not set")
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:"+port)
+		origin := r.Header.Get("Origin")
+		if origin == "http://localhost:"+port || origin == "http://localhost:8081" || origin == "ws://localhost:8080/ws/visitors" {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+		}
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, session-token")
 		if r.Method == "OPTIONS" {
@@ -35,6 +38,7 @@ func main() {
 	router.HandleFunc("/", welcome)
 	router.HandleFunc("/sign", sign)
 	router.HandleFunc("/dashboard/init", dashboardInit)
+	go StartWebSocketServer(router)
 	fmt.Println("Server started on port 8080")
 	http.ListenAndServe(":8080", corsMiddleware(router))
 }

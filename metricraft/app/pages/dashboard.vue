@@ -38,11 +38,12 @@ const init = async () => {
 onMounted(() => {
 	cookie.value = getCookie("session-token");
 	init();
-	ws = new WebSocket(`ws://localhost:8000/ws/visitors`);
-	// ws.onopen = () => {
-	// 	console.log("Connected to websocket");
-	// };
+	ws = new WebSocket(`ws://localhost:8080/ws/visitors`);
+	ws.onopen = () => {
+		console.log("Connected to websocket");
+	};
 	ws.onmessage = (event: MessageEvent) => {
+		console.log(event);
 		handleMessage(event);
 	};
 });

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/joho/godotenv"
 	"metricraft/worker/enter"
 	"net/http"
@@ -17,6 +18,7 @@ func main() {
 	}
 	router := http.NewServeMux()
 	router.HandleFunc("/", enter.Enter)
+	fmt.Println("Listening on port " + os.Getenv("PORT"))
 	err = http.ListenAndServe(":"+os.Getenv("PORT"), router)
 	if err != nil {
 		panic(err)
