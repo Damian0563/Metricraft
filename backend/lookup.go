@@ -23,6 +23,21 @@ func signSecret(token string) (string, error) {
 	return signed, nil
 }
 
+func updateSecret(token string, signed string) error {
+	client := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       0,
+	})
+	defer client.Close()
+	ctx := context.Background()
+	err := client.Set(ctx, token, signed, 36*10^11).Err()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func checkSecret(token string) (bool, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",

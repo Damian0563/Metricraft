@@ -2,7 +2,6 @@ package enter
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/gorilla/websocket"
 )
 

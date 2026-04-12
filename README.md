@@ -1,8 +1,8 @@
+# Metricraft
+
 <div align="center">
   <img src="metricraft/public/logo.svg" alt="Metricraft" width="400" />
 </div>
-
-# Metricraft
 
 An analytics platform for log observability, focused on visual dashboards and reporting capabilities.
 
@@ -10,23 +10,134 @@ An analytics platform for log observability, focused on visual dashboards and re
 
 - **Log Observability**: Monitor and track application logs in real-time
 - **Visual Dashboards**: Interactive charts and visualizations for data analysis
-- **Reporting Tools**: Generate comprehensive reports from your log data
+- **Real-time Metrics**: Live HTTP request/response tracking with performance insights
 - **User Authentication**: Secure account management for team collaboration
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        Metricraft Stack                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│   ┌──────────────┐        ┌──────────────┐        ┌───────────┐ │
+│   │              │        │              │        │           │ │
+│   │    Nuxt 4    │◄──────►│   Go API     │◄──────►│  Redis    │ │
+│   │  (Frontend)  │  HTTP  │   Server     │  Auth  │  (Cache)  │ │
+│   │              │        │   :8080      │        │  :6379    │ │
+│   └──────────────┘        └──────┬───────┘        └───────────┘ │
+│                                  │                              │
+│                            WebSocket                            │
+│                                  │                              │
+│   ┌──────────────┐        ┌──────▼───────┐                     │
+│   │              │        │              │                     │
+│   │   ClickHouse │◄───────│  Go Worker   │◄─── User Traffic    │
+│   │  (Metrics)   │        │   Proxy      │                     │
+│   │              │        └──────────────┘                     │
+│   └──────────────┘                                              │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Components
+
+| Component | Technology | Description |
+|-----------|------------|-------------|
+| Frontend | Nuxt 4 + Vue 3 | Server-side rendered web application |
+| API Server | Go | REST API and WebSocket server for real-time updates |
+| Worker Proxy | Go | Reverse proxy that captures HTTP metrics |
+| Metrics Store | ClickHouse | Columnar database for high-volume log storage |
+| Session Cache | Redis | Fast token validation and session management |
+| User Database | PostgreSQL | User accounts and authentication |
+
+### Data Flow
+
+1. **Worker Proxy** intercepts incoming HTTP traffic and captures:
+   - Request headers and body
+   - Response status codes
+   - Request duration/latency
+
+2. **Metrics Streaming** via WebSocket to the API server
+
+3. **ClickHouse Storage** for efficient analytical queries on log data
+
+4. **Real-time Dashboard** updates through Nuxt frontend
 
 ## Tech Stack
 
 | Category | Technology |
 |----------|------------|
 | Frontend Framework | Nuxt 4 |
-| UI Library | Vue 3 |
-| Styling | Tailwind CSS 4 |
-| Backend | Go |
-| Database & Auth | Supabase |
+| UI Framework | Vue 3 |
+| Backend Language | Go |
+| Metrics Database | ClickHouse |
+| Session Cache | Redis |
+| User Database | PostgreSQL |
+
+## Project Structure
+
+```
+metricraft/
+├── backend/           # Go API server
+│   ├── main.go        # Entry point, HTTP server, CORS middleware
+│   ├── database.go    # PostgreSQL user operations
+│   ├── lookup.go     # Redis session management
+│   ├── websocket.go  # WebSocket handlers (frontend & worker)
+│   └── views.go      # HTTP route handlers
+├── worker/            # Go reverse proxy
+│   ├── main.go       # Entry point
+│   └── enter/        # Request interception module
+│       ├── enter.go  # Proxy logic and metrics collection
+│       └── leave.go  # WebSocket forwarding to API server
+└── metricraft/       # Nuxt frontend application
+    ├── app/           # Vue components, pages, layouts
+    └── public/        # Static assets
+```
 
 ## Getting Started
 
-> Instructions for setting up and running the project would go here.
+### Prerequisites
+
+- Go 1.21+
+- Node.js 18+
+- PostgreSQL
+- Redis
+- ClickHouse
+
+### Configuration
+
+Create `.env` files in both `backend/` and `worker/` directories:
+
+**backend/.env**
+```
+PORT=8080
+SECRET=<your-secret-key>
+DATABASE_URL=postgres://user:pass@localhost:5432/metricraft
+```
+
+**worker/.env**
+```
+PORT=<incoming-port>
+DEST_PORT=<destination-port>
+SECRET=<your-secret-key>
+```
+
+### Running
+
+1. Start PostgreSQL, Redis, and ClickHouse
+2. Start the backend server:
+   ```bash
+   cd backend && go run main.go
+   ```
+3. Start the worker proxy:
+   ```bash
+   cd worker && go run main.go
+   ```
+4. Start the frontend:
+   ```bash
+   cd metricraft && npm install && npm run dev
+   ```
 
 ## License
 
-> License information would go here.
+Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for details.
