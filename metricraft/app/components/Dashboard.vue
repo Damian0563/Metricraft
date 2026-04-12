@@ -1,6 +1,7 @@
 <template>
 	<NuxtLayout>
-		<DashboardNav :appName="appName" @toggle=handleRealtimeToggle />
+		<DashboardNav :appName="appName" @realTimeToggle=handleRealtimeToggle @customizeView=handleCustomizeView />
+		<GraphGrid />
 	</NuxtLayout>
 </template>
 
@@ -32,6 +33,10 @@ const handleRealtimeToggle = (val: boolean) => {
 		console.log("Disconnected from websocket");
 		if (ws) ws.close();
 	}
+};
+
+const handleCustomizeView = (val: boolean) => {
+	console.log(val);
 };
 
 onMounted(() => {

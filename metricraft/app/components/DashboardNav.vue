@@ -1,5 +1,5 @@
 <template>
-	<div v-if="props.appName" class="text-white justify-start text-2xl font-bold py-8 px-16"
+	<div v-if="props.appName" class="text-white justify-start text-2xl font-bold py-8 px-16 mb-8"
 		style="background-color: #00F376;">
 		<nav>
 			<div class="flex justify-between">
@@ -7,7 +7,11 @@
 					<img src="/logo.svg" class="h-8 mr-4" alt="logo" />
 					<h1 class="text-black text-2xl font-bold">{{ props.appName }}</h1>
 				</div>
-				<div class="flex items-center">
+				<div class="flex items-center gap-8">
+					<button class="bg-white text-black rounded-full px-4 py-2 text-sm"
+						@click="customizeDashboard = !customizeDashboard; emit('customizeView', customizeDashboard)">
+						Customize Dashboard
+					</button>
 					<button class="bg-white text-black rounded-full px-4 py-2 text-sm" @click="options = !options">
 						<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
 							stroke="currentColor">
@@ -23,7 +27,8 @@
 								</span>
 								<input type="checkbox"
 									class="w-4 h-4 rounded border-gray-300 text-[#00F376] focus:ring-[#00F376] cursor-pointer"
-									@toggle="emit('realTimeToggle', $event.target.value)" />
+									:checked="realtimeEnabled"
+									@change="emit('realTimeToggle', ($event.target as HTMLInputElement).checked)" />
 							</label>
 						</div>
 					</div>
@@ -31,9 +36,6 @@
 			</div>
 		</nav>
 	</div>
-	<div class="flex flex-col p-16 mx-8">
-	</div>
-
 </template>
 
 <script setup lang="ts">
@@ -42,7 +44,9 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{
 	realTimeToggle: boolean;
+	customizeView: boolean;
 }>();
 const options = ref(false)
-
+const realtimeEnabled = ref(true)
+const customizeDashboard = ref(false)
 </script>
