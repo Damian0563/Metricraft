@@ -18,8 +18,8 @@
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
 						</svg>
 					</button>
-					<div class="relative" v-if="options">
-						<div
+					<div class="relative">
+						<div v-if="options"
 							class="absolute top-0 right-0 z-10 mt-6 mr-2 bg-white rounded-xl shadow-xl p-4 min-w-48 border border-gray-100">
 							<label class="flex items-center gap-3 cursor-pointer">
 								<span class="text-sm font-medium text-gray-700">
@@ -30,6 +30,9 @@
 									:checked="realtimeEnabled"
 									@change="emit('realTimeToggle', ($event.target as HTMLInputElement).checked)" />
 							</label>
+							<span class="text-sm font-medium text-gray-700 mt-4" @click="copyInvite">
+								Invite team members
+							</span>
 						</div>
 					</div>
 				</div>
@@ -45,8 +48,16 @@ const props = defineProps<{
 const emit = defineEmits<{
 	realTimeToggle: boolean;
 	customizeView: boolean;
+	load: void;
 }>();
 const options = ref(false)
 const realtimeEnabled = ref(true)
 const customizeDashboard = ref(false)
+const copyInvite = () => {
+	emit('load')
+	const cookie: string | undefined = document.cookie.split(";").find(c => c.trim().startsWith("session-token"))?.split("=")[1]
+	if (!cookie) return
+	navigator.clipboard.writeText(`http://localhost:8000/invite/inv:${cookie}`)
+	emit('load')
+}
 </script>

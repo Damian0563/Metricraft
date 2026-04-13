@@ -1,6 +1,7 @@
 <template>
 	<NuxtLayout>
-		<DashboardNav :appName="appName" @realTimeToggle=handleRealtimeToggle @customizeView=handleCustomizeView />
+		<DashboardNav :appName="appName" @load="emit('load')" @realTimeToggle=handleRealtimeToggle
+			@customizeView=handleCustomizeView />
 		<GraphGrid />
 	</NuxtLayout>
 </template>
@@ -12,9 +13,10 @@ const props = defineProps<{
 }>();
 const appName = ref("");
 watch(() => props.appName, (val) => appName.value = val);
-const emit = defineEmits(['load']);
+const emit = defineEmits<{
+	load: void;
+}>();
 let ws: WebSocket | null = null;
-
 const connectWebSocket = () => {
 	ws = new WebSocket(`ws://localhost:8080/ws/visitors`);
 	ws.onopen = () => {

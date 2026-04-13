@@ -10,7 +10,6 @@
 import { getCookie, updateCookie } from "@/composables/helpers";
 import type { dashboardInitPayload } from '@/composables/types';
 import { getDashboard } from "~/calls/dashboard";
-
 const cookie = ref("");
 const loading = ref(true);
 const errorMessage = ref("");

@@ -1,6 +1,11 @@
 <template>
 	<div class="grid grid-cols-3 gap-4 mx-8 p-4">
 		<Graph />
+		<Graph />
+		<Graph />
+		<Graph />
+		<Graph />
+		<Graph />
 	</div>
 </template>
 
