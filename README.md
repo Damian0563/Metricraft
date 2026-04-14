@@ -31,7 +31,7 @@ An analytics platform for log observability, focused on visual dashboards and re
 │                                  │                              │
 │   ┌──────────────┐        ┌──────▼───────┐                     │
 │   │              │        │              │                     │
-│   │   ClickHouse │◄───────│  Go Worker   │◄─── User Traffic    │
+│   │   PostgreSQL │◄───────│  Go Worker   │◄─── User Traffic    │
 │   │  (Metrics)   │        │   Proxy      │                     │
 │   │              │        └──────────────┘                     │
 │   └──────────────┘                                              │
@@ -46,9 +46,9 @@ An analytics platform for log observability, focused on visual dashboards and re
 | Frontend | Nuxt 4 + Vue 3 | Server-side rendered web application |
 | API Server | Go | REST API and WebSocket server for real-time updates |
 | Worker Proxy | Go | Reverse proxy that captures HTTP metrics |
-| Metrics Store | ClickHouse | Columnar database for high-volume log storage |
+| Metrics Store | PostgreSQL | Columnar database for high-volume log storage |
 | Session Cache | Redis | Fast token validation and session management |
-| User Database | PostgreSQL | User accounts and authentication |
+| User Database | Supabase | User accounts and authentication |
 
 ### Data Flow
 
@@ -59,7 +59,7 @@ An analytics platform for log observability, focused on visual dashboards and re
 
 2. **Metrics Streaming** via WebSocket to the API server
 
-3. **ClickHouse Storage** for efficient analytical queries on log data
+3. **PostgreSQL** for efficient analytical queries on log data
 
 4. **Real-time Dashboard** updates through Nuxt frontend
 
@@ -70,39 +70,11 @@ An analytics platform for log observability, focused on visual dashboards and re
 | Frontend Framework | Nuxt 4 |
 | UI Framework | Vue 3 |
 | Backend Language | Go |
-| Metrics Database | ClickHouse |
+| Metrics Database | PostgreSQL |
 | Session Cache | Redis |
-| User Database | PostgreSQL |
-
-## Project Structure
-
-```
-metricraft/
-├── backend/           # Go API server
-│   ├── main.go        # Entry point, HTTP server, CORS middleware
-│   ├── database.go    # PostgreSQL user operations
-│   ├── lookup.go     # Redis session management
-│   ├── websocket.go  # WebSocket handlers (frontend & worker)
-│   └── views.go      # HTTP route handlers
-├── worker/            # Go reverse proxy
-│   ├── main.go       # Entry point
-│   └── enter/        # Request interception module
-│       ├── enter.go  # Proxy logic and metrics collection
-│       └── leave.go  # WebSocket forwarding to API server
-└── metricraft/       # Nuxt frontend application
-    ├── app/           # Vue components, pages, layouts
-    └── public/        # Static assets
-```
+| User Database | Supabase |
 
 ## Getting Started
-
-### Prerequisites
-
-- Go 1.21+
-- Node.js 18+
-- PostgreSQL
-- Redis
-- ClickHouse
 
 ### Configuration
 

@@ -2,7 +2,6 @@ package enter
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/gorilla/websocket"
 )
 
@@ -20,7 +19,5 @@ func Leave(payload Payload) error {
 	if err != nil {
 		return err
 	}
-	err = Connect()
-	fmt.Println(err)
-	return err
+	return nil
 }
