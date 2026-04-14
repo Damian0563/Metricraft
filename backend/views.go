@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -67,6 +69,7 @@ func sign(w http.ResponseWriter, r *http.Request) {
 	}
 	body, err := io.ReadAll(r.Body)
 	var payload signPayload
+	var errChannel = make(chan error)
 	err = json.Unmarshal(body, &payload)
 	if err != nil {
 		http.Error(w, "Invalid payload", http.StatusBadRequest)
@@ -79,6 +82,8 @@ func sign(w http.ResponseWriter, r *http.Request) {
 			jsonResponse["err"] = "Error occured during account creation. Please try again later."
 		} else {
 			jsonResponse["token"] = uuid
+			context := context.Background()
+			go initDB(context, errChannel)
 		}
 	} else {
 		uuid, ok := signIn(payload.Mail, payload.Secret)
@@ -89,7 +94,17 @@ func sign(w http.ResponseWriter, r *http.Request) {
 			jsonResponse["err"] = "Invalid credentials"
 		}
 	}
-	w.WriteHeader(http.StatusOK)
-	response, _ := json.Marshal(jsonResponse)
+	err = <-errChannel
+	var response []byte
+	if err == nil {
+		w.WriteHeader(http.StatusOK)
+		response, _ = json.Marshal(jsonResponse)
+	} else {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		jsonResponse["token"] = ""
+		jsonResponse["err"] = "Error occured during account creation. Please try again later."
+		response, _ = json.Marshal(jsonResponse)
+	}
 	w.Write(response)
 }

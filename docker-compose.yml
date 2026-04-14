@@ -3,13 +3,13 @@ services:
     image: postgres:18
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: secret
-      POSTGRES_DB: demo
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: postgres
     ports:
       - 5432:5432
-    volumes:
-      - postgresql:/var/lib/postgresql/data
-    restart: never
+    # volumes:
+    #   - postgresql:/var/lib/postgresql/data
+    restart: no
 
   pgadmin:
     image: dpage/pgadmin4:9.8
@@ -20,11 +20,10 @@ services:
       PGADMIN_DEFAULT_PASSWORD: secret
       PGADMIN_CONFIG_SERVER_MODE: 'False'
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
-    volumes:
-      - pgadmin:/var/lib/pgadmin
+    # volumes:
+    #   - pgadmin:/var/lib/pgadmin
     depends_on:
       - postgresql
-
   redis:
     image: redis:latest
     ports:
