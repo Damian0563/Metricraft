@@ -9,8 +9,34 @@ services:
       - 5432:5432
     # volumes:
     #   - postgresql:/var/lib/postgresql/data
+    networks:
+      - metricraft-network
     restart: no
+  metricraft:
+    build: ./metricraft
+    ports:
+      - 8000:8000
+    networks:
+      - metricraft-network
+    depends_on:
+      - postgresql
 
+  backend:
+    build: ./backend
+    ports:
+      - 8080:8080
+    networks:
+      - metricraft-network
+    depends_on:
+      - postgresql
+  worker:
+    build: ./worker
+    ports:
+      - 8081:8081
+    networks:
+      - metricraft-network
+    depends_on:
+      - postgresql
   pgadmin:
     image: dpage/pgadmin4:9.8
     ports:
@@ -28,4 +54,9 @@ services:
     image: redis:latest
     ports:
       - 6379:6379
+    networks:
+      - metricraft-network
     restart: always
+networks:
+  metricraft-network:
+    driver: bridge
