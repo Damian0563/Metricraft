@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/joho/godotenv"
 	"log"
@@ -39,6 +40,13 @@ func main() {
 	router.HandleFunc("/sign", sign)
 	router.HandleFunc("/dashboard/init", dashboardInit)
 	go StartWebSocketServer(router)
+	ctx := context.Background()
+	errChannel := make(chan error)
+	go initDB(ctx, errChannel)
+	err = <-errChannel
+	if err != nil {
+		panic(err)
+	}
 	fmt.Println("Server started on port 8080")
 	http.ListenAndServe(":8080", corsMiddleware(router))
 }

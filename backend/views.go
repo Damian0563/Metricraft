@@ -1,10 +1,8 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -69,7 +67,6 @@ func sign(w http.ResponseWriter, r *http.Request) {
 	}
 	body, err := io.ReadAll(r.Body)
 	var payload signPayload
-	var errChannel = make(chan error)
 	err = json.Unmarshal(body, &payload)
 	if err != nil {
 		http.Error(w, "Invalid payload", http.StatusBadRequest)
@@ -78,33 +75,24 @@ func sign(w http.ResponseWriter, r *http.Request) {
 	var jsonResponse = make(map[string]interface{})
 	if payload.AppName != "" {
 		if uuid, error_db := createUser(payload.Mail, payload.Secret, payload.AppName); error_db != nil {
+			w.WriteHeader(http.StatusInternalServerError)
 			jsonResponse["token"] = ""
 			jsonResponse["err"] = "Error occured during account creation. Please try again later."
 		} else {
+			w.WriteHeader(http.StatusOK)
 			jsonResponse["token"] = uuid
-			context := context.Background()
-			go initDB(context, errChannel)
 		}
 	} else {
 		uuid, ok := signIn(payload.Mail, payload.Secret)
 		if ok {
+			w.WriteHeader(http.StatusOK)
 			jsonResponse["token"] = uuid
 		} else {
+			w.WriteHeader(http.StatusUnauthorized)
 			jsonResponse["token"] = ""
 			jsonResponse["err"] = "Invalid credentials"
 		}
 	}
-	err = <-errChannel
-	var response []byte
-	if err == nil {
-		w.WriteHeader(http.StatusOK)
-		response, _ = json.Marshal(jsonResponse)
-	} else {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		jsonResponse["token"] = ""
-		jsonResponse["err"] = "Error occured during account creation. Please try again later."
-		response, _ = json.Marshal(jsonResponse)
-	}
+	response, _ := json.Marshal(jsonResponse)
 	w.Write(response)
 }

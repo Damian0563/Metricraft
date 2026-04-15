@@ -5,18 +5,19 @@ import (
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"strings"
+	"time"
 )
 
 func signSecret(token string) (string, error) {
 	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
+		Addr:     "127.0.0.1:6379",
 		Password: "",
 		DB:       0,
 	})
 	defer client.Close()
 	ctx := context.Background()
 	signed := token + ":" + uuid.New().String()
-	err := client.Set(ctx, token, signed, 36*10^11).Err()
+	err := client.Set(ctx, token, signed, 24*time.Hour).Err()
 	if err != nil {
 		return "", err
 	}
@@ -25,13 +26,13 @@ func signSecret(token string) (string, error) {
 
 func updateSecret(token string, signed string) error {
 	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
+		Addr:     "127.0.0.1:6379",
 		Password: "",
 		DB:       0,
 	})
 	defer client.Close()
 	ctx := context.Background()
-	err := client.Set(ctx, token, signed, 36*10^11).Err()
+	err := client.Set(ctx, token, signed, 24*time.Hour).Err()
 	if err != nil {
 		return err
 	}
@@ -40,7 +41,7 @@ func updateSecret(token string, signed string) error {
 
 func checkSecret(token string) (bool, error) {
 	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
+		Addr:     "127.0.0.1:6379",
 		Password: "",
 		DB:       0,
 	})

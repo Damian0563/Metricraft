@@ -72,7 +72,7 @@
 					<label for="confirmSecret" class="block text-sm font-medium text-gray-700 mb-1">Confirm Secret Key</label>
 					<div class="w-full flex">
 						<input id="confirmSecret" @keyup="handleTextInput" :type="showConfirmSecret ? 'text' : 'password'"
-							v-model="confirmSecret" placeholder="Confirm your secret key"
+							v-model="confirmSecret" placeholder="Confirm your secret key" autocomplete="on"
 							class="px-4 py-2 w-96 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00F376] focus:border-transparent transition" />
 						<svg @click="showConfirmSecret = !showConfirmSecret" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
 							fill="none" stroke="#00F376" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -87,7 +87,7 @@
 						</svg>
 					</div>
 				</div>
-				<div v-if="!localOldUser" class="flex justify-center text-sm h-8">
+				<div v-if="!localOldUser" class="flex justify-center text-m h-12 font-bold">
 					<span v-if="message" :class="message == 'Secret keys do not match.' ? 'text-red-500' : 'text-green-500'">{{
 						message
 					}}</span>
@@ -104,6 +104,7 @@
 
 <script setup lang="ts">
 import type { signPayload } from '@/composables/types';
+import { validateEmail } from '@/composables/helpers';
 import { sign } from '~/calls/welcome';
 const props = defineProps<{
 	oldUser: boolean;
@@ -119,12 +120,17 @@ const appName = ref('');
 const showSecret = ref(false);
 const showConfirmSecret = ref(false);
 const handleSign = async () => {
+	if (!validateEmail(mail.value)) {
+		emit('popup', 'Please enter a valid email.');
+		return;
+	}
 	let payload: signPayload = {
 		mail: mail.value,
 		secret: secret.value,
 	}
 	if (!localOldUser.value) {
 		if (secret.value !== confirmSecret.value) {
+			message.value = 'Secret keys do not match.';
 			return;
 		} else if (mail.value === '' || secret.value === '' || appName.value === '' || confirmSecret.value === '') {
 			emit('popup', 'Please fill in all fields');
@@ -152,9 +158,9 @@ const handleSign = async () => {
 }
 const handleTextInput = () => {
 	if (secret.value.length > 0 && confirmSecret.value.length > 0) {
-		if (secret.value !== confirmSecret.value) {
+		if (secret.value !== confirmSecret.value && secret.value.length <= confirmSecret.value.length) {
 			message.value = 'Secret keys do not match.';
-		} else {
+		} else if (secret.value === confirmSecret.value) {
 			message.value = 'Secret keys match. ';
 		}
 	}

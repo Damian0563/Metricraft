@@ -37,7 +37,7 @@ const handleLoad = () => {
 
 const handleSignup = async (uuid: string) => {
 	loading.value = true
-	document.cookie = `session-token=${uuid}; path=/;expires=${new Date(Date.now() + 3600000).toUTCString()};SameSite=None;Secure`
+	document.cookie = `session-token=${uuid}; path=/;expires=${new Date(Date.now() + 3600000 * 24).toUTCString()};SameSite=None;Secure`
 	await navigateTo("/dashboard")
 	loading.value = false
 }

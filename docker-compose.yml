@@ -7,36 +7,36 @@ services:
       POSTGRES_DB: postgres
     ports:
       - 5432:5432
-    # volumes:
-    #   - postgresql:/var/lib/postgresql/data
+    volumes:
+      - postgresql:/var/lib/postgresql
     networks:
       - metricraft-network
     restart: no
-  metricraft:
-    build: ./metricraft
-    ports:
-      - 8000:8000
-    networks:
-      - metricraft-network
-    depends_on:
-      - postgresql
-
-  backend:
-    build: ./backend
-    ports:
-      - 8080:8080
-    networks:
-      - metricraft-network
-    depends_on:
-      - postgresql
-  worker:
-    build: ./worker
-    ports:
-      - 8081:8081
-    networks:
-      - metricraft-network
-    depends_on:
-      - postgresql
+  # metricraft:
+  #   build: ./metricraft
+  #   ports:
+  #     - 8000:8000
+  #   networks:
+  #     - metricraft-network
+  #   depends_on:
+  #     - postgresql
+  #
+  # backend:
+  #   build: ./backend
+  #   ports:
+  #     - 8080:8080
+  #   networks:
+  #     - metricraft-network
+  #   depends_on:
+  #     - postgresql
+  # worker:
+  #   build: ./worker
+  #   ports:
+  #     - 8081:8081
+  #   networks:
+  #     - metricraft-network
+  #   depends_on:
+  #     - postgresql
   pgadmin:
     image: dpage/pgadmin4:9.8
     ports:
@@ -46,10 +46,12 @@ services:
       PGADMIN_DEFAULT_PASSWORD: secret
       PGADMIN_CONFIG_SERVER_MODE: 'False'
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
-    # volumes:
-    #   - pgadmin:/var/lib/pgadmin
+    volumes:
+      - pgadmin:/var/lib/pgadmin
     depends_on:
       - postgresql
+    networks:
+      - metricraft-network
   redis:
     image: redis:latest
     ports:
@@ -60,3 +62,6 @@ services:
 networks:
   metricraft-network:
     driver: bridge
+volumes:
+  postgresql:
+  pgadmin:

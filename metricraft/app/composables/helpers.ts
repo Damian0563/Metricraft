@@ -29,5 +29,9 @@ export const getCookie = (cname: string) => {
 }
 
 export const updateCookie = (cvalue: string) => {
-	document.cookie = `session-token=${cvalue};path=/;expires=${new Date(Date.now() + 3600000).toUTCString()};SameSite=None;Secure`;
+	document.cookie = `session-token=${cvalue};path=/;expires=${new Date(Date.now() + 3600000 * 24).toUTCString()};SameSite=None;Secure`;
 }
+
+export const validateEmail = (email: string) => {
+	return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+};
