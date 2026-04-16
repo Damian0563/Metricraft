@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/joho/godotenv"
 	"log"
@@ -9,14 +10,20 @@ import (
 	"os"
 )
 
+func getConfig() map[string]string {
+	response := make(map[string]string)
+	body, _ := os.ReadFile("../config.json")
+	json.Unmarshal(body, &response)
+	return response
+}
+
+var config map[string]string = getConfig()
+var PORT string = config["port"]
+
 func corsMiddleware(next http.Handler) http.Handler {
-	port := os.Getenv("PORT")
-	if port == "" {
-		panic("PORT environment variable not set")
-	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
-		if origin == "http://localhost:"+port || origin == "http://localhost:8081" || origin == "ws://localhost:8080/ws/visitors" {
+		if origin == "http://localhost:"+PORT || origin == "http://localhost:8081" || origin == "ws://localhost:8080/ws/visitors" {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 		}
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
@@ -30,7 +37,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 }
 
 func main() {
-	err := godotenv.Load()
+	err := godotenv.Load("../.env")
 	if err != nil {
 		log.Fatal("Error loading .env file")
 		return

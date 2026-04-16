@@ -10,7 +10,7 @@ import (
 )
 
 func createUser(mail string, secret string, appName string) (string, error) {
-	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_URL"))
+	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
 	if err != nil {
 		return "", err
 	}
@@ -28,7 +28,7 @@ func createUser(mail string, secret string, appName string) (string, error) {
 }
 
 func signIn(mail string, secret string) (string, bool) {
-	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_URL"))
+	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
 	if err != nil {
 		panic(err)
 	}
@@ -44,7 +44,7 @@ func signIn(mail string, secret string) (string, bool) {
 }
 
 func getAppNameByToken(token string) (string, error) {
-	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_URL"))
+	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
 	if err != nil {
 		return "", err
 	}

@@ -41,6 +41,7 @@ func Enter(w http.ResponseWriter, r *http.Request) {
 		for k, v := range r.Header {
 			req.Header.Set(k, v[0])
 		}
+		req.Header.Set("User-Agent", "Metricraft")
 		resp, err := client.Do(req)
 		if err == nil {
 			metrics.StatusCode = resp.StatusCode
@@ -52,6 +53,7 @@ func Enter(w http.ResponseWriter, r *http.Request) {
 			req.Header.Set(k, v[0])
 		}
 		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("User-Agent", "Metricraft")
 		resp, err := client.Do(req)
 		if err == nil {
 			metrics.StatusCode = resp.StatusCode
@@ -62,6 +64,7 @@ func Enter(w http.ResponseWriter, r *http.Request) {
 		for k, v := range r.Header {
 			req.Header.Set(k, v[0])
 		}
+		req.Header.Set("User-Agent", "Metricraft")
 		req.Header.Set("Content-Type", "application/json")
 		resp, err := client.Do(req)
 		if err == nil {
@@ -73,6 +76,7 @@ func Enter(w http.ResponseWriter, r *http.Request) {
 		for k, v := range r.Header {
 			req.Header.Set(k, v[0])
 		}
+		req.Header.Set("User-Agent", "Metricraft")
 		resp, err := client.Do(req)
 		if err == nil {
 			metrics.StatusCode = resp.StatusCode
