@@ -1,13 +1,13 @@
-package main
+package enter
 
 import (
 	"context"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v4"
 	"os"
 	"time"
 )
 
-func initDB(ctx context.Context, errChannel chan error) {
+func InitDB(ctx context.Context, errChannel chan error) {
 	time.Sleep(15 * time.Second)
 	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_LOGS"))
 	if err != nil {

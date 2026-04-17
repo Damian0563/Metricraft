@@ -1,7 +1,16 @@
-from golang:1.26-alpine
-workdir /app
-copy . ./
-run go mod download
-run go build -o backend
+FROM golang:1.26-alpine
+WORKDIR /app
+
+ARG SECRET
+ARG DATABASE_USERS
+
+ENV SECRET=$SECRET
+ENV DATABASE_USERS=$DATABASE_USERS
+
+COPY . ./
+RUN go mod download
+RUN go build -o backend
+
 EXPOSE 8080
+
 CMD ["./backend"]

@@ -46,7 +46,7 @@ An analytics platform for log observability, focused on visual dashboards and re
 | Frontend | Nuxt 4 + Vue 3 | Server-side rendered web application |
 | API Server | Go | REST API and WebSocket server for real-time updates |
 | Worker Proxy | Go | Reverse proxy that captures HTTP metrics |
-| Metrics Store | PostgreSQL | Columnar database for high-volume log storage |
+| Metrics Store | PostgreSQL | Database for log storage and analytics |
 | Session Cache | Redis | Fast token validation and session management |
 | User Database | Supabase | User accounts and authentication |
 
@@ -72,43 +72,80 @@ An analytics platform for log observability, focused on visual dashboards and re
 | Backend Language | Go |
 | Metrics Database | PostgreSQL |
 | Session Cache | Redis |
-| User Database | Supabase |
+| User Database | Supabase (external) |
+| Containerization | Docker Compose |
 
 ## Getting Started
 
 ### Configuration
 
-Create `.env` files in both `backend/` and `worker/` directories:
+Create a root `.env` file:
 
-**backend/.env**
 ```
-PORT=8080
 SECRET=<your-secret-key>
-DATABASE_URL=postgres://user:pass@localhost:5432/metricraft
+DATABASE_USERS=<supabase-connection-string>
+DATABASE_LOGS=<postgres-connection-string>
 ```
 
-**worker/.env**
-```
-PORT=<incoming-port>
-DEST_PORT=<destination-port>
-SECRET=<your-secret-key>
-```
+- `DATABASE_USERS`: Supabase PostgreSQL connection for user accounts
+- `DATABASE_LOGS`: Local PostgreSQL connection for log storage
 
 ### Running
 
-1. Start PostgreSQL, Redis, and ClickHouse
-2. Start the backend server:
+1. Configure the `.env` file with your secrets
+2. Start all services with Docker:
    ```bash
-   cd backend && go run main.go
+   docker compose up --build
    ```
-3. Start the worker proxy:
-   ```bash
-   cd worker && go run main.go
-   ```
-4. Start the frontend:
-   ```bash
-   cd metricraft && npm install && npm run dev
-   ```
+
+### Port Binding
+
+Only the frontend is exposed externally. The internal services (backend, worker, PostgreSQL, Redis) are hidden within the Docker network.
+
+To bind the frontend to your desired host port, modify the port mapping in docker-compose.yml:
+
+```yaml
+# Change "80:8000" to your desired port
+ports:
+  - "8080:8000"  # Host port : Container port
+```
+
+Then access at http://localhost:8080 (or your chosen port)
+
+## Building and Pushing
+
+To build and push the image to Docker Hub:
+
+```bash
+# Build with environment variables
+docker build \
+  --build-arg SECRET=your-secret \
+  --build-arg DATABASE_USERS=your-supabase-url \
+  --build-arg DATABASE_LOGS=your-postgres-url \
+  -t your-username/metricraft:latest \
+  ./metricraft
+
+# Push to Docker Hub
+docker push your-username/metricraft:latest
+```
+
+## Running (Users)
+
+Users only need to bind the port:
+
+```bash
+docker run -p 8080:8000 your-username/metricraft:latest
+```
+
+Or with docker-compose:
+
+```yaml
+services:
+  metricraft:
+    image: your-username/metricraft:latest
+    ports:
+      - "8080:8000"
+```
 
 ## License
 

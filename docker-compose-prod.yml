@@ -1,0 +1,63 @@
+services:
+  postgresql:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: postgres
+    volumes:
+      - postgresql:/var/lib/postgresql
+    networks:
+      - metricraft-network
+    restart: no
+
+  redis:
+    image: redis:latest
+    networks:
+      - metricraft-network
+    restart: always
+
+  backend:
+    build:
+      context: ./backend
+      args:
+        SECRET: ${SECRET}
+        DATABASE_USERS: ${DATABASE_USERS}
+    networks:
+      - metricraft-network
+    depends_on:
+      - postgresql
+
+  worker:
+    build:
+      context: ./worker
+      args:
+        SECRET: ${SECRET}
+        DATABASE_LOGS: ${DATABASE_LOGS}
+    networks:
+      - metricraft-network
+    depends_on:
+      - postgresql
+
+  metricraft:
+    build:
+      context: ./metricraft
+      args:
+        SECRET: ${SECRET}
+        DATABASE_USERS: ${DATABASE_USERS}
+        DATABASE_LOGS: ${DATABASE_LOGS}
+    ports:
+      - "80:8000"
+    networks:
+      - metricraft-network
+    depends_on:
+      - postgresql
+      - redis
+      - backend
+      - worker
+networks:
+  metricraft-network:
+    driver: bridge
+volumes:
+  postgresql:
+  pgadmin:

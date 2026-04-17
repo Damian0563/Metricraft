@@ -4,13 +4,14 @@ import (
 	"context"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
+	"os"
 	"strings"
 	"time"
 )
 
 func signSecret(token string) (string, error) {
 	client := redis.NewClient(&redis.Options{
-		Addr:     "127.0.0.1:6379",
+		Addr:     os.Getenv("redis"),
 		Password: "",
 		DB:       0,
 	})
@@ -26,7 +27,7 @@ func signSecret(token string) (string, error) {
 
 func updateSecret(token string, signed string) error {
 	client := redis.NewClient(&redis.Options{
-		Addr:     "127.0.0.1:6379",
+		Addr:     os.Getenv("redis"),
 		Password: "",
 		DB:       0,
 	})
@@ -41,7 +42,7 @@ func updateSecret(token string, signed string) error {
 
 func checkSecret(token string) (bool, error) {
 	client := redis.NewClient(&redis.Options{
-		Addr:     "127.0.0.1:6379",
+		Addr:     os.Getenv("redis"),
 		Password: "",
 		DB:       0,
 	})

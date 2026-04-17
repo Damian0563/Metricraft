@@ -1,8 +1,18 @@
-from node:20-alpine
-workdir /app
-copy . ./
-run npm ci
-run npm run build
+FROM node:20-alpine
+WORKDIR /app
+
+ARG SECRET
+ARG DATABASE_USERS
+ARG DATABASE_LOGS
+
+ENV SECRET=$SECRET
+ENV DATABASE_USERS=$DATABASE_USERS
+ENV DATABASE_LOGS=$DATABASE_LOGS
+
+COPY . ./
+RUN npm ci
+RUN npm run build
+
 EXPOSE 8000
-#dev setup
-CMD ["npm", "run", "dev"]
+
+CMD ["node", ".output/server/index.mjs"]

@@ -1,7 +1,16 @@
-from golang:1.26-alpine
-workdir /app
-copy . ./
-run go mod download
-run go build -o worker
+FROM golang:1.26-alpine
+WORKDIR /app
+
+ARG SECRET
+ARG DATABASE_LOGS
+
+ENV SECRET=$SECRET
+ENV DATABASE_LOGS=$DATABASE_LOGS
+
+COPY . ./
+RUN go mod download
+RUN go build -o worker
+
 EXPOSE 8081
+
 CMD ["./worker"]

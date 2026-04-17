@@ -3,10 +3,12 @@ package enter
 import (
 	"encoding/json"
 	"github.com/gorilla/websocket"
+	"os"
 )
 
 func Leave(payload Payload) error {
-	conn, _, err := websocket.DefaultDialer.Dial("ws://localhost:8080/ws/workers", nil)
+	host := os.Getenv("ws")
+	conn, _, err := websocket.DefaultDialer.Dial(host+":8080/ws/workers", nil)
 	if err != nil {
 		return err
 	}
