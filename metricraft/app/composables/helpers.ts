@@ -35,3 +35,7 @@ export const updateCookie = (cvalue: string) => {
 export const validateEmail = (email: string) => {
 	return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 };
+
+export const invalidateCookie = () => {
+	document.cookie = "session-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+}

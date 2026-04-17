@@ -30,9 +30,13 @@
 									:checked="realtimeEnabled"
 									@change="emit('realTimeToggle', ($event.target as HTMLInputElement).checked)" />
 							</label>
-							<span class="text-sm font-medium text-gray-700 mt-4" @click="copyInvite">
+							<span class="text-sm font-medium text-gray-700 mt-4 hover:cursor-pointer" @click="copyInvite">
 								Invite team members
 							</span>
+							<button
+								class="text-sm font-medium text-white bg-red-500 rounded-full p-1 w-full transition-all duration-300 shadow-md hover:bg-red-600 hover:shadow-lg"
+								@click="signOut">Sign out
+							</button>
 						</div>
 					</div>
 				</div>
@@ -42,6 +46,7 @@
 </template>
 
 <script setup lang="ts">
+import { invalidateCookie } from "~/composables/helpers"
 const props = defineProps<{
 	appName: string;
 }>();
@@ -59,5 +64,9 @@ const copyInvite = () => {
 	if (!cookie) return
 	navigator.clipboard.writeText(`http://localhost:8000/invite/inv:${cookie}`)
 	emit('load')
+}
+const signOut = () => {
+	invalidateCookie()
+	navigateTo('/')
 }
 </script>

@@ -1,9 +1,7 @@
 <template>
-	<NuxtLayout>
-		<DashboardNav :appName="appName" @load="emit('load')" @realTimeToggle=handleRealtimeToggle
-			@customizeView=handleCustomizeView />
-		<GraphGrid />
-	</NuxtLayout>
+	<DashboardNav :appName="appName" @load="emit('load')" @realTimeToggle=handleRealtimeToggle
+		@customizeView=handleCustomizeView />
+	<GraphGrid />
 </template>
 
 <script setup lang="ts">
