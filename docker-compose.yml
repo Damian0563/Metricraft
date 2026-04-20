@@ -5,6 +5,8 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: postgres
+    ports:
+      - 5432:5432
     volumes:
       - postgresql:/var/lib/postgresql
     networks:
@@ -27,6 +29,8 @@ services:
       - metricraft-network
   redis:
     image: redis:latest
+    ports:
+      - 6379:6379
     networks:
       - metricraft-network
     restart: always

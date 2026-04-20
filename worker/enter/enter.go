@@ -85,5 +85,5 @@ func Enter(w http.ResponseWriter, r *http.Request) {
 	}
 	metrics.Duration = time.Since(start)
 	payload := Payload{Headers: headers, Url: redirect, Body: body, Method: method, Metrics: metrics}
-	go Leave(payload)
+	fmt.Println(Leave(payload))
 }

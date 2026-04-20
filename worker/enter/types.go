@@ -2,9 +2,6 @@ package enter
 
 import "time"
 
-type Request interface {
-}
-
 type Payload struct {
 	Headers map[string]any
 	Url     string

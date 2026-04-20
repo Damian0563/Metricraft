@@ -24,6 +24,9 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+		if os.Getenv("SECRET") == "" || os.Getenv("DATABASE_LOGS") == "" {
+			panic("Secret must be set")
+		}
 		os.Setenv("backend", "http://localhost")
 		os.Setenv("ws", "ws://localhost")
 	} else if MODE == "docker" {
@@ -33,9 +36,7 @@ func main() {
 		os.Setenv("ws", "wss://metrcraft-backend-1")
 		os.Setenv("backend", "https://metricraft-metricraft-1")
 	}
-	if os.Getenv("SECRET") == "" || os.Getenv("DATABASE_LOGS") == "" {
-		panic("Secret must be set")
-	}
+
 	os.Setenv("DEST_PORT", getConfig()["dest-port"])
 	router := http.NewServeMux()
 	router.HandleFunc("/", enter.Enter)
