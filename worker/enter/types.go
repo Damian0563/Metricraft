@@ -8,6 +8,7 @@ type Payload struct {
 	Body    map[string]any
 	Method  string
 	Metrics ResponseMetrics
+	Time    time.Time
 }
 
 type ResponseMetrics struct {

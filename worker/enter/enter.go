@@ -13,6 +13,7 @@ import (
 var client = &http.Client{Timeout: 30 * time.Second}
 
 func Enter(w http.ResponseWriter, r *http.Request) {
+	started := time.Now()
 	var headers map[string]any = make(map[string]any)
 	headers["X-Forwarded-For"] = r.Header.Get("X-Forwarded-For")
 	headers["X-Forwarded-Host"] = r.Header.Get("X-Forwarded-Host")
@@ -84,6 +85,6 @@ func Enter(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	metrics.Duration = time.Since(start)
-	payload := Payload{Headers: headers, Url: redirect, Body: body, Method: method, Metrics: metrics}
-	fmt.Println(Leave(payload))
+	payload := Payload{Headers: headers, Time: started, Url: redirect, Body: body, Method: method, Metrics: metrics}
+	go Leave(payload)
 }
