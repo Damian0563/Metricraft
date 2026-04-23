@@ -36,9 +36,16 @@ func welcome(w http.ResponseWriter, r *http.Request) {
 
 func dashboardInit(w http.ResponseWriter, r *http.Request) {
 	signedToken := r.Header.Get("Session-Token")
-	token := strings.Split(signedToken, ":")[0]
+	tokenStr := strings.Split(signedToken, ":")[0]
+	token := Token{token: tokenStr}
+	type dashboardInitPayload struct {
+		AppName      string   `json:"appName"`
+		SignedSecret string   `json:"signedSecret"`
+		Settings     settings `json:"settings"`
+		Error        string   `json:"error"`
+	}
 	var Response = dashboardInitPayload{}
-	appName, err := getAppNameByToken(token)
+	appName, err := getAppNameByToken(tokenStr)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		Response.Error = err.Error()
@@ -47,7 +54,7 @@ func dashboardInit(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.WriteHeader(http.StatusOK)
 		Response.AppName = appName
-		signed, error := signSecret(token)
+		signed, error := signSecret(tokenStr)
 		if error != nil {
 			Response.Error = "Error occured during signing. Please try again later."
 			Response.SignedSecret = ""
@@ -55,6 +62,10 @@ func dashboardInit(w http.ResponseWriter, r *http.Request) {
 			Response.SignedSecret = signed
 		}
 		Response.Error = ""
+	}
+	user, err := token.GetUser()
+	if err == nil {
+		Response.Settings = user.Settings
 	}
 	response, _ := json.Marshal(Response)
 	w.Write(response)
@@ -66,6 +77,11 @@ func sign(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	body, err := io.ReadAll(r.Body)
+	type signPayload struct {
+		Mail    string `json:"mail"`
+		Secret  string `json:"secret"`
+		AppName string `json:"appName",omitempty`
+	}
 	var payload signPayload
 	err = json.Unmarshal(body, &payload)
 	if err != nil {

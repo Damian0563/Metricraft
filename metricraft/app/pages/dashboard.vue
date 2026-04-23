@@ -19,6 +19,7 @@ const init = async () => {
 	loading.value = true;
 	try {
 		const data: dashboardInitPayload = await getDashboard(cookie.value);
+		console.log("raw response:", JSON.stringify(data));
 		if (data.error) {
 			errorMessage.value = "Error loading dashboard, session expired.";
 			navigateTo("/");

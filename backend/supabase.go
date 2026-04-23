@@ -56,3 +56,17 @@ func getAppNameByToken(token string) (string, error) {
 	}
 	return appName, nil
 }
+
+func getUserByToken(token string) (User, error) {
+	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
+	if err != nil {
+		return User{}, err
+	}
+	defer conn.Close(context.Background())
+	var user User
+	err = conn.QueryRow(context.Background(), "SELECT mail, app_name, uuid, realtime FROM users WHERE uuid = $1", token).Scan(&user.Mail, &user.AppName, &user.UUID, &user.Settings)
+	if err != nil {
+		return User{}, err
+	}
+	return user, nil
+}

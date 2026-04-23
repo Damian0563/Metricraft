@@ -5,20 +5,28 @@ import (
 	"sync"
 )
 
-type signPayload struct {
-	Mail    string `json:"mail"`
-	Secret  string `json:"secret"`
-	AppName string `json:"appName",omitempty`
-}
-
-type dashboardInitPayload struct {
-	AppName      string `json:"appName"`
-	SignedSecret string `json:"signedSecret"`
-	Error        string `json:"error"`
-}
-
 type Session struct {
 	frontend *websocket.Conn
 	worker   *websocket.Conn
 	mu       sync.Mutex
+}
+
+type Token struct {
+	token string
+}
+
+func (t Token) GetUser() (User, error) {
+	return getUserByToken(t.token)
+}
+
+type User struct {
+	Mail     string   `json:"mail"`
+	AppName  string   `json:"appName"`
+	UUID     string   `json:"uuid"`
+	Settings settings `json:"settings,omitempty"`
+}
+
+// This can be expanded later to include more settings
+type settings struct {
+	Realtime bool `json:"realtime"`
 }
