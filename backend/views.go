@@ -34,7 +34,32 @@ func welcome(w http.ResponseWriter, r *http.Request) {
 	w.Write(response)
 }
 
+func toggleRealtime(w http.ResponseWriter, r *http.Request) {
+	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	signedToken := r.Header.Get("Session-Token")
+	tokenStr := strings.Split(signedToken, ":")[0]
+	token := Token{token: tokenStr}
+	type realtimePayload struct {
+		Enabled bool `json:"enabled"`
+	}
+	var payload realtimePayload
+	json.NewDecoder(r.Body).Decode(&payload)
+	err := token.ChangeRealtime(payload.Enabled)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
 func dashboardInit(w http.ResponseWriter, r *http.Request) {
+	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 	signedToken := r.Header.Get("Session-Token")
 	tokenStr := strings.Split(signedToken, ":")[0]
 	token := Token{token: tokenStr}

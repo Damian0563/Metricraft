@@ -29,7 +29,7 @@
 								<input type="checkbox"
 									class="w-4 h-4 rounded border-gray-300 text-[#00F376] focus:ring-[#00F376] cursor-pointer"
 									:checked="realtimeEnabled"
-									@change="emit('realTimeToggle', ($event.target as HTMLInputElement).checked)" />
+									@change="emit('realtimeToggle', ($event.target as HTMLInputElement).checked)" />
 							</label>
 							<span class="text-sm font-medium text-gray-700 mt-4 hover:cursor-pointer" @click="copyInvite">
 								Invite team members
@@ -50,14 +50,14 @@
 import { invalidateCookie } from "~/composables/helpers"
 const props = defineProps<{
 	appName: string;
+	realtimeEnabled: boolean;
 }>();
 const emit = defineEmits<{
-	realTimeToggle: boolean;
+	realtimeToggle: boolean;
 	customizeView: boolean;
 	load: void;
 }>();
 const options = ref(false)
-const realtimeEnabled = ref(true)
 const customizeDashboard = ref(false)
 const copyInvite = () => {
 	emit('load')

@@ -1,16 +1,22 @@
 <template>
-	<DashboardNav :appName="appName" @load="emit('load')" @realTimeToggle=handleRealtimeToggle
-		@customizeView=handleCustomizeView />
-	<GraphGrid />
+	<NuxtLayout>
+		<DashboardNav :appName="appName" :realtimeEnabled="realtimeEnabled" @realtimeToggle=handleRealtimeToggle
+			@customizeView=handleCustomizeView />
+		<GraphGrid />
+	</NuxtLayout>
 </template>
 
 <script setup lang="ts">
 import { handleMessage } from "@/ws/visitors"
+import { toggleRealtime } from "@/calls/settings"
 const props = defineProps<{
 	appName: string;
+	realtimeEnabled: boolean;
 }>();
-const appName = ref("");
+const appName = ref(props.appName);
+const realtimeEnabled = ref(props.realtimeEnabled);
 watch(() => props.appName, (val) => appName.value = val);
+watch(() => props.realtimeEnabled, (val) => realtimeEnabled.value = val);
 const emit = defineEmits<{
 	load: void;
 }>();
@@ -27,6 +33,7 @@ const connectWebSocket = () => {
 };
 
 const handleRealtimeToggle = (val: boolean) => {
+	toggleRealtime(val)
 	if (val) {
 		connectWebSocket();
 	} else {
@@ -40,7 +47,9 @@ const handleCustomizeView = (val: boolean) => {
 };
 
 onMounted(() => {
-	connectWebSocket();
+	if (realtimeEnabled.value) {
+		connectWebSocket();
+	}
 });
 
 onBeforeUnmount(() => {

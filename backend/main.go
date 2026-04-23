@@ -74,6 +74,7 @@ func main() {
 	router.HandleFunc("/", welcome)
 	router.HandleFunc("/sign", sign)
 	router.HandleFunc("/dashboard/init", dashboardInit)
+	router.HandleFunc("/settings/realtime", toggleRealtime)
 	go StartWebSocketServer(router)
 	fmt.Println("Server started on port 8080")
 	http.ListenAndServe(":8080", corsMiddleware(router))

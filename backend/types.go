@@ -19,6 +19,10 @@ func (t Token) GetUser() (User, error) {
 	return getUserByToken(t.token)
 }
 
+func (t Token) ChangeRealtime(enabled bool) error {
+	return changeRealtimeByToken(t.token, enabled)
+}
+
 type User struct {
 	Mail     string   `json:"mail"`
 	AppName  string   `json:"appName"`

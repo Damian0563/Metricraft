@@ -3,7 +3,6 @@ export const useBackendUrl = () => {
 	return config.public.secret
 }
 
-
 export const getCookie = (cname: string) => {
 	try {
 		let name = cname + "=";

@@ -2,7 +2,7 @@
 	<NuxtLayout>
 		<Popup :message="errorMessage" @close="errorMessage = ''" />
 		<Spinner :loading="loading" />
-		<Dashboard :appName="appName" @load="handleLoad" />
+		<Dashboard :appName="appName" :realtimeEnabled="realtimeEnabled" @load="handleLoad" />
 	</NuxtLayout>
 </template>
 
@@ -14,17 +14,18 @@ const cookie = ref("");
 const loading = ref(true);
 const errorMessage = ref("");
 const appName = ref("");
+const realtimeEnabled = ref(false);
 
 const init = async () => {
 	loading.value = true;
 	try {
 		const data: dashboardInitPayload = await getDashboard(cookie.value);
-		console.log("raw response:", JSON.stringify(data));
 		if (data.error) {
 			errorMessage.value = "Error loading dashboard, session expired.";
 			navigateTo("/");
 		} else {
 			appName.value = data.appName;
+			realtimeEnabled.value = data.settings.realtime;
 			cookie.value = data.signedSecret;
 			updateCookie(cookie.value);
 		}
