@@ -14,4 +14,4 @@ jobs:
     - name: Build
       run: cd worker && go build .
     - name: Test
-      run: cd worker && go test -v .
+      run: cd worker/enter && go test -v .
