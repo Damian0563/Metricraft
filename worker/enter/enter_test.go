@@ -9,12 +9,6 @@ import (
 	"time"
 )
 
-const (
-	testLatitude  = "52.52"
-	testLongitude = "13.41"
-	baseURL       = "https://api.open-meteo.com/v1/forecast"
-)
-
 // TestExtractDetails_GetRequest tests GET request handling through extactDetails.
 // This approach creates a mock destination server to intercept the proxied request,
 // allowing us to verify headers, method, URL construction, and response metrics

@@ -36,7 +36,6 @@ func main() {
 		os.Setenv("ws", "wss://metrcraft-backend-1")
 		os.Setenv("backend", "https://metricraft-metricraft-1")
 	}
-
 	os.Setenv("DEST_PORT", getConfig()["dest-port"])
 	router := http.NewServeMux()
 	router.HandleFunc("/", enter.Enter)

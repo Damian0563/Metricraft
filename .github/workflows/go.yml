@@ -1,0 +1,15 @@
+name: Go
+on: [push]
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Install dependencies
+      uses: actions/setup-go@v5
+      with:
+        go-version: ^1.23.x
+    - name: Build
+      run: cd worker && go build .
+    - name: Test
+      run: cd worker && go test -v .
