@@ -13,6 +13,16 @@ import (
 var client = &http.Client{Timeout: 30 * time.Second}
 
 func Enter(w http.ResponseWriter, r *http.Request) {
+	payload, err := extactDetails(r)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "Error: %s", err)
+		return
+	}
+	Leave(payload)
+}
+
+func extactDetails(r *http.Request) (Payload, error) {
 	started := time.Now()
 	var headers map[string]any = make(map[string]any)
 	headers["X-Forwarded-For"] = r.Header.Get("X-Forwarded-For")
@@ -47,6 +57,8 @@ func Enter(w http.ResponseWriter, r *http.Request) {
 		if err == nil {
 			metrics.StatusCode = resp.StatusCode
 			resp.Body.Close()
+		} else {
+			return Payload{}, err
 		}
 	case "POST":
 		req, _ := http.NewRequest("POST", redirect, bytes.NewBuffer(data))
@@ -59,6 +71,8 @@ func Enter(w http.ResponseWriter, r *http.Request) {
 		if err == nil {
 			metrics.StatusCode = resp.StatusCode
 			resp.Body.Close()
+		} else {
+			return Payload{}, err
 		}
 	case "PUT":
 		req, _ := http.NewRequest("PUT", redirect, bytes.NewBuffer(data))
@@ -71,6 +85,8 @@ func Enter(w http.ResponseWriter, r *http.Request) {
 		if err == nil {
 			metrics.StatusCode = resp.StatusCode
 			resp.Body.Close()
+		} else {
+			return Payload{}, err
 		}
 	case "DELETE":
 		req, _ := http.NewRequest("DELETE", redirect, nil)
@@ -82,9 +98,10 @@ func Enter(w http.ResponseWriter, r *http.Request) {
 		if err == nil {
 			metrics.StatusCode = resp.StatusCode
 			resp.Body.Close()
+		} else {
+			return Payload{}, err
 		}
 	}
 	metrics.Duration = time.Since(start)
-	payload := Payload{Headers: headers, Time: started, Url: redirect, Body: body, Method: method, Metrics: metrics}
-	go Leave(payload)
+	return Payload{Headers: headers, Time: started, Url: redirect, Body: body, Method: method, Metrics: metrics}, nil
 }
