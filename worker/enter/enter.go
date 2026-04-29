@@ -102,6 +102,6 @@ func extactDetails(r *http.Request) (Payload, error) {
 			return Payload{}, err
 		}
 	}
-	metrics.Duration = time.Since(start)
+	metrics.Duration = time.Duration(time.Since(start).Milliseconds())
 	return Payload{Headers: headers, Time: started, Url: redirect, Body: body, Method: method, Metrics: metrics}, nil
 }

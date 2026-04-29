@@ -13,32 +13,6 @@ An analytics platform for log observability, focused on visual dashboards and re
 - **Real-time Metrics**: Live HTTP request/response tracking with performance insights
 - **User Authentication**: Secure account management for team collaboration
 
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        Metricraft Stack                          │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│   ┌──────────────┐        ┌──────────────┐        ┌───────────┐ │
-│   │              │        │              │        │           │ │
-│   │    Nuxt 4    │◄──────►│   Go API     │◄──────►│  Redis    │ │
-│   │  (Frontend)  │  HTTP  │   Server     │  Auth  │  (Cache)  │ │
-│   │              │        │   :8080      │        │  :6379    │ │
-│   └──────────────┘        └──────┬───────┘        └───────────┘ │
-│                                  │                              │
-│                            WebSocket                            │
-│                                  │                              │
-│   ┌──────────────┐        ┌──────▼───────┐                     │
-│   │              │        │              │                     │
-│   │   PostgreSQL │◄───────│  Go Worker   │◄─── User Traffic    │
-│   │  (Metrics)   │        │   Proxy      │                     │
-│   │              │        └──────────────┘                     │
-│   └──────────────┘                                              │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
 ### Components
 
 | Component | Technology | Description |
@@ -76,41 +50,19 @@ An analytics platform for log observability, focused on visual dashboards and re
 | Containerization | Docker Compose |
 
 ## Getting Started
-
-### Configuration
-
-Create a root `.env` file:
-
-```
-SECRET=<your-secret-key>
-DATABASE_USERS=<supabase-connection-string>
-DATABASE_LOGS=<postgres-connection-string>
-```
-
-- `DATABASE_USERS`: Supabase PostgreSQL connection for user accounts
-- `DATABASE_LOGS`: Local PostgreSQL connection for log storage
-
-### Running
-
-1. Configure the `.env` file with your secrets
-2. Start all services with Docker:
-   ```bash
-   docker compose up --build
-   ```
-
-### Port Binding
-
-Only the frontend is exposed externally. The internal services (backend, worker, PostgreSQL, Redis) are hidden within the Docker network.
-
-To bind the frontend to your desired host port, modify the port mapping in docker-compose.yml:
+With docker-compose:
 
 ```yaml
-# Change "80:8000" to your desired port
-ports:
-  - "8080:8000"  # Host port : Container port
+services:
+  metricraft:
+    image: your-username/metricraft:latest
+    ports:
+      - "8080:8000"
+		environment:
+			-DEST_PORT=3000
 ```
 
-Then access at http://localhost:8080 (or your chosen port)
+<strong>Make sure the port is allowed by CORS policy in your backend.</strong>
 
 ## Building and Pushing
 
@@ -127,24 +79,6 @@ docker build \
 
 # Push to Docker Hub
 docker push your-username/metricraft:latest
-```
-
-## Running (Users)
-
-Users only need to bind the port:
-
-```bash
-docker run -p 8080:8000 your-username/metricraft:latest
-```
-
-Or with docker-compose:
-
-```yaml
-services:
-  metricraft:
-    image: your-username/metricraft:latest
-    ports:
-      - "8080:8000"
 ```
 
 ## License

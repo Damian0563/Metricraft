@@ -1,40 +1,27 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/joho/godotenv"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 )
 
-func getConfig() map[string]string {
-	response := make(map[string]string)
-	body, _ := os.ReadFile("../config.json")
-	json.Unmarshal(body, &response)
-	return response
-}
-
-var config map[string]string = getConfig()
-var PORT string = config["port"]
-var MODE string = config["mode"]
+var MODE string
 
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
-		host := os.Getenv("host")
-		if host != "" {
-			ws_host := os.Getenv("ws")
-			if origin == host+":"+PORT || origin == host+":8081" || origin == ws_host+":8080/ws/visitors" {
-				w.Header().Set("Access-Control-Allow-Origin", origin)
-			}
-		} else {
-			frontend := os.Getenv("frontend")
-			worker := os.Getenv("worker")
-			ws := os.Getenv("ws")
-			if origin == frontend+":"+PORT || origin == frontend+":8081" || origin == worker+":8081" || origin == ws+":8080/ws/visitors" {
-				w.Header().Set("Access-Control-Allow-Origin", origin)
+		if origin != "" {
+			allowedOrigins := strings.Split(os.Getenv("ALLOWED_ORIGINS"), ",")
+			for _, allowed := range allowedOrigins {
+				allowed = strings.TrimSpace(allowed)
+				if allowed != "" && origin == allowed {
+					w.Header().Set("Access-Control-Allow-Origin", origin)
+					break
+				}
 			}
 		}
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
@@ -49,11 +36,17 @@ func corsMiddleware(next http.Handler) http.Handler {
 
 func main() {
 	var err error
+	err = godotenv.Load()
+	if err != nil {
+		fmt.Println(err)
+		log.Fatal("Error loading .env file")
+		return
+	}
+	MODE = os.Getenv("MODE")
 	if MODE == "local" {
 		os.Setenv("host", "http://localhost")
 		os.Setenv("ws", "ws://localhost")
 		os.Setenv("redis", "127.0.0.1:6379")
-		err = godotenv.Load("../.env")
 		if err != nil {
 			fmt.Println(err)
 			log.Fatal("Error loading .env file")

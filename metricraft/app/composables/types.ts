@@ -12,3 +12,10 @@ export type dashboardInitPayload = {
 	error: string;
 	settings: { realtime: boolean };
 }
+
+
+export type config = {
+	secret: string,
+	httphost: string,
+	wsshost: string,
+}
