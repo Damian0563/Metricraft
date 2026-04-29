@@ -6,12 +6,56 @@
 
 An analytics platform for log observability, focused on visual dashboards and reporting capabilities.
 
+## Who Is This For?
+
+Metriccraft is designed for **small to medium teams** that want to self-host their analytics infrastructure. Whether you're a startup tracking user behavior, a DevOps team monitoring service health, or an engineering org needing visibility into HTTP traffic — Metriccraft gives you full control without relying on third-party SaaS platforms.
+
+Key benefits:
+- **Self-hosted**: No data leaves your infrastructure
+- **Privacy-first**: Your logs and metrics stay on your servers
+- **Scalable for teams**: Built for collaborative analysis across small to medium engineering teams
+- **Customizable**: Extend with serverless integrations and gRPC communication between services
+
 ## Features
 
 - **Log Observability**: Monitor and track application logs in real-time
 - **Visual Dashboards**: Interactive charts and visualizations for data analysis
 - **Real-time Metrics**: Live HTTP request/response tracking with performance insights
 - **User Authentication**: Secure account management for team collaboration
+- **Serverless Mailing Integration**: Send reports and alerts via email using serverless functions
+- **gRPC Backend-Worker Communication**: High-performance gRPC communication between backend and worker proxy for efficient metric streaming
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        Metricraft Stack                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│   ┌──────────────┐        ┌──────────────┐        ┌───────────┐ │
+│   │              │        │              │        │           │ │
+│   │    Nuxt 4    │◄──────►│   Go API     │◄───gRPC│  Redis    │ │
+│   │  (Frontend)  │  HTTP  │   Server     │  Auth  │  (Cache)  │ │
+│   │              │        │   :8080      │        │  :6379    │ │
+│   └──────────────┘        └──────┬───────┘        └───────────┘ │
+│                                  │                              │
+│                            WebSocket                            │
+│                                  │                              │
+│   ┌──────────────┐        ┌──────▼───────┐                     │
+│   │              │        │              │                     │
+│   │   PostgreSQL │◄───────│  Go Worker   │◄─── User Traffic    │
+│   │  (Metrics)   │        │   Proxy      │                     │
+│   │              │        │   (gRPC)     │                     │
+│   └──────────────┘        └──────────────┘                     │
+│                                                                  │
+│   ┌──────────────┐                                               │
+│   │              │                                               │
+│   │  Serverless  │◄── Email Reports & Alerts                      │
+│   │  Mail Func   │                                               │
+│   └──────────────┘                                               │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ### Components
 
@@ -19,7 +63,8 @@ An analytics platform for log observability, focused on visual dashboards and re
 |-----------|------------|-------------|
 | Frontend | Nuxt 4 + Vue 3 | Server-side rendered web application |
 | API Server | Go | REST API and WebSocket server for real-time updates |
-| Worker Proxy | Go | Reverse proxy that captures HTTP metrics |
+| Worker Proxy | Go | Reverse proxy that captures HTTP metrics, communicates with backend via gRPC |
+| Serverless Mail | Go Functions | Serverless email service for reports and alerts |
 | Metrics Store | PostgreSQL | Database for log storage and analytics |
 | Session Cache | Redis | Fast token validation and session management |
 | User Database | Supabase | User accounts and authentication |
