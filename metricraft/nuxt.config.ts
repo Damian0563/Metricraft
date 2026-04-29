@@ -1,16 +1,31 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import tailwindcss from "@tailwindcss/vite";
-import { fileURLToPath } from "node:url";
-import fs from "node:fs";
-import path from "node:path";
+import { config } from "./composables/types";
 
-const getPort = (): number | undefined => {
+const getConfig = (): config => {
 	try {
-		const configPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "config.json");
-		const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-		return config.port;
+		let mode = import.meta.env.MODE;
+		if (mode === undefined) {
+			throw new Error("no config file");
+		}
+		let config: config = { "secret": import.meta.env.SECRET || "", "httphost": "", "wsshost": "", "port": 0 };
+		if (mode === "local") {
+			config.httphost = "http://localhost:8080";
+			config.wsshost = "ws://localhost:8080";
+		} else if (mode === "docker") {
+			config.httphost = "http://metricraft-backend-1:8080";
+			config.wsshost = "ws://metricraft-backend-1:8080";
+		} else if (mode === "prod") {
+			config.httphost = "https://metricraft-backend-1:8080";
+			config.wsshost = "wss://metricraft-backend-1:8080";
+		}
+		else {
+			throw new Error("invalid mode");
+		}
+		return config;
 	} catch (e) {
 		console.log(e);
+		return { "port": 0, "httphost": "", "wsshost": "", "secret": "" };
 	}
 };
 
@@ -21,12 +36,14 @@ export default defineNuxtConfig({
 	css: ["@/assets/css/main.css"],
 	runtimeConfig: {
 		public: {
-			secret: process.env.SECRET || "",
+			secret: getConfig().secret,
 			backendPort: 8080,
+			wsshost: getConfig().wsshost,
+			httphost: getConfig().httphost,
 		},
 	},
 	devServer: {
-		port: getPort(),
+		port: 8000,
 	},
 	vite: {
 		plugins: [

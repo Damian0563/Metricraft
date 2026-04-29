@@ -1,10 +1,10 @@
-import type { signPayload } from '@/composables/types';
+import type { signPayload, config } from '@/composables/types';
 export const welcome = async (): Promise<boolean | null> => {
-	const SECRET = useBackendUrl()
+	const config: config = useBackendUrl()
 	try {
-		const response = await fetch(`http://localhost:8080/`, {
+		const response = await fetch(`${config.httphost}/welcome`, {
 			headers: {
-				"Authorization": SECRET,
+				"Authorization": config.secret,
 				"Session-Token": getCookie("session-token"),
 			},
 			method: "GET",
@@ -14,18 +14,19 @@ export const welcome = async (): Promise<boolean | null> => {
 			throw data.err
 		}
 		return data.exists
-	} catch {
+	} catch (e) {
+		console.log(e)
 		throw "Something went wrong, Check your internet connection and try again."
 	}
 }
 
 export const sign = async (payload: signPayload): Promise<boolean | null> => {
-	const SECRET = useBackendUrl()
+	const config: config = useBackendUrl()
 	try {
-		const response = await fetch(`http://localhost:8080/sign`, {
+		const response = await fetch($`{config.httphost}/sign`, {
 			method: 'POST',
 			headers: {
-				"Authorization": SECRET,
+				"Authorization": config.secret,
 			},
 			body: JSON.stringify(payload),
 		})

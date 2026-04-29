@@ -1,6 +1,11 @@
-export const useBackendUrl = () => {
+export const useBackendUrl = (): config => {
 	const config = useRuntimeConfig()
-	return config.public.secret
+	return {
+		secret: config.public.secret,
+		httphost: config.public.httphost,
+		wsshost: config.public.wsshost,
+		port: config.public.backendPort,
+	}
 }
 
 export const getCookie = (cname: string) => {

@@ -9,6 +9,7 @@
 <script setup lang="ts">
 import { handleMessage } from "@/ws/visitors"
 import { toggleRealtime } from "@/calls/settings"
+import type { config } from "@/composables/types"
 const props = defineProps<{
 	appName: string;
 	realtimeEnabled: boolean;
@@ -22,7 +23,9 @@ const emit = defineEmits<{
 }>();
 let ws: WebSocket | null = null;
 const connectWebSocket = () => {
-	ws = new WebSocket(`ws://localhost:8080/ws/visitors`);
+	const config: config = useBackendUrl()
+	if (!config.wsshost) console.error("No websocket host")
+	ws = new WebSocket($`{config.wsshost}:8080/ws/visitors`);
 	ws.onopen = () => {
 		console.log("Connected to websocket");
 	};

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/joho/godotenv"
 	"metricraft/worker/enter"
@@ -10,17 +9,11 @@ import (
 	"os"
 )
 
-func getConfig() map[string]string {
-	response := make(map[string]string)
-	body, _ := os.ReadFile("../config.json")
-	json.Unmarshal(body, &response)
-	return response
-}
 func main() {
-	MODE := getConfig()["mode"]
 	var err error
+	err = godotenv.Load()
+	MODE := os.Getenv("MODE")
 	if MODE == "local" {
-		err = godotenv.Load("../.env")
 		if err != nil {
 			panic(err)
 		}
@@ -36,7 +29,6 @@ func main() {
 		os.Setenv("ws", "wss://metrcraft-backend-1")
 		os.Setenv("backend", "https://metricraft-metricraft-1")
 	}
-	os.Setenv("DEST_PORT", getConfig()["dest-port"])
 	router := http.NewServeMux()
 	router.HandleFunc("/", enter.Enter)
 	ctx := context.Background()
