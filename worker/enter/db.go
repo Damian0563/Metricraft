@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/jackc/pgx/v4"
+	"metricraft/worker/external"
 	"os"
 	"time"
 )
@@ -21,8 +22,11 @@ func InitDB(ctx context.Context, errChannel chan error) {
 		return
 	}
 	conn.Exec(context.Background(), "INSERT INTO settings (realtime, enabled) VALUES (true, false)")
-	_, err = conn.Exec(context.Background(), "CREATE TABLE IF NOT EXISTS logs (date TIMESTAMP,responseTime TEXT NOT NULL, url TEXT NOT NULL, \"user\" TEXT NOT NULL, payload TEXT, headers TEXT NOT NULL, method TEXT NOT NULL, status INTEGER NOT NULL)")
-	if err != nil {
+	if _, err = conn.Exec(context.Background(), "CREATE TABLE IF NOT EXISTS logs (date TIMESTAMP,responseTime INTEGER, url TEXT NOT NULL, \"user\" TEXT NOT NULL,country TEXT NOT NULL ,payload TEXT, headers TEXT NOT NULL, method TEXT NOT NULL, status INTEGER NOT NULL)"); err != nil {
+		errChannel <- err
+		return
+	}
+	if _, err = conn.Exec(context.Background(), "CREATE INDEX IF NOT EXISTS idx_date ON logs (date)"); err != nil {
 		errChannel <- err
 		return
 	}
@@ -38,11 +42,17 @@ func Insert(payload Payload) error {
 	defer conn.Close(ctx)
 	headers, _ := json.Marshal(payload.Headers)
 	body, _ := json.Marshal(payload.Body)
-	realip := payload.Headers["X-Real-IP"]
+	var realip string = payload.Headers["X-Real-IP"]
+	var country string = "Unknown"
 	if realip == "" {
 		realip = "Unknown"
+	} else {
+		country, err = external.GetCountryOrigin(realip)
+		if err != nil {
+			country = "Unknown"
+		}
 	}
-	_, err = conn.Exec(ctx, "INSERT INTO logs (date, responseTime, url, \"user\", payload, headers, method, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", payload.Time, payload.Metrics.Duration.String(), payload.Url, realip, string(body), string(headers), payload.Method, payload.Metrics.StatusCode)
+	_, err = conn.Exec(ctx, "INSERT INTO logs (date, responseTime, url, \"user\",country, payload, headers, method, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", payload.Time, payload.Metrics.Duration, payload.Url, realip, country, string(body), string(headers), payload.Method, payload.Metrics.StatusCode)
 	return err
 }
 

@@ -3,7 +3,7 @@ package enter
 import "time"
 
 type Payload struct {
-	Headers map[string]any
+	Headers map[string]string
 	Url     string
 	Body    map[string]any
 	Method  string
@@ -13,5 +13,5 @@ type Payload struct {
 
 type ResponseMetrics struct {
 	StatusCode int
-	Duration   time.Duration
+	Duration   int64
 }
