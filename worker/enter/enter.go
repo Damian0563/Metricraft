@@ -24,7 +24,7 @@ func Enter(w http.ResponseWriter, r *http.Request) {
 
 func extactDetails(r *http.Request) (Payload, error) {
 	started := time.Now()
-	var headers map[string]any = make(map[string]any)
+	var headers map[string]string = make(map[string]string)
 	headers["X-Forwarded-For"] = r.Header.Get("X-Forwarded-For")
 	headers["X-Forwarded-Host"] = r.Header.Get("X-Forwarded-Host")
 	headers["X-Forwarded-Proto"] = r.Header.Get("X-Forwarded-Proto")
@@ -102,6 +102,6 @@ func extactDetails(r *http.Request) (Payload, error) {
 			return Payload{}, err
 		}
 	}
-	metrics.Duration = time.Duration(time.Since(start).Milliseconds())
+	metrics.Duration = time.Since(start).Milliseconds()
 	return Payload{Headers: headers, Time: started, Url: redirect, Body: body, Method: method, Metrics: metrics}, nil
 }

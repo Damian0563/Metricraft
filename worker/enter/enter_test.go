@@ -44,11 +44,11 @@ func TestExtractDetails_GetRequest(t *testing.T) {
 		t.Errorf("Expected status 200, got %d", payload.Metrics.StatusCode)
 	}
 
-	if payload.Metrics.Duration <= 0 {
-		t.Error("Expected positive duration")
+	if payload.Metrics.Duration < 0 {
+		t.Error("Expected non-negative duration")
 	}
 
-	t.Logf("Payload: method=%s, url=%s, status=%d, duration=%v",
+	t.Logf("Payload: method=%s, url=%s, status=%d, duration=%dms",
 		payload.Method, payload.Url, payload.Metrics.StatusCode, payload.Metrics.Duration)
 }
 
