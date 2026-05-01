@@ -1,0 +1,12 @@
+service Metricraft {
+
+  rpc getUrlCongestion(timeframe) returns (congestion);
+}
+
+message timeframe{
+  google.protobuf.Duration timeframe = 1;
+}
+
+message congestion{
+  map<string,int32> congestion = 1;
+}
