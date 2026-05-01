@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func signSecret(token string) (string, error) {
+func signToken(token string) (string, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     os.Getenv("redis"),
 		Password: "",
@@ -25,7 +25,7 @@ func signSecret(token string) (string, error) {
 	return signed, nil
 }
 
-func updateSecret(token string, signed string) error {
+func updateToken(token string, signed string) error {
 	client := redis.NewClient(&redis.Options{
 		Addr:     os.Getenv("redis"),
 		Password: "",
@@ -40,7 +40,7 @@ func updateSecret(token string, signed string) error {
 	return nil
 }
 
-func checkSecret(token string) (bool, error) {
+func checkToken(token string) (bool, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     os.Getenv("redis"),
 		Password: "",
@@ -55,6 +55,9 @@ func checkSecret(token string) (bool, error) {
 			return false, nil
 		}
 		return false, err
+	}
+	if len(parts) == 1 {
+		return true, nil
 	}
 	return signed == parts[1], nil
 }

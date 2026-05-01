@@ -23,7 +23,7 @@ export const welcome = async (): Promise<boolean | null> => {
 export const sign = async (payload: signPayload): Promise<boolean | null> => {
 	const config: config = useBackendUrl()
 	try {
-		const response = await fetch($`{config.httphost}/sign`, {
+		const response = await fetch(`${config.httphost}/sign`, {
 			method: 'POST',
 			headers: {
 				"Authorization": config.secret,
@@ -35,7 +35,8 @@ export const sign = async (payload: signPayload): Promise<boolean | null> => {
 			throw data.err
 		}
 		return data.token
-	} catch {
+	} catch (e) {
+		console.log(e)
 		throw "Something went wrong, Check your internet connection and try again."
 	}
 }

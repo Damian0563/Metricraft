@@ -1,3 +1,8 @@
+syntax = "proto3";
+package metricraft;
+option go_package = "metricraft/proto";
+import "google/protobuf/duration.proto";
+
 service Metricraft {
 
   rpc getUrlCongestion(timeframe) returns (congestion);
