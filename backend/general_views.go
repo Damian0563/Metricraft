@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"strings"
 )
 
 func welcome(w http.ResponseWriter, r *http.Request) {
@@ -19,8 +18,8 @@ func welcome(w http.ResponseWriter, r *http.Request) {
 		unauthorized = true
 	}
 	if !unauthorized {
-		token := r.Header.Get("Session-Token")
-		exists, err := checkSecret(token)
+		token := Token{token: r.Header.Get("Session-Token")}
+		exists, err := token.verify()
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			jsonResponse["err"] = "Error occured during checking session token. Please try again later."
@@ -39,15 +38,21 @@ func toggleRealtime(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-	signedToken := r.Header.Get("Session-Token")
-	tokenStr := strings.Split(signedToken, ":")[0]
-	token := Token{token: tokenStr}
+	token := Token{token: r.Header.Get("Session-Token")}
+	authed, err := token.verify()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	} else if !authed {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 	type realtimePayload struct {
 		Enabled bool `json:"enabled"`
 	}
 	var payload realtimePayload
 	json.NewDecoder(r.Body).Decode(&payload)
-	err := token.ChangeRealtime(payload.Enabled)
+	err = token.ChangeRealtime(payload.Enabled)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -60,9 +65,15 @@ func dashboardInit(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-	signedToken := r.Header.Get("Session-Token")
-	tokenStr := strings.Split(signedToken, ":")[0]
-	token := Token{token: tokenStr}
+	token := Token{token: r.Header.Get("Session-Token")}
+	authed, err := token.verify()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	} else if !authed {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 	type dashboardInitPayload struct {
 		AppName      string   `json:"appName"`
 		SignedSecret string   `json:"signedSecret"`
@@ -70,7 +81,7 @@ func dashboardInit(w http.ResponseWriter, r *http.Request) {
 		Error        string   `json:"error"`
 	}
 	var Response = dashboardInitPayload{}
-	appName, err := getAppNameByToken(tokenStr)
+	appName, err := token.GetAppName()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		Response.Error = err.Error()
@@ -79,7 +90,7 @@ func dashboardInit(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.WriteHeader(http.StatusOK)
 		Response.AppName = appName
-		signed, error := signSecret(tokenStr)
+		signed, error := token.sign()
 		if error != nil {
 			Response.Error = "Error occured during signing. Please try again later."
 			Response.SignedSecret = ""
@@ -128,6 +139,8 @@ func sign(w http.ResponseWriter, r *http.Request) {
 		if ok {
 			w.WriteHeader(http.StatusOK)
 			jsonResponse["token"] = uuid
+			token := Token{token: uuid}
+			token.sign()
 		} else {
 			w.WriteHeader(http.StatusUnauthorized)
 			jsonResponse["token"] = ""

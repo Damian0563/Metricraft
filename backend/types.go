@@ -11,23 +11,15 @@ type Session struct {
 	mu       sync.Mutex
 }
 
-type Token struct {
-	token string
-}
-
-func (t Token) GetUser() (User, error) {
-	return getUserByToken(t.token)
-}
-
-func (t Token) ChangeRealtime(enabled bool) error {
-	return changeRealtimeByToken(t.token, enabled)
-}
-
 type User struct {
 	Mail     string   `json:"mail"`
 	AppName  string   `json:"appName"`
 	UUID     string   `json:"uuid"`
 	Settings settings `json:"settings,omitempty"`
+}
+
+type Token struct {
+	token string
 }
 
 // This can be expanded later to include more settings

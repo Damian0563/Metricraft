@@ -8,10 +8,6 @@
 					<h1 class="text-black text-2xl font-bold">{{ props.appName }}</h1>
 				</div>
 				<div class="flex items-center gap-8">
-					<button class="bg-white text-black rounded-full px-4 py-2 text-sm"
-						@click="customizeDashboard = !customizeDashboard; emit('customizeView', customizeDashboard)">
-						Customize Dashboard
-					</button>
 					<button class="bg-white text-black rounded-full px-4 py-2 text-sm hover:cursor-pointer"
 						@click="options = !options">
 						<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
@@ -21,19 +17,26 @@
 					</button>
 					<div class="relative">
 						<div v-if="options"
-							class="absolute top-0 right-0 z-10 mt-6 mr-2 bg-white rounded-xl shadow-xl p-4 min-w-48 border border-gray-100">
-							<label class="flex items-center gap-3 cursor-pointer">
-								<span class="text-sm font-medium text-gray-700">
-									Real-time updates
-								</span>
-								<input type="checkbox"
-									class="w-4 h-4 rounded border-gray-300 text-[#00F376] focus:ring-[#00F376] cursor-pointer"
-									:checked="realtimeEnabled"
-									@change="emit('realtimeToggle', ($event.target as HTMLInputElement).checked)" />
-							</label>
-							<span class="text-sm font-medium text-gray-700 mt-4 hover:cursor-pointer" @click="copyInvite">
-								Invite team members
-							</span>
+							class="absolute top-0 right-0 z-10 mt-6 mr-2 bg-white rounded-xl shadow-xl p-4 min-w-48 border border-gray-100 justfy-center">
+							<!-- <label class="flex items-center gap-3 cursor-pointer"> -->
+							<!-- 	<span class="text-sm font-medium text-gray-700"> -->
+							<!-- 		Real-time updates -->
+							<!-- 	</span> -->
+							<!-- 	<input type="checkbox" -->
+							<!-- 		class="w-4 h-4 rounded border-gray-300 text-[#00F376] focus:ring-[#00F376] cursor-pointer" -->
+							<!-- 		:checked="realtimeEnabled" -->
+							<!-- 		@change="emit('realtimeToggle', ($event.target as HTMLInputElement).checked)" /> -->
+							<!-- </label> -->
+							<!-- <button class="bg-white text-black rounded-full px-4 py-2 text-sm" -->
+							<!-- 	@click="customizeDashboard = !customizeDashboard; emit('customizeView', customizeDashboard)"> -->
+							<!-- 	Customize Dashboard -->
+							<!-- </button> -->
+							<!-- <span class="text-sm font-medium text-gray-700 mt-4 hover:cursor-pointer" @click="copyInvite"> -->
+							<!-- 	Invite team members -->
+							<!-- </span> -->
+							<NuxtLink to="/settings" class="text-sm font-medium text-gray-700 mt-4 hover:cursor-pointer">
+								Settings
+							</NuxtLink>
 							<button
 								class="text-sm font-medium text-white bg-red-500 rounded-full p-1 w-full transition-all duration-300 shadow-md hover:bg-red-600 hover:shadow-lg"
 								@click="signOut">Sign out
@@ -58,14 +61,14 @@ const emit = defineEmits<{
 	load: void;
 }>();
 const options = ref(false)
-const customizeDashboard = ref(false)
-const copyInvite = () => {
-	emit('load')
-	const cookie: string | undefined = document.cookie.split(";").find(c => c.trim().startsWith("session-token"))?.split("=")[1]
-	if (!cookie) return
-	navigator.clipboard.writeText(`http://localhost:8000/invite/inv:${cookie}`)
-	emit('load')
-}
+// const customizeDashboard = ref(false)
+// const copyInvite = () => {
+// 	emit('load')
+// 	const cookie: string | undefined = document.cookie.split(";").find(c => c.trim().startsWith("session-token"))?.split("=")[1]
+// 	if (!cookie) return
+// 	navigator.clipboard.writeText(`http://localhost:8000/invite/inv:${cookie}`)
+// 	emit('load')
+// }
 const signOut = () => {
 	invalidateCookie()
 	navigateTo('/')
