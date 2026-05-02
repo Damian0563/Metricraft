@@ -1,23 +1,12 @@
 <template>
-	<div class="w-full px-8 py-4 overflow-y">
-		<div class="flex items-center justify-between mb-6">
-			<h1 class="text-3xl font-bold text-black">Settings</h1>
-			<button @click="emit('back')"
-				class="hover:cursor-pointer p-2 rounded-full transition-all duration-200 bg-[#00F376] hover:bg-[#00d668]">
-				<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-black" fill="none" viewBox="0 0 24 24"
-					stroke="currentColor">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-				</svg>
-			</button>
+	<div class="w-full px-8 py-2 ">
+		<div class="flex items-center justify-between mb-3">
+			<h1 class="text-3xl font-bold" style="color: #00F376;">Settings</h1>
 		</div>
 		<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 			<div class="lg:col-span-2 space-y-6">
 				<div class="bg-white rounded-xl shadow-xl p-8 border border-gray-100">
 					<div class="space-y-8">
-						<div class="pb-6 border-b border-gray-200">
-							<h2 class="text-xl font-semibold text-gray-800">Application</h2>
-							<p class="text-sm text-gray-500 mt-2">{{ appName }}</p>
-						</div>
 						<div class="pb-6 border-b border-gray-200">
 							<h2 class="text-xl font-semibold text-gray-800 mb-4">Preferences</h2>
 							<label class="flex items-center justify-between cursor-pointer">
@@ -32,11 +21,38 @@
 							</label>
 						</div>
 						<div class="pb-6 border-b border-gray-200">
-							<h2 class="text-xl font-semibold text-gray-800 mb-4">Customization</h2>
-							<button @click="emit('customizeView', !customizeDashboard)"
-								class="w-full text-left px-4 py-3 rounded-xl border border-gray-200 hover:border-[#00F376] hover:shadow-md transition-all duration-300 text-gray-700 font-medium">
-								Customize Dashboard View
-							</button>
+							<h2 class="text-xl font-semibold text-gray-800 mb-4">Log Retention Policy</h2>
+							<div class="flex items-center gap-4">
+								<select v-model="logRetention"
+									class="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 font-medium focus:outline-none focus:border-[#00F376] transition-colors duration-200">
+									<option value="7">7 days</option>
+									<option value="30">30 days</option>
+									<option value="90">90 days</option>
+									<option value="180">6 months</option>
+									<option value="365">1 year</option>
+								</select>
+								<p class="text-sm text-gray-500">Automatically delete logs older than the selected period to reduce
+									memory usage. The data of the derived metrics will be compacted and still available, but raw http
+									traffic logs will be deleted, you can export them at any time.</p>
+							</div>
+						</div>
+						<div>
+							<h2 class="text-xl font-semibold text-gray-800 mb-4">Derived Metrics</h2>
+							<div class="space-y-3">
+								<div v-for="metric in derivedMetrics" :key="metric.id"
+									class="flex items-center justify-between px-4 py-3 rounded-xl border border-gray-100 bg-gray-50">
+									<div>
+										<p class="text-sm font-medium text-gray-700">{{ metric.name }}</p>
+										<p class="text-xs text-gray-500">{{ metric.description }}</p>
+									</div>
+									<span :class="[
+										'text-xs font-medium px-3 py-1 rounded-full',
+										metric.enabled ? 'bg-[#00F376]/20 text-green-700' : 'bg-gray-200 text-gray-500'
+									]">
+										{{ metric.enabled ? 'Active' : 'Inactive' }}
+									</span>
+								</div>
+							</div>
 						</div>
 					</div>
 				</div>
@@ -48,6 +64,13 @@
 						class="text-base font-medium text-gray-700 hover:cursor-pointer hover:text-[#00F376] transition-colors duration-200">
 						Invite team members
 					</span>
+				</div>
+				<div class="bg-white rounded-xl shadow-xl p-8 border border-gray-100">
+					<h2 class="text-xl font-semibold text-gray-800 mb-4">Customization</h2>
+					<button @click="emit('customizeView', !customizeDashboard)"
+						class="w-full text-left px-4 py-3 rounded-xl border border-gray-200 hover:border-[#00F376] hover:shadow-md transition-all duration-300 text-gray-700 font-medium">
+						Customize Dashboard View
+					</button>
 				</div>
 			</div>
 		</div>
@@ -63,9 +86,15 @@ const emit = defineEmits<{
 	realtimeToggle: [value: boolean];
 	customizeView: [value: boolean];
 	load: [value: void];
-	back: [value: void];
 }>();
 const customizeDashboard = ref(false)
+const logRetention = ref('30')
+const derivedMetrics = ref([
+	{ id: 1, name: 'Error Rate (5m window)', description: 'Percentage of failed requests in 5-minute intervals', enabled: true },
+	{ id: 2, name: 'P95 Latency', description: '95th percentile response time per endpoint', enabled: true },
+	{ id: 3, name: 'Throughput Delta', description: 'Change in request volume compared to previous hour', enabled: false },
+	{ id: 4, name: 'Uptime Score', description: 'Availability percentage over the last 24 hours', enabled: true },
+])
 const copyInvite = () => {
 	emit('load')
 	const cookie: string | undefined = document.cookie.split(";").find(c => c.trim().startsWith("session-token"))?.split("=")[1]

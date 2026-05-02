@@ -1,10 +1,9 @@
 <template>
 	<NuxtLayout>
-		<DashboardNav :appName="appName" @settings=handleSettings />
+		<DashboardNav :appName="appName" @settings=handleSettings @back="settings = false" />
 		<GraphGrid v-if="!settings" />
 		<Settings v-if="settings" :appName="appName" :realtimeEnabled="realtimeEnabled"
-			@realtime-toggle="handleRealtimeToggle" @customize-view="handleCustomizeView" @load="emit('load')"
-			@back="handleSettings" />
+			@realtime-toggle="handleRealtimeToggle" @customize-view="handleCustomizeView" @load="emit('load')" />
 	</NuxtLayout>
 </template>
 
@@ -22,7 +21,7 @@ const settings = ref(false);
 watch(() => props.appName, (val) => appName.value = val);
 watch(() => props.realtimeEnabled, (val) => realtimeEnabled.value = val);
 const emit = defineEmits<{
-	load: void;
+	load: [value: void];
 }>();
 let ws: WebSocket | null = null;
 const connectWebSocket = () => {
@@ -49,7 +48,7 @@ const handleRealtimeToggle = (val: boolean) => {
 };
 
 const handleSettings = () => {
-	settings.value = !settings.value;
+	settings.value = true;
 }
 
 const handleCustomizeView = (val: boolean) => {
