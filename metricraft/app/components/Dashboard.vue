@@ -1,8 +1,10 @@
 <template>
 	<NuxtLayout>
-		<DashboardNav :appName="appName" :realtimeEnabled="realtimeEnabled" @realtimeToggle=handleRealtimeToggle
-			@customizeView=handleCustomizeView />
-		<GraphGrid />
+		<DashboardNav :appName="appName" @settings=handleSettings />
+		<GraphGrid v-if="!settings" />
+		<Settings v-if="settings" :appName="appName" :realtimeEnabled="realtimeEnabled"
+			@realtime-toggle="handleRealtimeToggle" @customize-view="handleCustomizeView" @load="emit('load')"
+			@back="handleSettings" />
 	</NuxtLayout>
 </template>
 
@@ -16,6 +18,7 @@ const props = defineProps<{
 }>();
 const appName = ref(props.appName);
 const realtimeEnabled = ref(props.realtimeEnabled);
+const settings = ref(false);
 watch(() => props.appName, (val) => appName.value = val);
 watch(() => props.realtimeEnabled, (val) => realtimeEnabled.value = val);
 const emit = defineEmits<{
@@ -25,7 +28,7 @@ let ws: WebSocket | null = null;
 const connectWebSocket = () => {
 	const config: config = useBackendUrl()
 	if (!config.wsshost) console.error("No websocket host")
-	ws = new WebSocket($`{config.wsshost}:8080/ws/visitors`);
+	ws = new WebSocket(`${config.wsshost}/ws/visitors`);
 	ws.onopen = () => {
 		console.log("Connected to websocket");
 	};
@@ -44,6 +47,10 @@ const handleRealtimeToggle = (val: boolean) => {
 		if (ws) ws.close();
 	}
 };
+
+const handleSettings = () => {
+	settings.value = !settings.value;
+}
 
 const handleCustomizeView = (val: boolean) => {
 	console.log(val);

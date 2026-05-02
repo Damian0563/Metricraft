@@ -9,6 +9,9 @@ export const getDashboard = async (cookie: string): Promise<dashboardInitPayload
 		},
 		method: "GET",
 	})
-	const data = await response.json()
+	let data = await response.json()
+	if (!response.ok) {
+		data.error = response.statusText
+	}
 	return data.payload || data
 }

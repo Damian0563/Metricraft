@@ -1,19 +1,24 @@
 package main
 
+import "strings"
+
 func (t Token) GetUser() (User, error) {
 	return getUserByToken(t.token)
 }
 
 func (t Token) GetAppName() (string, error) {
-	return getAppNameByToken(t.token)
+	split := strings.Split(t.token, ":")
+	return getAppNameByToken(split[0])
 }
 
 func (t Token) ChangeRealtime(enabled bool) error {
-	return changeRealtimeByToken(t.token, enabled)
+	split := strings.Split(t.token, ":")
+	return changeRealtimeByToken(split[0], enabled)
 }
 
 func (t Token) sign() (string, error) {
-	return signToken(t.token)
+	split := strings.Split(t.token, ":")
+	return signToken(split[0])
 }
 
 func (t Token) verify() (bool, error) {
