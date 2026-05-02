@@ -55,29 +55,3 @@ func Insert(payload Payload) error {
 	_, err = conn.Exec(ctx, "INSERT INTO logs (date, responseTime, url, \"user\",country, payload, headers, method, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", payload.Time, payload.Metrics.Duration, payload.Url, realip, country, string(body), string(headers), payload.Method, payload.Metrics.StatusCode)
 	return err
 }
-
-func ChangeRealtime(enabled bool) error {
-	ctx := context.Background()
-	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
-	if err != nil {
-		return err
-	}
-	defer conn.Close(ctx)
-	_, err = conn.Exec(ctx, "UPDATE settings SET realtime = $1 WHERE TRUE", enabled)
-	return err
-}
-
-func GetRealtime() (bool, error) {
-	ctx := context.Background()
-	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
-	if err != nil {
-		return false, err
-	}
-	defer conn.Close(ctx)
-	var realtime bool
-	err = conn.QueryRow(ctx, "SELECT realtime FROM settings WHERE TRUE").Scan(&realtime)
-	if err != nil {
-		return false, err
-	}
-	return realtime, nil
-}

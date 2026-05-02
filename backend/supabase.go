@@ -64,22 +64,9 @@ func getUserByToken(token string) (User, error) {
 	}
 	defer conn.Close(context.Background())
 	var user User
-	err = conn.QueryRow(context.Background(), "SELECT mail, app_name, uuid, realtime FROM users WHERE uuid = $1", token).Scan(&user.Mail, &user.AppName, &user.UUID, &user.Settings.Realtime)
+	err = conn.QueryRow(context.Background(), "SELECT mail, app_name, uuid FROM users WHERE uuid = $1", token).Scan(&user.Mail, &user.AppName, &user.UUID, &user.Settings.Realtime)
 	if err != nil {
 		return User{}, err
 	}
 	return user, nil
-}
-
-func changeRealtimeByToken(token string, enabled bool) error {
-	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
-	if err != nil {
-		return err
-	}
-	defer conn.Close(context.Background())
-	_, err = conn.Exec(context.Background(), "UPDATE users SET realtime = $1 WHERE uuid = $2", enabled, token)
-	if err != nil {
-		return err
-	}
-	return nil
 }
