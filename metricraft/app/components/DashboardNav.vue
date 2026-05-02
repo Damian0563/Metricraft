@@ -34,9 +34,9 @@
 							<!-- <span class="text-sm font-medium text-gray-700 mt-4 hover:cursor-pointer" @click="copyInvite"> -->
 							<!-- 	Invite team members -->
 							<!-- </span> -->
-							<NuxtLink to="/settings" class="text-sm font-medium text-gray-700 mt-4 hover:cursor-pointer">
+							<span @click="emit('settings')" class="text-sm font-medium text-gray-700 mt-4 hover:cursor-pointer">
 								Settings
-							</NuxtLink>
+							</span>
 							<button
 								class="text-sm font-medium text-white bg-red-500 rounded-full p-1 w-full transition-all duration-300 shadow-md hover:bg-red-600 hover:shadow-lg"
 								@click="signOut">Sign out
@@ -53,12 +53,9 @@
 import { invalidateCookie } from "~/composables/helpers"
 const props = defineProps<{
 	appName: string;
-	realtimeEnabled: boolean;
 }>();
 const emit = defineEmits<{
-	realtimeToggle: boolean;
-	customizeView: boolean;
-	load: void;
+	settings: void;
 }>();
 const options = ref(false)
 // const customizeDashboard = ref(false)

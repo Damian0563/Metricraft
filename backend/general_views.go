@@ -88,23 +88,24 @@ func dashboardInit(w http.ResponseWriter, r *http.Request) {
 		Response.AppName = ""
 		Response.SignedSecret = ""
 	} else {
-		w.WriteHeader(http.StatusOK)
 		Response.AppName = appName
 		signed, error := token.sign()
 		if error != nil {
+			w.WriteHeader(http.StatusInternalServerError)
 			Response.Error = "Error occured during signing. Please try again later."
 			Response.SignedSecret = ""
 		} else {
+			w.WriteHeader(http.StatusOK)
 			Response.SignedSecret = signed
+			Response.Error = ""
+			user, err := token.GetUser()
+			if err == nil {
+				Response.Settings = user.Settings
+			}
 		}
-		Response.Error = ""
+		response, _ := json.Marshal(Response)
+		w.Write(response)
 	}
-	user, err := token.GetUser()
-	if err == nil {
-		Response.Settings = user.Settings
-	}
-	response, _ := json.Marshal(Response)
-	w.Write(response)
 }
 
 func sign(w http.ResponseWriter, r *http.Request) {
@@ -132,15 +133,27 @@ func sign(w http.ResponseWriter, r *http.Request) {
 			jsonResponse["err"] = "Error occured during account creation. Please try again later."
 		} else {
 			w.WriteHeader(http.StatusOK)
-			jsonResponse["token"] = uuid
+			token := Token{token: uuid}
+			signed, err := token.sign()
+			if err != nil {
+				jsonResponse["token"] = ""
+				jsonResponse["err"] = "Error occured during signing. Please try again later."
+			} else {
+				jsonResponse["token"] = signed
+			}
 		}
 	} else {
 		uuid, ok := signIn(payload.Mail, payload.Secret)
 		if ok {
-			w.WriteHeader(http.StatusOK)
-			jsonResponse["token"] = uuid
 			token := Token{token: uuid}
-			token.sign()
+			signed, err := token.sign()
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				jsonResponse["token"] = ""
+				jsonResponse["err"] = "Error occured during signing. Please try again later."
+			}
+			w.WriteHeader(http.StatusOK)
+			jsonResponse["token"] = signed
 		} else {
 			w.WriteHeader(http.StatusUnauthorized)
 			jsonResponse["token"] = ""
