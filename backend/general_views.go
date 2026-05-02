@@ -52,7 +52,7 @@ func toggleRealtime(w http.ResponseWriter, r *http.Request) {
 	}
 	var payload realtimePayload
 	json.NewDecoder(r.Body).Decode(&payload)
-	err = token.ChangeRealtime(payload.Enabled)
+	err = ChangeRealtime(payload.Enabled)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -77,7 +77,7 @@ func dashboardInit(w http.ResponseWriter, r *http.Request) {
 	type dashboardInitPayload struct {
 		AppName      string   `json:"appName"`
 		SignedSecret string   `json:"signedSecret"`
-		Settings     settings `json:"settings"`
+		Settings     Settings `json:"settings"`
 		Error        string   `json:"error"`
 	}
 	var Response = dashboardInitPayload{}
@@ -98,9 +98,8 @@ func dashboardInit(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			Response.SignedSecret = signed
 			Response.Error = ""
-			user, err := token.GetUser()
 			if err == nil {
-				Response.Settings = user.Settings
+				Response.Settings, err = GetSettings()
 			}
 		}
 		response, _ := json.Marshal(Response)

@@ -34,7 +34,7 @@
 							<!-- <span class="text-sm font-medium text-gray-700 mt-4 hover:cursor-pointer" @click="copyInvite"> -->
 							<!-- 	Invite team members -->
 							<!-- </span> -->
-							<span @click="emit('settings')" class="text-sm font-medium text-gray-700 mt-4 hover:cursor-pointer">
+							<span @click="emit('settings')" class="text-sm font-medium text-gray-700 mt-4 hover:cursor-pointer text-center block">
 								Settings
 							</span>
 							<button

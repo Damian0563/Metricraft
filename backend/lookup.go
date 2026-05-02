@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"os"
@@ -60,6 +59,5 @@ func checkToken(token string) (bool, error) {
 	if len(parts) == 1 {
 		return false, nil
 	}
-	fmt.Println(signed == token)
 	return signed == token, nil
 }

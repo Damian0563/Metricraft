@@ -11,11 +11,6 @@ func (t Token) GetAppName() (string, error) {
 	return getAppNameByToken(split[0])
 }
 
-func (t Token) ChangeRealtime(enabled bool) error {
-	split := strings.Split(t.token, ":")
-	return changeRealtimeByToken(split[0], enabled)
-}
-
 func (t Token) sign() (string, error) {
 	split := strings.Split(t.token, ":")
 	return signToken(split[0])

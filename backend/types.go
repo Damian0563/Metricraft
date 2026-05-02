@@ -15,7 +15,7 @@ type User struct {
 	Mail     string   `json:"mail"`
 	AppName  string   `json:"appName"`
 	UUID     string   `json:"uuid"`
-	Settings settings `json:"settings,omitempty"`
+	Settings Settings `json:"settings,omitempty"`
 }
 
 type Token struct {
@@ -23,6 +23,7 @@ type Token struct {
 }
 
 // This can be expanded later to include more settings
-type settings struct {
-	Realtime bool `json:"realtime"`
+type Settings struct {
+	Realtime bool   `json:"realtime"`
+	Enabled  string `json:"enabled"`
 }

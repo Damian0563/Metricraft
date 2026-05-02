@@ -13,5 +13,6 @@ export const getDashboard = async (cookie: string): Promise<dashboardInitPayload
 	if (!response.ok) {
 		data.error = response.statusText
 	}
+	console.log(data)
 	return data.payload || data
 }
