@@ -17,3 +17,22 @@ export const toggleRealtime = async (enabled: boolean) => {
 		console.error(error);
 	}
 }
+
+export const changeRetention = async (retention: number) => {
+	try {
+		const config: config = useBackendUrl()
+		const response = await fetch(`${config.httphost}/settings/retention`, {
+			method: "POST",
+			headers: {
+				"Authorization": config.secret,
+				"Session-Token": getCookie("session-token"),
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({ retention }),
+		});
+		console.log(response)
+		if (!response.ok) throw new Error("Failed to change retention");
+	} catch (error) {
+		console.error(error);
+	}
+}

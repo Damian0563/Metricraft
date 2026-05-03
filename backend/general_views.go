@@ -60,6 +60,33 @@ func toggleRealtime(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+func changeRetention(w http.ResponseWriter, r *http.Request) {
+	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	token := Token{token: r.Header.Get("Session-Token")}
+	authed, err := token.verify()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	} else if !authed {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	type retentionPayload struct {
+		Retention int `json:"retention"`
+	}
+	var payload retentionPayload
+	json.NewDecoder(r.Body).Decode(&payload)
+	err = ChangeLogsRetention(payload.Retention)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
 func dashboardInit(w http.ResponseWriter, r *http.Request) {
 	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)

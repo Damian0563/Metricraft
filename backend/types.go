@@ -24,6 +24,7 @@ type Token struct {
 
 // This can be expanded later to include more settings
 type Settings struct {
-	Realtime bool   `json:"realtime"`
-	Enabled  string `json:"enabled"`
+	Realtime  bool   `json:"realtime"`
+	Enabled   string `json:"enabled"`
+	Retention int    `json:"retention"`
 }

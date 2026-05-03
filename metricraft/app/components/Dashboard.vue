@@ -2,24 +2,28 @@
 	<NuxtLayout>
 		<DashboardNav :appName="appName" @settings=handleSettings @back="settings = false" />
 		<GraphGrid v-if="!settings" />
-		<Settings v-if="settings" :appName="appName" :realtimeEnabled="realtimeEnabled"
-			@realtime-toggle="handleRealtimeToggle" @customize-view="handleCustomizeView" @load="emit('load')" />
+		<Settings v-if="settings" :realtimeEnabled="realtimeEnabled" :logRetention="logRetention"
+			@realtime-toggle="handleRealtimeToggle" @customize-view="handleCustomizeView" @load="emit('load')"
+			@logRetention="handleLogRetention" />
 	</NuxtLayout>
 </template>
 
 <script setup lang="ts">
 import { handleMessage } from "@/ws/visitors"
-import { toggleRealtime } from "@/calls/settings"
+import { toggleRealtime, changeRetention } from "@/calls/settings"
 import type { config } from "@/composables/types"
 const props = defineProps<{
 	appName: string;
 	realtimeEnabled: boolean;
+	logRetention: number;
 }>();
 const appName = ref(props.appName);
 const realtimeEnabled = ref(props.realtimeEnabled);
+const logRetention = ref(props.logRetention);
 const settings = ref(false);
 watch(() => props.appName, (val) => appName.value = val);
 watch(() => props.realtimeEnabled, (val) => realtimeEnabled.value = val);
+watch(() => props.logRetention, (val) => logRetention.value = val);
 const emit = defineEmits<{
 	load: [value: void];
 }>();
@@ -36,6 +40,10 @@ const connectWebSocket = () => {
 		handleMessage(event);
 	};
 };
+
+const handleLogRetention = (val: number) => {
+	changeRetention(val);
+}
 
 const handleRealtimeToggle = (val: boolean) => {
 	toggleRealtime(val)
