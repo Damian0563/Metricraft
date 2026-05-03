@@ -2,7 +2,7 @@
 	<NuxtLayout>
 		<Popup :message="errorMessage" @close="errorMessage = ''" />
 		<Spinner :loading="loading" />
-		<Dashboard :appName="appName" :realtimeEnabled="realtimeEnabled" @load="handleLoad" />
+		<Dashboard :appName="appName" :realtimeEnabled="realtimeEnabled" :logRetention="logRetention" @load="handleLoad" />
 	</NuxtLayout>
 </template>
 
@@ -15,7 +15,7 @@ const loading = ref(true);
 const errorMessage = ref("");
 const appName = ref("");
 const realtimeEnabled = ref(false);
-
+const logRetention = ref(30);
 const init = async () => {
 	loading.value = true;
 	try {
@@ -26,6 +26,7 @@ const init = async () => {
 		} else {
 			appName.value = data.appName;
 			realtimeEnabled.value = data.settings.realtime;
+			logRetention.value = data.settings.retention;
 			cookie.value = data.signedSecret;
 			updateCookie(cookie.value);
 		}

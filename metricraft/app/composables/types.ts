@@ -10,7 +10,7 @@ export type dashboardInitPayload = {
 	appName: string;
 	signedSecret: string;
 	error: string;
-	settings: { realtime: boolean };
+	settings: { realtime: boolean, retention: number };
 }
 
 

@@ -16,12 +16,20 @@ func InitDB(ctx context.Context, errChannel chan error) {
 		errChannel <- err
 		return
 	}
-	_, err = conn.Exec(context.Background(), "CREATE TABLE IF NOT EXISTS settings (realtime BOOL, enabled TEXT)")
+	_, err = conn.Exec(context.Background(), "CREATE TABLE IF NOT EXISTS settings (realtime BOOL, enabled TEXT, retention INTEGER)")
 	if err != nil {
 		errChannel <- err
 		return
 	}
-	conn.Exec(context.Background(), "INSERT INTO settings (realtime, enabled) VALUES (true, '{}')")
+	var count int
+	err = conn.QueryRow(context.Background(), "SELECT COUNT(*) FROM settings").Scan(&count)
+	if err != nil {
+		errChannel <- err
+		return
+	}
+	if count == 0 {
+		conn.Exec(context.Background(), "INSERT INTO settings (realtime, enabled, retention) VALUES (true, '{}', 30)")
+	}
 	if _, err = conn.Exec(context.Background(), "CREATE TABLE IF NOT EXISTS logs (date TIMESTAMP,responseTime INTEGER, url TEXT NOT NULL, \"user\" TEXT NOT NULL,country TEXT NOT NULL ,payload TEXT, headers TEXT NOT NULL, method TEXT NOT NULL, status INTEGER NOT NULL)"); err != nil {
 		errChannel <- err
 		return
