@@ -18,14 +18,14 @@ func signToken(token string) (string, error) {
 	defer client.Close()
 	ctx := context.Background()
 	signed := token + ":" + uuid.New().String()
-	err := client.Set(ctx, token, signed, 24*time.Hour).Err()
+	err := client.Set(ctx, token, signed, 1*time.Hour).Err()
 	if err != nil {
 		return "", err
 	}
 	return signed, nil
 }
 
-func updateToken(token string, signed string) error {
+func updateToken(token string) error {
 	client := redis.NewClient(&redis.Options{
 		Addr:     os.Getenv("redis"),
 		Password: "",
@@ -33,7 +33,8 @@ func updateToken(token string, signed string) error {
 	})
 	defer client.Close()
 	ctx := context.Background()
-	err := client.Set(ctx, token, signed, 24*time.Hour).Err()
+	parts := strings.Split(token, ":")
+	err := client.Set(ctx, parts[0], token, 1*time.Hour).Err()
 	if err != nil {
 		return err
 	}
