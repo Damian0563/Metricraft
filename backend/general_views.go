@@ -39,12 +39,8 @@ func toggleRealtime(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	token := Token{token: r.Header.Get("Session-Token")}
-	authed, err := token.verify()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	} else if !authed {
-		w.WriteHeader(http.StatusUnauthorized)
+	authed := token.validateRequest(&w)
+	if !authed {
 		return
 	}
 	type realtimePayload struct {
@@ -52,7 +48,7 @@ func toggleRealtime(w http.ResponseWriter, r *http.Request) {
 	}
 	var payload realtimePayload
 	json.NewDecoder(r.Body).Decode(&payload)
-	err = ChangeRealtime(payload.Enabled)
+	err := ChangeRealtime(payload.Enabled)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -73,6 +69,11 @@ func changeRetention(w http.ResponseWriter, r *http.Request) {
 	} else if !authed {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
+	} else {
+		if err = token.updateToken(); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 	}
 	type retentionPayload struct {
 		Retention int `json:"retention"`
@@ -93,19 +94,9 @@ func dashboardInit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	token := Token{token: r.Header.Get("Session-Token")}
-	authed, err := token.verify()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+	authed := token.validateRequest(&w)
+	if !authed {
 		return
-	} else if !authed {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-	type dashboardInitPayload struct {
-		AppName      string   `json:"appName"`
-		SignedSecret string   `json:"signedSecret"`
-		Settings     Settings `json:"settings"`
-		Error        string   `json:"error"`
 	}
 	var Response = dashboardInitPayload{}
 	appName, err := token.GetAppName()

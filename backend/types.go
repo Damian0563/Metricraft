@@ -21,6 +21,12 @@ type User struct {
 type Token struct {
 	token string
 }
+type dashboardInitPayload struct {
+	AppName      string   `json:"appName"`
+	SignedSecret string   `json:"signedSecret"`
+	Settings     Settings `json:"settings"`
+	Error        string   `json:"error"`
+}
 
 // This can be expanded later to include more settings
 type Settings struct {
