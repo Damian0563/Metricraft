@@ -23,13 +23,13 @@
 						<div class="pb-6 border-b border-gray-200">
 							<h2 class="text-xl font-semibold text-gray-800 mb-4">Log Retention Policy</h2>
 							<div class="flex items-center gap-4">
-								<select v-model="logRetention"
+								<select v-model="logRetention" @change="emit('logRetention', Number(logRetention))"
 									class="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 font-medium focus:outline-none focus:border-[#00F376] transition-colors duration-200">
-									<option value="7" @click="emit('logRetention', 7)">7 days</option>
-									<option value="30" @click="emit('logRetention', 30)">30 days</option>
-									<option value="90" @click="emit('logRetention', 90)">90 days</option>
-									<option value="180" @click="emit('logRetention', 180)">6 months</option>
-									<option value="365" @click="emit('logRetention', 365)">1 year</option>
+									<option value="7">7 days</option>
+									<option value="30">30 days</option>
+									<option value="90">90 days</option>
+									<option value="180">6 months</option>
+									<option value="365">1 year</option>
 								</select>
 								<p class="text-sm text-gray-500">Automatically delete logs older than the selected period to reduce
 									memory usage. The data of the derived metrics will be compacted and still available, but raw http
@@ -89,13 +89,8 @@ const emit = defineEmits<{
 	load: [value: void];
 }>();
 const customizeDashboard = ref(false)
-const logRetention = ref('30')
-watch(() => props.logRetention, (val) => {
-	if ([7, 30, 90].includes(val)) logRetention.value = `${val} days`
-	else if (val == 180) logRetention.value = '6 months'
-	else if (val == 365) logRetention.value = '1 year'
-	else logRetention.value = '30 days'
-})
+const logRetention = ref(props.logRetention)
+watch(() => props.logRetention, (val) => logRetention.value = val)
 const derivedMetrics = ref([
 	{ id: 1, name: 'Geographical traffic', description: 'Map of origins of http requests in a specified time interval.', enabled: true },
 	{ id: 2, name: 'P95 Latency', description: '95th percentile response time per endpoint', enabled: true },
