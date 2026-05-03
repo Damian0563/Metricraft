@@ -42,6 +42,7 @@ const connectWebSocket = () => {
 };
 
 const handleLogRetention = (val: number) => {
+	logRetention.value = val;
 	changeRetention(val);
 }
 
