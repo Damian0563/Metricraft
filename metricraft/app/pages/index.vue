@@ -3,8 +3,7 @@
 		<Navbar />
 		<Spinner :loading="loading" />
 		<Popup :message="errorMessage" @close="errorMessage = ''" />
-		<Sign :oldUser="oldUserStatus" @signup="handleSignup" @load="handleLoad" @popup="createPop"
-			@toggle="oldUserStatus = !oldUserStatus" />
+		<Sign :oldUser="mode" @signup="handleSignup" @load="handleLoad" @popup="createPop" @toggle="mode = !mode" />
 	</NuxtLayout>
 </template>
 
@@ -14,6 +13,7 @@ import { welcome } from "~/calls/welcome"
 const oldUserStatus = ref(false)
 const errorMessage = ref("")
 const loading = ref(true)
+const mode = ref(true)
 
 const handleStatus = async () => {
 	try {

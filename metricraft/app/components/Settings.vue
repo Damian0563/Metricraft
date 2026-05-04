@@ -20,39 +20,36 @@
 								</div>
 							</label>
 						</div>
-						<div class="pb-6 border-b border-gray-200">
-							<h2 class="text-xl font-semibold text-gray-800 mb-4">Log Retention Policy</h2>
-							<div class="flex items-center gap-4">
-								<select v-model="logRetention" @change="emit('logRetention', Number(logRetention))"
-									class="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 font-medium focus:outline-none focus:border-[#00F376] transition-colors duration-200">
-									<option value="7">7 days</option>
-									<option value="30">30 days</option>
-									<option value="90">90 days</option>
-									<option value="180">6 months</option>
-									<option value="365">1 year</option>
-								</select>
-								<p class="text-sm text-gray-500">Automatically delete logs older than the selected period to reduce
-									memory usage. The data of the derived metrics will be compacted and still available, but raw http
-									traffic logs will be deleted, you can export them at any time.</p>
-							</div>
-						</div>
 						<div>
 							<h2 class="text-xl font-semibold text-gray-800 mb-4">Derived Metrics</h2>
 							<div class="space-y-3">
-								<div v-for="metric in derivedMetrics" :key="metric.id"
+								<div v-for="metric in pendingMetrics" :key="metric.id"
 									class="flex items-center justify-between px-4 py-3 rounded-xl border border-gray-100 bg-gray-50">
 									<div>
 										<p class="text-sm font-medium text-gray-700">{{ metric.name }}</p>
 										<p class="text-xs text-gray-500">{{ metric.description }}</p>
 									</div>
-									<span :class="[
-										'text-xs font-medium px-3 py-1 rounded-full',
-										metric.enabled ? 'bg-[#00F376]/20 text-green-700' : 'bg-gray-200 text-gray-500'
-									]">
-										{{ metric.enabled ? 'Active' : 'Inactive' }}
-									</span>
+									<div class="flex items-center gap-3">
+										<label class="relative cursor-pointer">
+											<input type="checkbox" class="sr-only peer" v-model="metric.enabled" />
+											<div
+												class="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#00F376]">
+											</div>
+										</label>
+										<span :class="[
+											'text-xs font-medium px-3 py-1 rounded-full',
+											metric.enabled ? 'bg-[#00F376]/20 text-green-700' : 'bg-gray-200 text-gray-500'
+										]">
+											{{ metric.enabled ? 'Active' : 'Inactive' }}
+										</span>
+									</div>
 								</div>
 							</div>
+							<button @click="applyMetricChanges"
+								class="mt-4 px-6 py-2 bg-[#00F376] text-gray-900 font-semibold rounded-lg hover:bg-[#00D96A] transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+								:disabled="!hasChanges">
+								Apply Changes
+							</button>
 						</div>
 					</div>
 				</div>
@@ -72,6 +69,22 @@
 						Customize Dashboard View
 					</button>
 				</div>
+				<div class="bg-white rounded-xl shadow-xl p-8 border border-gray-100">
+					<h2 class="text-xl font-semibold text-gray-800 mb-4">Log Retention Policy</h2>
+					<div class="flex flex-col gap-3">
+						<select v-model="logRetention" @change="emit('logRetention', Number(logRetention))"
+							class="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 font-medium focus:outline-none focus:border-[#00F376] transition-colors duration-200">
+							<option value="7">7 days</option>
+							<option value="30">30 days</option>
+							<option value="90">90 days</option>
+							<option value="180">6 months</option>
+							<option value="365">1 year</option>
+						</select>
+						<p class="text-sm text-gray-500">Automatically delete logs older than the selected period to reduce
+							memory usage. The data of the derived metrics will be compacted and still available, but raw http
+							traffic logs will be deleted, you can export them at any time.</p>
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -87,11 +100,12 @@ const emit = defineEmits<{
 	customizeView: [value: boolean];
 	logRetention: [value: number];
 	load: [value: void];
+	derivedMetricsUpdate: [metrics: { id: number; enabled: boolean }[]];
 }>();
 const customizeDashboard = ref(false)
 const logRetention = ref(props.logRetention)
 watch(() => props.logRetention, (val) => logRetention.value = val)
-const derivedMetrics = ref([
+const originalMetrics = ref([
 	{ id: 1, name: 'Geographical traffic', description: 'Map of origins of http requests in a specified time interval.', enabled: true },
 	{ id: 2, name: 'P95 Latency', description: '95th percentile response time per endpoint', enabled: true },
 	{ id: 3, name: 'Traffic congestion trends', description: 'Request volume measured in one hour time intervals over specified time frame.', enabled: false },
@@ -101,6 +115,16 @@ const derivedMetrics = ref([
 	{ id: 7, name: 'Median response time', description: 'P50 latency across all requests, providing a representative measure of typical endpoint performance.', enabled: true },
 	{ id: 8, name: 'Throughput', description: 'Requests per second measured over configurable time intervals to track traffic capacity and trends.', enabled: true },
 ])
+const pendingMetrics = ref(originalMetrics.value.map(m => ({ ...m })))
+const hasChanges = computed(() =>
+	originalMetrics.value.some((orig, i) => orig.enabled !== pendingMetrics.value[i]?.enabled)
+)
+const applyMetricChanges = () => {
+	if (!hasChanges.value) return
+	const changes = pendingMetrics.value.map(m => ({ id: m.id, enabled: m.enabled }))
+	emit('derivedMetricsUpdate', changes)
+	originalMetrics.value = pendingMetrics.value.map(m => ({ ...m }))
+}
 const copyInvite = () => {
 	emit('load')
 	const cookie: string | undefined = document.cookie.split(";").find(c => c.trim().startsWith("session-token"))?.split("=")[1]
