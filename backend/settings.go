@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/jackc/pgx/v5"
 	"os"
 )
@@ -36,9 +37,19 @@ func GetSettings() (Settings, error) {
 		return Settings{}, err
 	}
 	defer conn.Close(ctx)
-	err = conn.QueryRow(ctx, "SELECT realtime,enabled,retention FROM settings WHERE TRUE").Scan(&settings.Realtime, &settings.Enabled, &settings.Retention)
+	var enabled string
+	err = conn.QueryRow(ctx, "SELECT realtime,enabled,retention FROM settings WHERE TRUE").Scan(&settings.Realtime, &enabled, &settings.Retention)
+	if err != nil {
+		return Settings{}, err
+	}
+	settings.Enabled = make(map[string]bool)
+	err = json.Unmarshal([]byte(enabled), &settings.Enabled)
 	if err != nil {
 		return Settings{}, err
 	}
 	return settings, nil
+}
+
+func ChangeMetrics(metrics []Metric) error {
+	return nil
 }

@@ -69,7 +69,7 @@ func main() {
 	router.HandleFunc("/dashboard/init", dashboardInit)
 	router.HandleFunc("/settings/realtime", toggleRealtime)
 	router.HandleFunc("/settings/retention", changeRetention)
-	router.HandleFunc("/service/congestion", getCongestion)
+	router.HandleFunc("/settings/metrics", changeMetrics)
 	go StartWebSocketServer(router)
 	fmt.Println("Server started on port 8080")
 	http.ListenAndServe(":8080", corsMiddleware(router))

@@ -72,7 +72,7 @@
 				<div class="bg-white rounded-xl shadow-xl p-8 border border-gray-100">
 					<h2 class="text-xl font-semibold text-gray-800 mb-4">Log Retention Policy</h2>
 					<div class="flex flex-col gap-3">
-						<select v-model="logRetention" @change="emit('logRetention', Number(logRetention))"
+						<select v-model="logRetention" @change="changeRetention(Number(logRetention))"
 							class="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 font-medium focus:outline-none focus:border-[#00F376] transition-colors duration-200">
 							<option value="7">7 days</option>
 							<option value="30">30 days</option>
@@ -91,21 +91,23 @@
 </template>
 
 <script setup lang="ts">
+import { changeDerivedMetrics, changeRetention } from "@/calls/settings"
 const props = defineProps<{
 	realtimeEnabled: boolean;
 	logRetention: number;
+	derivedMetrics: Map<string, boolean>;
 }>();
 const emit = defineEmits<{
 	realtimeToggle: [value: boolean];
 	customizeView: [value: boolean];
-	logRetention: [value: number];
 	load: [value: void];
-	derivedMetricsUpdate: [metrics: { id: number; enabled: boolean }[]];
 }>();
 const customizeDashboard = ref(false)
 const logRetention = ref(props.logRetention)
 watch(() => props.logRetention, (val) => logRetention.value = val)
-const originalMetrics = ref([
+type Metric = { id: number; name: string; description: string; enabled: boolean }
+const pendingMetrics = ref<Metric[]>([])
+const originalMetrics = ref<Metric[]>([
 	{ id: 1, name: 'Geographical traffic', description: 'Map of origins of http requests in a specified time interval.', enabled: true },
 	{ id: 2, name: 'P95 Latency', description: '95th percentile response time per endpoint', enabled: true },
 	{ id: 3, name: 'Traffic congestion trends', description: 'Request volume measured in one hour time intervals over specified time frame.', enabled: false },
@@ -115,15 +117,27 @@ const originalMetrics = ref([
 	{ id: 7, name: 'Median response time', description: 'P50 latency across all requests, providing a representative measure of typical endpoint performance.', enabled: true },
 	{ id: 8, name: 'Throughput', description: 'Requests per second measured over configurable time intervals to track traffic capacity and trends.', enabled: true },
 ])
-const pendingMetrics = ref(originalMetrics.value.map(m => ({ ...m })))
+watch(() => props.derivedMetrics, (val: Map<string, boolean>) => {
+	let res: boolean | undefined;
+	originalMetrics.value.forEach((metric) => {
+		res = val.get(metric.name)
+		if (typeof res === "boolean") {
+			metric.enabled = res
+		}
+	})
+	pendingMetrics.value = originalMetrics.value.map(m => ({ ...m }))
+}, { immediate: true })
+
 const hasChanges = computed(() =>
 	originalMetrics.value.some((orig, i) => orig.enabled !== pendingMetrics.value[i]?.enabled)
 )
-const applyMetricChanges = () => {
+const applyMetricChanges = async () => {
+	emit('load')
 	if (!hasChanges.value) return
-	const changes = pendingMetrics.value.map(m => ({ id: m.id, enabled: m.enabled }))
-	emit('derivedMetricsUpdate', changes)
+	const changes = pendingMetrics.value.map(m => ({ name: m.name, enabled: m.enabled }))
+	await changeDerivedMetrics(changes)
 	originalMetrics.value = pendingMetrics.value.map(m => ({ ...m }))
+	emit('load')
 }
 const copyInvite = () => {
 	emit('load')
