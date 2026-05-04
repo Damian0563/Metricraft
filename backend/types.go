@@ -30,7 +30,12 @@ type dashboardInitPayload struct {
 
 // This can be expanded later to include more settings
 type Settings struct {
-	Realtime  bool   `json:"realtime"`
-	Enabled   string `json:"enabled"`
-	Retention int    `json:"retention"`
+	Realtime  bool            `json:"realtime"`
+	Enabled   map[string]bool `json:"enabled"`
+	Retention int             `json:"retention"`
+}
+
+type Metric struct {
+	Name    string `json:"name"`
+	Enabled bool   `json:"enabled"`
 }

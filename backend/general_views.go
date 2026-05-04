@@ -56,6 +56,29 @@ func toggleRealtime(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+func changeMetrics(w http.ResponseWriter, r *http.Request) {
+	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	token := Token{token: r.Header.Get("Session-Token")}
+	authed := token.validateRequest(&w)
+	if !authed {
+		return
+	}
+	type metricsPayload struct {
+		Metrics []Metric `json:"metrics"`
+	}
+	var payload metricsPayload
+	json.NewDecoder(r.Body).Decode(&payload)
+	err := ChangeMetrics(payload.Metrics)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
 func changeRetention(w http.ResponseWriter, r *http.Request) {
 	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
