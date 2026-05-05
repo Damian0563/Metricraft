@@ -51,5 +51,21 @@ func GetSettings() (Settings, error) {
 }
 
 func ChangeMetrics(metrics []Metric) error {
-	return nil
+	ctx := context.Background()
+	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
+	if err != nil {
+		return err
+	}
+	defer conn.Close(ctx)
+	mapMetrics := make(map[string]bool)
+	for _, metric := range metrics {
+		mapMetrics[metric.Name] = metric.Enabled
+	}
+	var stringifiedMetrics []byte
+	stringifiedMetrics, err = json.Marshal(mapMetrics)
+	if err != nil {
+		return err
+	}
+	_, err = conn.Exec(ctx, "UPDATE settings SET enabled = $1 WHERE TRUE", string(stringifiedMetrics))
+	return err
 }
