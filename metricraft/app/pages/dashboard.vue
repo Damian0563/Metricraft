@@ -35,6 +35,7 @@ const init = async () => {
 			updateCookie(cookie.value);
 		}
 	} catch (e) {
+		console.log(e);
 		errorMessage.value = "Error loading dashboard, session expired.";
 		navigateTo("/");
 	} finally {

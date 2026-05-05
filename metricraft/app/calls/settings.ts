@@ -47,7 +47,7 @@ export const changeDerivedMetrics = async (metrics: { name: string; enabled: boo
 				"Session-Token": getCookie("session-token"),
 				"Content-Type": "application/json",
 			},
-			body: { "metrics": JSON.stringify(metrics) },
+			body: JSON.stringify(metrics),
 		});
 		console.log(response, metrics)
 		if (!response.ok) throw new Error("Failed to change metrics");

@@ -66,12 +66,9 @@ func changeMetrics(w http.ResponseWriter, r *http.Request) {
 	if !authed {
 		return
 	}
-	type metricsPayload struct {
-		Metrics []Metric `json:"metrics"`
-	}
-	var payload metricsPayload
+	var payload []Metric
 	json.NewDecoder(r.Body).Decode(&payload)
-	err := ChangeMetrics(payload.Metrics)
+	err := ChangeMetrics(payload)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
