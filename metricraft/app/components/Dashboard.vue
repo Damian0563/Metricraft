@@ -1,11 +1,9 @@
 <template>
-	<NuxtLayout>
-		<DashboardNav :appName="appName" @settings=handleSettings @back="settings = false" />
-		<GraphGrid v-if="!settings" />
-		<Settings v-if="settings" :realtimeEnabled="realtimeEnabled" :logRetention="logRetention"
-			:derivedMetrics="derivedMetrics" @realtime-toggle="handleRealtimeToggle" @customize-view="handleCustomizeView"
-			@load="emit('load')" />
-	</NuxtLayout>
+	<DashboardNav :appName="props.appName" @settings=handleSettings />
+	<GraphGrid v-if="!settings" />
+	<Settings v-if="settings" :realtimeEnabled="realtimeEnabled" :logRetention="logRetention"
+		:derivedMetrics="derivedMetrics" @realtime-toggle="handleRealtimeToggle" @customize-view="handleCustomizeView"
+		@load="emit('load')" />
 </template>
 
 <script setup lang="ts">
@@ -18,15 +16,11 @@ const props = defineProps<{
 	logRetention: number;
 	derivedMetrics: Map<string, boolean>;
 }>();
-const appName = ref(props.appName);
 const realtimeEnabled = ref(props.realtimeEnabled);
 const logRetention = ref(props.logRetention);
 const derivedMetrics = ref(new Map<string, boolean>());
-const url = computed(() => new URL(window.location.href));
-const settings = computed(() => {
-	return url.value.searchParams.get("settings") !== null
-})
-watch(() => props.appName, (val) => appName.value = val);
+const route = useRoute()
+const settings = computed(() => 'settings' in route.query)
 watch(() => props.realtimeEnabled, (val) => realtimeEnabled.value = val);
 watch(() => props.logRetention, (val) => logRetention.value = val);
 watch(() => props.derivedMetrics, (val) => derivedMetrics.value = val);
@@ -58,7 +52,6 @@ const handleRealtimeToggle = (val: boolean) => {
 };
 
 const handleSettings = () => {
-	//settings.value = true;
 	window.location.href = `${window.location.origin}/dashboard?settings`
 }
 
