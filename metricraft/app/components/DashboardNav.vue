@@ -1,5 +1,5 @@
 <template>
-	<div v-if="props.appName" class="text-white justify-start text-2xl font-bold py-8 px-16 mb-8"
+	<div class="text-white justify-start text-2xl font-bold py-8 px-16 mb-8"
 		style="background-color: #00F376;">
 		<nav>
 			<div class="flex justify-between">
@@ -41,17 +41,14 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{
 	settings: [value: void];
-	back: [value: void];
 }>();
 const options = ref(false)
 const signOut = () => {
 	invalidateCookie()
 	navigateTo('/')
 }
+const router = useRouter()
 const getBack = () => {
-	let url = new URL(window.location.href)
-	url.searchParams.delete("settings")
-	window.location.href = url.toString()
-	emit('back')
+	router.replace({ query: {} })
 }
 </script>

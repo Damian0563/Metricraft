@@ -139,8 +139,4 @@ const applyMetricChanges = async () => {
 	originalMetrics.value = pendingMetrics.value.map(m => ({ ...m }))
 	emit('load')
 }
-
-onMounted(() => {
-})
-
 </script>
