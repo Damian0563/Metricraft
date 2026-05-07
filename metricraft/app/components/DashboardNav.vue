@@ -4,7 +4,7 @@
 		<nav>
 			<div class="flex justify-between">
 				<div class="flex items-center">
-					<img src="/logo.svg" class="h-8 mr-4 cursor-pointer" alt="logo, go back to main view" @click="emit('back')" />
+					<img src="/logo.svg" class="h-8 mr-4 cursor-pointer" alt="logo, go back to main view" @click="getBack" />
 					<h1 class="text-black text-2xl font-bold">{{ props.appName }}</h1>
 				</div>
 				<div class="flex items-center gap-8">
@@ -47,5 +47,11 @@ const options = ref(false)
 const signOut = () => {
 	invalidateCookie()
 	navigateTo('/')
+}
+const getBack = () => {
+	let url = new URL(window.location.href)
+	url.searchParams.delete("settings")
+	window.location.href = url.toString()
+	emit('back')
 }
 </script>

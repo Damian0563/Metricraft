@@ -22,7 +22,10 @@ const appName = ref(props.appName);
 const realtimeEnabled = ref(props.realtimeEnabled);
 const logRetention = ref(props.logRetention);
 const derivedMetrics = ref(new Map<string, boolean>());
-const settings = ref(false);
+const url = computed(() => new URL(window.location.href));
+const settings = computed(() => {
+	return url.value.searchParams.get("settings") !== null
+})
 watch(() => props.appName, (val) => appName.value = val);
 watch(() => props.realtimeEnabled, (val) => realtimeEnabled.value = val);
 watch(() => props.logRetention, (val) => logRetention.value = val);
@@ -55,7 +58,8 @@ const handleRealtimeToggle = (val: boolean) => {
 };
 
 const handleSettings = () => {
-	settings.value = true;
+	//settings.value = true;
+	window.location.href = `${window.location.origin}/dashboard?settings`
 }
 
 const handleCustomizeView = (val: boolean) => {
@@ -67,6 +71,7 @@ onMounted(() => {
 		connectWebSocket();
 	}
 });
+
 
 onBeforeUnmount(() => {
 	if (ws) ws.close();

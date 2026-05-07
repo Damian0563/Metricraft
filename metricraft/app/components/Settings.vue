@@ -57,7 +57,7 @@
 			<div class="space-y-6">
 				<div class="bg-white rounded-xl shadow-xl p-8 border border-gray-100">
 					<h2 class="text-xl font-semibold text-gray-800 mb-4">Team</h2>
-					<span @click="copyInvite"
+					<span @click="navigateTo(`/invite`)"
 						class="text-base font-medium text-gray-700 hover:cursor-pointer hover:text-[#00F376] transition-colors duration-200">
 						Invite team members
 					</span>
@@ -139,11 +139,8 @@ const applyMetricChanges = async () => {
 	originalMetrics.value = pendingMetrics.value.map(m => ({ ...m }))
 	emit('load')
 }
-const copyInvite = () => {
-	emit('load')
-	const cookie: string | undefined = document.cookie.split(";").find(c => c.trim().startsWith("session-token"))?.split("=")[1]
-	if (!cookie) return
-	navigator.clipboard.writeText(`http://localhost:8000/invite/inv:${cookie}`)
-	emit('load')
-}
+
+onMounted(() => {
+})
+
 </script>
