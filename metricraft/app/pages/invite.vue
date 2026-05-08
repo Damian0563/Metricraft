@@ -1,102 +1,104 @@
 <template>
-	<DashboardNav :appName="appName" @settings="handleSettings" />
-	<Popup :message="errorMessage" @close="errorMessage = ''" />
-	<div class="w-full px-8 py-2">
-		<div class="flex items-center justify-between mb-6">
-			<h1 class="text-3xl font-bold" style="color: #00F376;">Invite Team Members</h1>
-			<button @click="goBack"
-				class="text-white hover:text-[#00F376] transition-colors duration-200 flex items-center gap-2 cursor-pointer">
-				<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-				</svg>
-				Back to Dashboard
-			</button>
-		</div>
-		<div class="max-w-4xl mx-auto">
-			<div class="bg-white rounded-xl shadow-xl p-8 border border-gray-100">
-				<div class="flex gap-4 mb-8 border-b border-gray-200">
-					<button @click="mode = 'manual'"
-						:class="['pb-4 px-2 font-medium transition-all duration-200 cursor-pointer', mode === 'manual' ? 'border-b-2 border-[#00F376] text-[#00F376]' : 'text-gray-500 hover:text-gray-700']">
-						Manual Entry
-					</button>
-					<button @click="mode = 'batch'"
-						:class="['pb-4 px-2 font-medium transition-all duration-200 cursor-pointer', mode === 'batch' ? 'border-b-2 border-[#00F376] text-[#00F376]' : 'text-gray-500 hover:text-gray-700']">
-						Batch Upload (CSV)
-					</button>
-				</div>
-				<div v-if="mode === 'manual'" class="space-y-6">
-					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-						<div class="flex gap-3">
-							<input v-model="emailInput" type="email" placeholder="colleague@example.com"
-								class="flex-1 px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:border-[#00F376] transition-colors text-gray-800"
-								@keyup.enter="addEmail" />
-							<button @click="addEmail"
-								class="px-6 py-2 bg-[#00F376] text-gray-900 font-semibold rounded-lg hover:bg-[#00D96A] transition-colors shadow-md cursor-pointer">
-								Add
-							</button>
-						</div>
+	<div>
+		<DashboardNav :appName="appName" @settings="handleSettings" />
+		<Popup :message="errorMessage" @close="errorMessage = ''" />
+		<div class="w-full px-8 py-2">
+			<div class="flex items-center justify-between mb-6">
+				<h1 class="text-3xl font-bold" style="color: #00F376;">Invite Team Members</h1>
+				<button @click="goBack"
+					class="text-white hover:text-[#00F376] transition-colors duration-200 flex items-center gap-2 cursor-pointer">
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+					</svg>
+					Back to Dashboard
+				</button>
+			</div>
+			<div class="max-w-4xl mx-auto">
+				<div class="bg-white rounded-xl shadow-xl p-8 border border-gray-100">
+					<div class="flex gap-4 mb-8 border-b border-gray-200">
+						<button @click="mode = 'manual'"
+							:class="['pb-4 px-2 font-medium transition-all duration-200 cursor-pointer', mode === 'manual' ? 'border-b-2 border-[#00F376] text-[#00F376]' : 'text-gray-500 hover:text-gray-700']">
+							Manual Entry
+						</button>
+						<button @click="mode = 'batch'"
+							:class="['pb-4 px-2 font-medium transition-all duration-200 cursor-pointer', mode === 'batch' ? 'border-b-2 border-[#00F376] text-[#00F376]' : 'text-gray-500 hover:text-gray-700']">
+							Batch Upload (CSV)
+						</button>
 					</div>
-					<div v-if="emails.length > 0">
-						<h3 class="text-sm font-semibold text-gray-800 mb-3">Pending Invites ({{ emails.length }})</h3>
-						<div class="space-y-2 max-h-60 overflow-y-auto pr-2">
-							<div v-for="(email, index) in emails" :key="index"
-								class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
-								<span class="text-gray-700">{{ email }}</span>
-								<button @click="removeEmail(index)" class="text-red-500 hover:text-red-700 cursor-pointer">
-									<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-										<path fill-rule="evenodd"
-											d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-											clip-rule="evenodd" />
-									</svg>
+					<div v-if="mode === 'manual'" class="space-y-6">
+						<div>
+							<label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+							<div class="flex gap-3">
+								<input v-model="emailInput" type="email" placeholder="colleague@example.com"
+									class="flex-1 px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:border-[#00F376] transition-colors text-gray-800"
+									@keyup.enter="addEmail" />
+								<button @click="addEmail"
+									class="px-6 py-2 bg-[#00F376] text-gray-900 font-semibold rounded-lg hover:bg-[#00D96A] transition-colors shadow-md cursor-pointer">
+									Add
 								</button>
 							</div>
 						</div>
-					</div>
-				</div>
-				<div v-if="mode === 'batch'" class="space-y-6">
-					<div
-						class="border-2 border-dashed border-gray-200 rounded-xl p-12 text-center hover:border-[#00F376] transition-colors cursor-pointer group"
-						@click="fileInput?.click()">
-						<input type="file" ref="fileInput" class="hidden" accept=".csv" @change="handleFileUpload" />
-						<div class="flex flex-col items-center">
-							<svg xmlns="http://www.w3.org/2000/svg"
-								class="h-12 w-12 text-gray-400 mb-4 group-hover:text-[#00F376] transition-colors" fill="none"
-								viewBox="0 0 24 24" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-									d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-							</svg>
-							<p class="text-lg font-medium text-gray-700">Click to upload CSV</p>
-							<p class="text-sm text-gray-500 mt-1">File should contain a column with email addresses</p>
-						</div>
-					</div>
-					<div v-if="csvFile"
-						class="flex items-center justify-between p-4 bg-[#00F376]/10 rounded-lg border border-[#00F376]/20">
-						<div class="flex items-center gap-3">
-							<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[#00F376]" fill="none" viewBox="0 0 24 24"
-								stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-									d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-							</svg>
-							<div class="text-left">
-								<p class="text-sm font-medium text-gray-800">{{ csvFile.name }}</p>
-								<p class="text-xs text-gray-500">{{ (csvFile.size / 1024).toFixed(2) }} KB</p>
+						<div v-if="emails.length > 0">
+							<h3 class="text-sm font-semibold text-gray-800 mb-3">Pending Invites ({{ emails.length }})</h3>
+							<div class="space-y-2 max-h-60 overflow-y-auto pr-2">
+								<div v-for="(email, index) in emails" :key="index"
+									class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
+									<span class="text-gray-700">{{ email }}</span>
+									<button @click="removeEmail(index)" class="text-red-500 hover:text-red-700 cursor-pointer">
+										<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+											<path fill-rule="evenodd"
+												d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+												clip-rule="evenodd" />
+										</svg>
+									</button>
+								</div>
 							</div>
 						</div>
-						<button @click="csvFile = null" class="text-gray-400 hover:text-gray-600 cursor-pointer">
-							<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-								<path fill-rule="evenodd"
-									d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-									clip-rule="evenodd" />
-							</svg>
+					</div>
+					<div v-if="mode === 'batch'" class="space-y-6">
+						<div
+							class="border-2 border-dashed border-gray-200 rounded-xl p-12 text-center hover:border-[#00F376] transition-colors cursor-pointer group"
+							@click="fileInput?.click()">
+							<input type="file" ref="fileInput" class="hidden" accept=".csv" @change="handleFileUpload" />
+							<div class="flex flex-col items-center">
+								<svg xmlns="http://www.w3.org/2000/svg"
+									class="h-12 w-12 text-gray-400 mb-4 group-hover:text-[#00F376] transition-colors" fill="none"
+									viewBox="0 0 24 24" stroke="currentColor">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+										d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+								</svg>
+								<p class="text-lg font-medium text-gray-700">Click to upload CSV</p>
+								<p class="text-sm text-gray-500 mt-1">File should contain a column with email addresses</p>
+							</div>
+						</div>
+						<div v-if="csvFile"
+							class="flex items-center justify-between p-4 bg-[#00F376]/10 rounded-lg border border-[#00F376]/20">
+							<div class="flex items-center gap-3">
+								<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[#00F376]" fill="none" viewBox="0 0 24 24"
+									stroke="currentColor">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+										d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+								</svg>
+								<div class="text-left">
+									<p class="text-sm font-medium text-gray-800">{{ csvFile.name }}</p>
+									<p class="text-xs text-gray-500">{{ (csvFile.size / 1024).toFixed(2) }} KB</p>
+								</div>
+							</div>
+							<button @click="csvFile = null" class="text-gray-400 hover:text-gray-600 cursor-pointer">
+								<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+									<path fill-rule="evenodd"
+										d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+										clip-rule="evenodd" />
+								</svg>
+							</button>
+						</div>
+					</div>
+					<div class="mt-10 pt-6 border-t border-gray-100 flex justify-end">
+						<button @click="sendInvites" :disabled="!canSend"
+							class="px-8 py-3 bg-[#00F376] text-gray-900 font-bold rounded-lg hover:bg-[#00D96A] transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider text-sm cursor-pointer">
+							Send Invites
 						</button>
 					</div>
-				</div>
-				<div class="mt-10 pt-6 border-t border-gray-100 flex justify-end">
-					<button @click="sendInvites" :disabled="!canSend"
-						class="px-8 py-3 bg-[#00F376] text-gray-900 font-bold rounded-lg hover:bg-[#00D96A] transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider text-sm cursor-pointer">
-						Send Invites
-					</button>
 				</div>
 			</div>
 		</div>
