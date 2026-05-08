@@ -2,10 +2,11 @@ import type { signPayload, config } from '@/composables/types';
 export const welcome = async (): Promise<boolean | null> => {
 	const config: config = useBackendUrl()
 	try {
+		const sessionToken = getCookie("session-token")
 		const response = await fetch(`${config.httphost}/welcome`, {
 			headers: {
 				"Authorization": config.secret,
-				"Session-Token": getCookie("session-token"),
+				"Session-Token": sessionToken,
 			},
 			method: "GET",
 		})

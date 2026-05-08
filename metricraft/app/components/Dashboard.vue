@@ -1,9 +1,11 @@
 <template>
-	<DashboardNav @settings=handleSettings />
-	<GraphGrid v-if="!settings" />
-	<Settings v-if="settings" :realtimeEnabled="realtimeEnabled" :logRetention="logRetention"
-		:derivedMetrics="derivedMetrics" @realtime-toggle="handleRealtimeToggle" @customize-view="handleCustomizeView"
-		@load="emit('load')" />
+	<div>
+		<DashboardNav @settings=handleSettings />
+		<GraphGrid v-if="!settings" />
+		<Settings v-if="settings" :realtimeEnabled="realtimeEnabled" :logRetention="logRetention"
+			:derivedMetrics="derivedMetrics" @realtime-toggle="handleRealtimeToggle" @customize-view="handleCustomizeView"
+			@load="emit('load')" />
+	</div>
 </template>
 
 <script setup lang="ts">

@@ -61,5 +61,6 @@ export default defineNuxtConfig({
 				{ rel: "icon", type: "image/ico", href: "/favicon.ico" },
 			],
 		},
+		pageTransition: { name: 'page', mode: 'out-in' },
 	},
 });

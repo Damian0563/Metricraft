@@ -1,53 +1,48 @@
 <template>
-	<NuxtLayout>
+	<div>
 		<Navbar />
-		<Spinner :loading="loading" />
+		<Spinner :loading="loading || localLoading" />
 		<Popup :message="errorMessage" @close="errorMessage = ''" />
 		<Sign :oldUser="mode" @signup="handleSignup" @load="handleLoad" @popup="createPop" @toggle="mode = !mode" />
-	</NuxtLayout>
+	</div>
 </template>
 
 
 <script setup lang="ts">
 import { welcome } from "~/calls/welcome"
-const oldUserStatus = ref(false)
 const errorMessage = ref("")
-const loading = ref(true)
 const mode = ref(true)
-
-const handleStatus = async () => {
-	try {
-		const result: boolean | null = await welcome()
-		if (result == null) {
-			errorMessage.value = "Something went wrong"
-			return
+const localLoading = ref(false)
+const { data: oldUserStatus, pending: loading, error } = await useAsyncData('welcome', () => welcome())
+if (process.client) {
+	watch(oldUserStatus, (newVal) => {
+		if (newVal) {
+			navigateTo("/dashboard")
 		}
-		oldUserStatus.value = result
-		if (oldUserStatus.value) {
-			await navigateTo("/dashboard")
-		}
-	} catch (error) {
-		errorMessage.value = "Something went wrong, Check your internet connection and try again."
-	}
+	})
+	watch(loading, (newVal) => {
+		localLoading.value = newVal
+	})
 }
 
+watch(error, (newVal) => {
+	if (newVal) {
+		errorMessage.value = "Something went wrong, Check your internet connection and try again."
+	}
+})
+
 const handleLoad = () => {
-	loading.value = !loading.value
+	localLoading.value = !localLoading.value
 }
 
 const handleSignup = async (uuid: string) => {
-	loading.value = true
+	localLoading.value = true
 	document.cookie = `session-token=${uuid}; path=/;expires=${new Date(Date.now() + 3600000 * 24).toUTCString()};SameSite=None;Secure`
 	await navigateTo("/dashboard")
-	loading.value = false
+	localLoading.value = false
 }
 
 const createPop = (msg: string) => {
 	errorMessage.value = msg
 }
-
-onMounted(async () => {
-	await handleStatus()
-	loading.value = false
-})
 </script>

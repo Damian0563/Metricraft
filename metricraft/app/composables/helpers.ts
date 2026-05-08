@@ -9,6 +9,7 @@ export const useBackendUrl = (): config => {
 }
 
 export const getCookie = (cname: string) => {
+	if (process.server) return ""
 	try {
 		let name = cname + "=";
 		let decodedCookie = decodeURIComponent(document.cookie);

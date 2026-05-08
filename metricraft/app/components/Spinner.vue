@@ -1,6 +1,8 @@
 <template>
-	<div class="spinner" v-if="props.loading">
-		<div class="loader"></div>
+	<div>
+		<div class="spinner" v-if="props.loading">
+			<div class="loader"></div>
+		</div>
 	</div>
 </template>
 
