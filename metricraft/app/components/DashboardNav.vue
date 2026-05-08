@@ -1,11 +1,10 @@
 <template>
-	<div class="text-white justify-start text-2xl font-bold py-8 px-16 mb-8"
-		style="background-color: #00F376;">
+	<div class="text-white justify-start text-2xl font-bold py-8 px-16 mb-8" style="background-color: #00F376;">
 		<nav>
 			<div class="flex justify-between">
 				<div class="flex items-center">
 					<img src="/logo.svg" class="h-8 mr-4 cursor-pointer" alt="logo, go back to main view" @click="getBack" />
-					<h1 class="text-black text-2xl font-bold">{{ props.appName }}</h1>
+					<h1 class="text-black text-2xl font-bold">{{ appName }}</h1>
 				</div>
 				<div class="flex items-center gap-8">
 					<button class="bg-white text-black rounded-full px-4 py-2 text-sm hover:cursor-pointer"
@@ -36,9 +35,7 @@
 
 <script setup lang="ts">
 import { invalidateCookie } from "~/composables/helpers"
-const props = defineProps<{
-	appName: string;
-}>();
+const appName = useState<string>('appName');
 const emit = defineEmits<{
 	settings: [value: void];
 }>();
@@ -49,6 +46,10 @@ const signOut = () => {
 }
 const router = useRouter()
 const getBack = () => {
-	router.replace({ query: {} })
+	if (router.currentRoute.value.name === 'dashboard') {
+		router.replace({ query: {} })
+	} else {
+		navigateTo('/dashboard')
+	}
 }
 </script>

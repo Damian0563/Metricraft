@@ -2,8 +2,8 @@
 	<NuxtLayout>
 		<Popup :message="errorMessage" @close="errorMessage = ''" />
 		<Spinner :loading="loading" />
-		<Dashboard :appName="appName" :realtimeEnabled="realtimeEnabled" :logRetention="logRetention"
-			:derivedMetrics="derivedMetrics" @load="handleLoad" />
+		<Dashboard :realtimeEnabled="realtimeEnabled" :logRetention="logRetention" :derivedMetrics="derivedMetrics"
+			@load="handleLoad" />
 	</NuxtLayout>
 </template>
 
@@ -14,7 +14,7 @@ import { getDashboard } from "~/calls/dashboard";
 const cookie = ref("");
 const loading = ref(true);
 const errorMessage = ref("");
-const appName = ref("");
+const appName = useState<string>('appName', () => "");
 const realtimeEnabled = ref(false);
 const logRetention = ref(30);
 const derivedMetrics = ref(new Map<string, boolean>());

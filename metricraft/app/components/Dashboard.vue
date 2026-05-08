@@ -1,5 +1,5 @@
 <template>
-	<DashboardNav :appName="props.appName" @settings=handleSettings />
+	<DashboardNav @settings=handleSettings />
 	<GraphGrid v-if="!settings" />
 	<Settings v-if="settings" :realtimeEnabled="realtimeEnabled" :logRetention="logRetention"
 		:derivedMetrics="derivedMetrics" @realtime-toggle="handleRealtimeToggle" @customize-view="handleCustomizeView"
@@ -11,7 +11,6 @@ import { handleMessage } from "@/ws/visitors"
 import { toggleRealtime } from "@/calls/settings"
 import type { config } from "@/composables/types"
 const props = defineProps<{
-	appName: string;
 	realtimeEnabled: boolean;
 	logRetention: number;
 	derivedMetrics: Map<string, boolean>;
@@ -52,7 +51,7 @@ const handleRealtimeToggle = (val: boolean) => {
 };
 
 const handleSettings = () => {
-	window.location.href = `${window.location.origin}/dashboard?settings`
+	navigateTo('/dashboard?settings')
 }
 
 const handleCustomizeView = (val: boolean) => {

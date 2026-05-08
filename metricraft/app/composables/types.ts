@@ -13,9 +13,9 @@ export type dashboardInitPayload = {
 	settings: { realtime: boolean, retention: number, enabled: Map<string, boolean> };
 }
 
-
 export type config = {
 	secret: string,
 	httphost: string,
 	wsshost: string,
+	port: number,
 }
