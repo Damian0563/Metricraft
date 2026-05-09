@@ -4,7 +4,7 @@
 		<GraphGrid v-if="!settings" />
 		<Settings v-if="settings" :realtimeEnabled="realtimeEnabled" :logRetention="logRetention"
 			:derivedMetrics="derivedMetrics" @realtime-toggle="handleRealtimeToggle" @customize-view="handleCustomizeView"
-			@load="emit('load')" />
+			@load="emit('load')" @update-metrics="emit('updateMetrics', $event)" />
 	</div>
 </template>
 
@@ -15,19 +15,19 @@ import type { config } from "@/composables/types"
 const props = defineProps<{
 	realtimeEnabled: boolean;
 	logRetention: number;
-	derivedMetrics: Map<string, boolean>;
+	derivedMetrics: Record<string, boolean>;
 }>();
+const emit = defineEmits<{
+	load: [value: void];
+	updateMetrics: [value: { name: string; enabled: boolean }[]];
+}>();
+const derivedMetrics = toRef(props, 'derivedMetrics');
 const realtimeEnabled = ref(props.realtimeEnabled);
 const logRetention = ref(props.logRetention);
-const derivedMetrics = ref(new Map<string, boolean>());
 const route = useRoute()
 const settings = computed(() => 'settings' in route.query)
 watch(() => props.realtimeEnabled, (val) => realtimeEnabled.value = val);
 watch(() => props.logRetention, (val) => logRetention.value = val);
-watch(() => props.derivedMetrics, (val) => derivedMetrics.value = val);
-const emit = defineEmits<{
-	load: [value: void];
-}>();
 let ws: WebSocket | null = null;
 const connectWebSocket = () => {
 	const config: config = useBackendUrl()

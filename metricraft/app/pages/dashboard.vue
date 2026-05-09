@@ -3,7 +3,7 @@
 		<Popup :message="errorMessage" @close="errorMessage = ''" />
 		<Spinner :loading="loading || localLoading" />
 		<Dashboard :realtimeEnabled="realtimeEnabled" :logRetention="logRetention" :derivedMetrics="derivedMetrics"
-			@load="handleLoad" />
+			@load="handleLoad" @updateMetrics="handleUpdateMetrics" />
 	</div>
 </template>
 
@@ -13,9 +13,9 @@ import { getDashboard } from "~/calls/dashboard";
 const localLoading = ref(false);
 const errorMessage = ref("");
 const appName = useState<string>('appName', () => "");
+const derivedMetrics = ref<Record<string, boolean>>({})
 const realtimeEnabled = ref(false);
 const logRetention = ref(30);
-const derivedMetrics = ref(new Map<string, boolean>());
 const timeout = ref(0)
 const { data: payload, pending: loading, error } = await useAsyncData<dashboardInitPayload>('dashboard', () => getDashboard())
 const initialize = ((newVal: dashboardInitPayload | undefined) => {
@@ -27,18 +27,23 @@ const initialize = ((newVal: dashboardInitPayload | undefined) => {
 		realtimeEnabled.value = newVal.settings.realtime
 		logRetention.value = newVal.settings.retention
 		const raw = newVal.settings.enabled as Record<string, boolean>
-		derivedMetrics.value = new Map(Object.entries(raw))
+		derivedMetrics.value = raw
 	} else {
 		errorMessage.value = newVal.error
-		timeout.value = setTimeout(() => {
-			navigateTo("/")
-		}, 5200)
+		if (import.meta.client) {
+			timeout.value = setTimeout(() => {
+				navigateTo("/")
+			}, 5200)
+		}
 	}
 })
 const handleLoad = () => {
 	localLoading.value = !localLoading.value
 };
-initialize(payload.value)
+const handleUpdateMetrics = (changes: { name: string; enabled: boolean }[]) => {
+	derivedMetrics.value = Object.fromEntries(changes.map(c => [c.name, c.enabled]))
+};
+watch(() => payload.value, initialize, { immediate: true })
 localLoading.value = loading.value
 if (error.value) {
 	errorMessage.value = "Something went wrong, Check your internet connection and try again."
