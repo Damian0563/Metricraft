@@ -40,17 +40,16 @@ export const changeRetention = async (retention: number) => {
 export const changeDerivedMetrics = async (metrics: { name: string; enabled: boolean }[]) => {
 	try {
 		const config: config = useBackendUrl()
-		const response = await fetch(`${config.httphost}/settings/metrics`, {
+		const headers = {
+			"Authorization": config.secret,
+			"Session-Token": getCookie("session-token"),
+			"Content-Type": "application/json",
+		}
+		await $fetch<Response>(`${config.httphost}/settings/metrics`, {
 			method: "POST",
-			headers: {
-				"Authorization": config.secret,
-				"Session-Token": getCookie("session-token"),
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify(metrics),
+			headers,
+			body: metrics,
 		});
-		console.log(response, metrics)
-		if (!response.ok) throw new Error("Failed to change metrics");
 	} catch (error) {
 		console.error(error);
 	}

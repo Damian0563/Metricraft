@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -114,10 +113,8 @@ func dashboardInit(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-	fmt.Println("token: ", r.Header.Get("Session-Token"))
 	token := Token{token: r.Header.Get("Session-Token")}
 	authed := token.validateRequest(&w, false)
-	fmt.Println("authed: ", authed)
 	if !authed {
 		return
 	}
@@ -144,7 +141,6 @@ func dashboardInit(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		response, _ := json.Marshal(Response)
-		fmt.Println(string(response))
 		w.Write(response)
 	}
 }

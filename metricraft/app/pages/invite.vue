@@ -146,7 +146,6 @@ const canSend = computed(() => {
 })
 
 const sendInvites = () => {
-	console.log('Sending invites...', mode.value === 'manual' ? emails.value : csvFile.value)
 	if (mode.value === 'manual') emails.value = []
 	else csvFile.value = null
 }

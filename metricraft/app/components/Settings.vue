@@ -92,20 +92,22 @@
 
 <script setup lang="ts">
 import { changeDerivedMetrics, changeRetention } from "@/calls/settings"
+type Metric = { id: number; name: string; description: string; enabled: boolean }
+type CompactMetric = { name: string; enabled: boolean }
 const props = defineProps<{
 	realtimeEnabled: boolean;
 	logRetention: number;
-	derivedMetrics: Map<string, boolean>;
+	derivedMetrics: Record<string, boolean>;
 }>();
 const emit = defineEmits<{
 	realtimeToggle: [value: boolean];
 	customizeView: [value: boolean];
 	load: [value: void];
+	updateMetrics: [value: CompactMetric[]];
 }>();
 const customizeDashboard = ref(false)
 const logRetention = ref(props.logRetention)
 watch(() => props.logRetention, (val) => logRetention.value = val)
-type Metric = { id: number; name: string; description: string; enabled: boolean }
 const pendingMetrics = ref<Metric[]>([])
 const originalMetrics = ref<Metric[]>([
 	{ id: 1, name: 'Geographical traffic', description: 'Map of origins of http requests in a specified time interval.', enabled: true },
@@ -117,16 +119,14 @@ const originalMetrics = ref<Metric[]>([
 	{ id: 7, name: 'Median response time', description: 'P50 latency across all requests, providing a representative measure of typical endpoint performance.', enabled: true },
 	{ id: 8, name: 'Throughput', description: 'Requests per second measured over configurable time intervals to track traffic capacity and trends.', enabled: true },
 ])
-watch(() => props.derivedMetrics, (val: Map<string, boolean>) => {
-	let res: boolean | undefined;
-	originalMetrics.value.forEach((metric) => {
-		res = val.get(metric.name)
-		if (typeof res === "boolean") {
-			metric.enabled = res
-		}
+watch(() => props.derivedMetrics, (metrics) => {
+	const updated = originalMetrics.value.map(metric => {
+		const enabled = metrics[metric.name]
+		return typeof enabled === "boolean" ? { ...metric, enabled } : metric
 	})
-	pendingMetrics.value = originalMetrics.value.map(m => ({ ...m }))
-}, { immediate: true })
+	originalMetrics.value = updated
+	pendingMetrics.value = updated.map(m => ({ ...m }))
+}, { immediate: true, deep: true })
 
 const hasChanges = computed(() =>
 	originalMetrics.value.some((orig, i) => orig.enabled !== pendingMetrics.value[i]?.enabled)
@@ -137,6 +137,7 @@ const applyMetricChanges = async () => {
 	const changes = pendingMetrics.value.map(m => ({ name: m.name, enabled: m.enabled }))
 	await changeDerivedMetrics(changes)
 	originalMetrics.value = pendingMetrics.value.map(m => ({ ...m }))
+	emit('updateMetrics', changes)
 	emit('load')
 }
 </script>
