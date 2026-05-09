@@ -1,23 +1,19 @@
-import type { signPayload, config } from '@/composables/types';
-export const welcome = async (): Promise<boolean | null> => {
-	const config: config = useBackendUrl()
+import type { signPayload, config, welcomeResponse } from '@/composables/types';
+import { getCookie } from "@/composables/helpers";
+export const welcome = async (): Promise<boolean> => {
 	try {
-		const sessionToken = getCookie("session-token")
-		const response = await fetch(`${config.httphost}/welcome`, {
-			headers: {
-				"Authorization": config.secret,
-				"Session-Token": sessionToken,
-			},
-			method: "GET",
-		})
-		const data = await response.json()
-		if (data.err) {
-			throw data.err
+		const config: config = useBackendUrl()
+		const headers = {
+			"Authorization": config.secret,
+			"Session-Token": useCookie("session-token").value || getCookie("session-token") || "",
 		}
-		return data.exists
+		const response = await $fetch<welcomeResponse>(`${config.httphost}/welcome`, {
+			method: "GET", headers
+		})
+		if (response.err) throw (response.err)
+		return Boolean(response.exists)
 	} catch (e) {
-		console.log(e)
-		throw "Something went wrong, Check your internet connection and try again."
+		return false
 	}
 }
 

@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -39,7 +40,7 @@ func toggleRealtime(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	token := Token{token: r.Header.Get("Session-Token")}
-	authed := token.validateRequest(&w)
+	authed := token.validateRequest(&w, true)
 	if !authed {
 		return
 	}
@@ -62,7 +63,7 @@ func changeMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	token := Token{token: r.Header.Get("Session-Token")}
-	authed := token.validateRequest(&w)
+	authed := token.validateRequest(&w, true)
 	if !authed {
 		return
 	}
@@ -113,8 +114,10 @@ func dashboardInit(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
+	fmt.Println("token: ", r.Header.Get("Session-Token"))
 	token := Token{token: r.Header.Get("Session-Token")}
-	authed := token.validateRequest(&w)
+	authed := token.validateRequest(&w, false)
+	fmt.Println("authed: ", authed)
 	if !authed {
 		return
 	}
@@ -127,7 +130,7 @@ func dashboardInit(w http.ResponseWriter, r *http.Request) {
 		Response.SignedSecret = ""
 	} else {
 		Response.AppName = appName
-		signed, error := token.sign()
+		signed, error := token.sign(false)
 		if error != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			Response.Error = "Error occured during signing. Please try again later."
@@ -141,6 +144,7 @@ func dashboardInit(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		response, _ := json.Marshal(Response)
+		fmt.Println(string(response))
 		w.Write(response)
 	}
 }
@@ -171,7 +175,7 @@ func sign(w http.ResponseWriter, r *http.Request) {
 		} else {
 			w.WriteHeader(http.StatusOK)
 			token := Token{token: uuid}
-			signed, err := token.sign()
+			signed, err := token.sign(true)
 			if err != nil {
 				jsonResponse["token"] = ""
 				jsonResponse["err"] = "Error occured during signing. Please try again later."
@@ -183,7 +187,7 @@ func sign(w http.ResponseWriter, r *http.Request) {
 		uuid, ok := signIn(payload.Mail, payload.Secret)
 		if ok {
 			token := Token{token: uuid}
-			signed, err := token.sign()
+			signed, err := token.sign(true)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				jsonResponse["token"] = ""

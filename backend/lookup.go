@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func signToken(token string) (string, error) {
+func signToken(token string, rotate bool) (string, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     os.Getenv("redis"),
 		Password: "",
@@ -17,6 +17,9 @@ func signToken(token string) (string, error) {
 	})
 	defer client.Close()
 	ctx := context.Background()
+	if !rotate {
+		return client.Get(ctx, token).Result()
+	}
 	signed := token + ":" + uuid.New().String()
 	err := client.Set(ctx, token, signed, 1*time.Hour).Err()
 	if err != nil {

@@ -1,13 +1,12 @@
 <template>
-	<div>
-		<div class="spinner" v-if="props.loading">
+	<div class="spinner-wrapper">
+		<div v-if="loading" class="spinner">
 			<div class="loader"></div>
 		</div>
 	</div>
 </template>
-
 <script setup lang="ts">
-const props = defineProps<{
+const { loading } = defineProps<{
 	loading: boolean
 }>()
 </script>
