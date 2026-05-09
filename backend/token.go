@@ -14,9 +14,9 @@ func (t Token) GetAppName() (string, error) {
 	return getAppNameByToken(split[0])
 }
 
-func (t Token) sign() (string, error) {
+func (t Token) sign(rotate bool) (string, error) {
 	split := strings.Split(t.token, ":")
-	return signToken(split[0])
+	return signToken(split[0], rotate)
 }
 
 func (t Token) verify() (bool, error) {
@@ -27,7 +27,7 @@ func (t Token) updateToken() error {
 	return updateToken(t.token)
 }
 
-func (t Token) validateRequest(w *http.ResponseWriter) bool {
+func (t Token) validateRequest(w *http.ResponseWriter, rotate bool) bool {
 	token := Token{t.token}
 	authed, err := token.verify()
 	if err != nil {
@@ -36,7 +36,7 @@ func (t Token) validateRequest(w *http.ResponseWriter) bool {
 	} else if !authed {
 		(*w).WriteHeader(http.StatusUnauthorized)
 		return false
-	} else {
+	} else if rotate {
 		if err = token.updateToken(); err != nil {
 			(*w).WriteHeader(http.StatusInternalServerError)
 			return false

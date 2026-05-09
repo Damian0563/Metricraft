@@ -1,54 +1,49 @@
 <template>
-	<NuxtLayout>
+	<div>
 		<Popup :message="errorMessage" @close="errorMessage = ''" />
-		<Spinner :loading="loading" />
+		<Spinner :loading="loading || localLoading" />
 		<Dashboard :realtimeEnabled="realtimeEnabled" :logRetention="logRetention" :derivedMetrics="derivedMetrics"
 			@load="handleLoad" />
-	</NuxtLayout>
+	</div>
 </template>
 
 <script setup lang="ts">
-import { getCookie, updateCookie } from "@/composables/helpers";
 import type { dashboardInitPayload } from '@/composables/types';
 import { getDashboard } from "~/calls/dashboard";
-const cookie = ref("");
-const loading = ref(true);
+const localLoading = ref(false);
 const errorMessage = ref("");
 const appName = useState<string>('appName', () => "");
 const realtimeEnabled = ref(false);
 const logRetention = ref(30);
 const derivedMetrics = ref(new Map<string, boolean>());
-const init = async () => {
-	loading.value = true;
-	try {
-		const data: dashboardInitPayload = await getDashboard(cookie.value);
-		if (data.error) {
-			errorMessage.value = "Error loading dashboard, session expired.";
-			navigateTo("/");
-		} else {
-			appName.value = data.appName;
-			realtimeEnabled.value = data.settings.realtime;
-			logRetention.value = data.settings.retention;
-			const raw = data.settings.enabled as Record<string, boolean>;
-			derivedMetrics.value = new Map(Object.entries(raw));
-			cookie.value = data.signedSecret;
-			updateCookie(cookie.value);
-		}
-	} catch (e) {
-		console.log(e);
-		errorMessage.value = "Error loading dashboard, session expired.";
-		navigateTo("/");
-	} finally {
-		loading.value = false;
+const timeout = ref(0)
+const { data: payload, pending: loading, error } = await useAsyncData<dashboardInitPayload>('dashboard', () => getDashboard())
+const initialize = ((newVal: dashboardInitPayload | undefined) => {
+	if (!newVal || newVal === undefined) {
+		return
 	}
-};
-
+	if (newVal && newVal.error === '') {
+		appName.value = newVal.appName
+		realtimeEnabled.value = newVal.settings.realtime
+		logRetention.value = newVal.settings.retention
+		const raw = newVal.settings.enabled as Record<string, boolean>
+		derivedMetrics.value = new Map(Object.entries(raw))
+	} else {
+		errorMessage.value = newVal.error
+		timeout.value = setTimeout(() => {
+			navigateTo("/")
+		}, 5200)
+	}
+})
 const handleLoad = () => {
-	loading.value = !loading.value;
+	localLoading.value = !localLoading.value
 };
-
-onMounted(() => {
-	cookie.value = getCookie("session-token");
-	init();
-});
+initialize(payload.value)
+localLoading.value = loading.value
+if (error.value) {
+	errorMessage.value = "Something went wrong, Check your internet connection and try again."
+}
+onBeforeUnmount(() => {
+	clearTimeout(timeout.value)
+})
 </script>
