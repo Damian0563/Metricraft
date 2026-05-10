@@ -71,8 +71,8 @@
 				<div v-if="!localOldUser">
 					<label for="confirmSecret" class="block text-sm font-medium text-gray-700 mb-1">Confirm Secret Key</label>
 					<div class="w-full flex">
-						<input id="confirmSecret" @keyup="handleTextInput" :type="showConfirmSecret ? 'text' : 'password'"
-							v-model="confirmSecret" placeholder="Confirm your secret key" autocomplete="on"
+						<input id="confirmSecret" :type="showConfirmSecret ? 'text' : 'password'" v-model="confirmSecret"
+							placeholder="Confirm your secret key" autocomplete="on"
 							class="px-4 py-2 w-96 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00F376] focus:border-transparent transition" />
 						<svg @click="showConfirmSecret = !showConfirmSecret" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
 							fill="none" stroke="#00F376" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -87,10 +87,23 @@
 						</svg>
 					</div>
 				</div>
-				<div v-if="!localOldUser" class="flex justify-center text-m h-12 font-bold">
-					<span v-if="message" :class="message == 'Secret keys do not match.' ? 'text-red-500' : 'text-green-500'">{{
-						message
-					}}</span>
+				<div v-if="!localOldUser" class="flex justify-center text-m h-8 font-bold">
+					<span v-if="matchMessage && confirmSecret.length > 0"
+						:class="matchMessage == 'Secret keys do not match.' ? 'text-red-500' : 'text-green-500'">{{
+							matchMessage
+						}}</span>
+				</div>
+				<div class="h-10" :class="{ 'invisible': localOldUser || secret.length === 0 }">
+					<div class="flex flex-col gap-1" v-if="(secret && confirmSecret.length === 0) || (secret === confirmSecret)">
+						<span
+							:class="passwordStrength ? (passwordStrength <= 1 ? 'text-red-500' : passwordStrength <= 2 ? 'text-orange-500' : passwordStrength <= 3 ? 'text-green-700' : 'text-green-500') : 'text-gray-200'">{{
+								passwordStrengthMessages[passwordStrength - 1] }}</span>
+						<div class="flex gap-1 h-2">
+							<div v-for="i in 4" :key="i" class="flex-1 rounded-full transition-all duration-200"
+								:class="i <= passwordStrength ? (i <= 1 ? 'bg-red-500' : i <= 2 ? 'bg-orange-500' : i <= 3 ? 'bg-green-700' : 'bg-green-500') : 'bg-gray-200'">
+							</div>
+						</div>
+					</div>
 				</div>
 				<button type="submit"
 					class="w-full cursor-pointer py-3 mt-2 text-black font-semibold bg-[#00F376] hover:text-white rounded-lg shadow-lg hover:bg-black transition delay-100 ease-in-out"
@@ -104,21 +117,34 @@
 
 <script setup lang="ts">
 import type { signPayload } from '@/composables/types';
-import { validateEmail } from '@/composables/helpers';
+import { validateEmail, evaluatePasswordStrength } from '@/composables/helpers';
 import { sign } from '~/calls/welcome';
 const props = defineProps<{
 	oldUser: boolean;
 }>();
 const localOldUser = ref(props.oldUser);
 watch(() => props.oldUser, (val) => localOldUser.value = val);
-const message = ref('');
-const emit = defineEmits(['signup', 'load', 'popup', 'toggle']);
+const emit = defineEmits<{
+	signup: [value: string];
+	load: [value: void];
+	popup: [value: string];
+	toggle: [value: void];
+}>();
 const mail = ref('');
 const secret = ref('');
 const confirmSecret = ref('');
 const appName = ref('');
 const showSecret = ref(false);
 const showConfirmSecret = ref(false);
+const passwordStrength = computed(() => evaluatePasswordStrength(secret.value) || 1);
+const passwordStrengthMessages = [
+	'Weak password, try something more complex',
+	'This password\'s stength is good enough.',
+	'This password\'s strength is okay.',
+	'This password\'s strength is excellent.'
+]
+const match = computed(() => secret.value === confirmSecret.value)
+const matchMessage = computed(() => match.value ? 'Secret keys match. ' : 'Secret keys do not match.')
 const handleSign = async () => {
 	if (!validateEmail(mail.value)) {
 		emit('popup', 'Please enter a valid email.');
@@ -130,10 +156,13 @@ const handleSign = async () => {
 	}
 	if (!localOldUser.value) {
 		if (secret.value !== confirmSecret.value) {
-			message.value = 'Secret keys do not match.';
+			emit('popup', 'Secret keys do not match.');
 			return;
 		} else if (mail.value === '' || secret.value === '' || appName.value === '' || confirmSecret.value === '') {
 			emit('popup', 'Please fill in all fields');
+			return;
+		} else if (passwordStrength.value === 1) {
+			emit('popup', 'Password is too weak.');
 			return;
 		}
 		payload.appName = appName.value;
@@ -150,19 +179,9 @@ const handleSign = async () => {
 			emit('signup', result);
 		}
 	} catch (e) {
-		emit('popup', e);
+		emit('popup', String(e));
 	} finally {
 		emit('load');
-	}
-
-}
-const handleTextInput = () => {
-	if (secret.value.length > 0 && confirmSecret.value.length > 0) {
-		if (secret.value !== confirmSecret.value && secret.value.length <= confirmSecret.value.length) {
-			message.value = 'Secret keys do not match.';
-		} else if (secret.value === confirmSecret.value) {
-			message.value = 'Secret keys match. ';
-		}
 	}
 }
 </script>
