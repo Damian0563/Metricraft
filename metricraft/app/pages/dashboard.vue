@@ -40,11 +40,12 @@ const initialize = ((newVal: dashboardInitPayload | undefined) => {
 
 watch(() => derivedMetrics.value, (val: Record<string, boolean>) => {
 	if (!val || val === undefined) return
-	val.forEach((name, enabled) => {
+	Object.entries(val).forEach(([name, enabled]) => {
 		if (enabled) {
-			fetchMetric(name)
+			void fetchMetric(name)
 		}
 	})
+})
 })
 const handleLoad = () => {
 	localLoading.value = !localLoading.value
