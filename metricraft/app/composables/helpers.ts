@@ -1,3 +1,5 @@
+import { zxcvbn } from "@zxcvbn-ts/core"
+
 export const useBackendUrl = (): config => {
 	const config = useRuntimeConfig()
 	return {
@@ -37,8 +39,13 @@ export const updateCookie = (cvalue: string) => {
 	document.cookie = `session-token=${cvalue};path=/;expires=${new Date(Date.now() + 3600000 * 24).toUTCString()};SameSite=None;Secure`;
 }
 
-export const validateEmail = (email: string) => {
+export const validateEmail = (email: string): boolean => {
 	return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+};
+
+export const evaluatePasswordStrength = (password: string): number => {
+	const passwordScore = zxcvbn(password);
+	return passwordScore.score;
 };
 
 export const invalidateCookie = () => {

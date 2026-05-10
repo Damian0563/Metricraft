@@ -1,4 +1,4 @@
-import type { signPayload, config, welcomeResponse } from '@/composables/types';
+import type { signPayload, config, welcomeResponse, signResponse } from '@/composables/types';
 import { getCookie } from "@/composables/helpers";
 export const welcome = async (): Promise<boolean> => {
 	try {
@@ -17,21 +17,23 @@ export const welcome = async (): Promise<boolean> => {
 	}
 }
 
-export const sign = async (payload: signPayload): Promise<boolean | null> => {
+export const sign = async (payload: signPayload): Promise<string | null> => {
 	const config: config = useBackendUrl()
+	const headers = {
+		"Authorization": config.secret,
+		"Content-Type": "application/json",
+	}
 	try {
-		const response = await fetch(`${config.httphost}/sign`, {
+		let data: string = await $fetch(`${config.httphost}/sign`, {
 			method: 'POST',
-			headers: {
-				"Authorization": config.secret,
-			},
-			body: JSON.stringify(payload),
+			headers,
+			body: payload,
 		})
-		const data = await response.json()
-		if (data.err) {
-			throw data.err
+		const object: signResponse = JSON.parse(data)
+		if (object.err) {
+			throw object.err
 		}
-		return data.token
+		return object.token
 	} catch (e) {
 		console.log(e)
 		throw "Something went wrong, Check your internet connection and try again."

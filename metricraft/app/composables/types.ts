@@ -23,3 +23,7 @@ export type welcomeResponse = {
 	err?: string;
 }
 
+export type signResponse = {
+	token: string;
+	err?: string;
+}
