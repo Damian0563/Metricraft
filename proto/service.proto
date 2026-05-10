@@ -5,7 +5,7 @@ import "google/protobuf/duration.proto";
 
 service Metricraft {
 
-  rpc getUrlCongestion(timeframe) returns (congestion);
+  rpc getTrafficCongestion(timeframe) returns (congestion);
 }
 
 message timeframe{

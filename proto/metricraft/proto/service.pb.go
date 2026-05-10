@@ -125,10 +125,10 @@ const file_service_proto_rawDesc = "" +
 	"congestion\x1a=\n" +
 	"\x0fCongestionEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\x05R\x05value:\x028\x012O\n" +
+	"\x05value\x18\x02 \x01(\x05R\x05value:\x028\x012S\n" +
 	"\n" +
-	"Metricraft\x12A\n" +
-	"\x10getUrlCongestion\x12\x15.metricraft.timeframe\x1a\x16.metricraft.congestionB\x12Z\x10metricraft/protob\x06proto3"
+	"Metricraft\x12E\n" +
+	"\x14getTrafficCongestion\x12\x15.metricraft.timeframe\x1a\x16.metricraft.congestionB\x12Z\x10metricraft/protob\x06proto3"
 
 var (
 	file_service_proto_rawDescOnce sync.Once
@@ -152,8 +152,8 @@ var file_service_proto_goTypes = []any{
 var file_service_proto_depIdxs = []int32{
 	3, // 0: metricraft.timeframe.timeframe:type_name -> google.protobuf.Duration
 	2, // 1: metricraft.congestion.congestion:type_name -> metricraft.congestion.CongestionEntry
-	0, // 2: metricraft.Metricraft.getUrlCongestion:input_type -> metricraft.timeframe
-	1, // 3: metricraft.Metricraft.getUrlCongestion:output_type -> metricraft.congestion
+	0, // 2: metricraft.Metricraft.getTrafficCongestion:input_type -> metricraft.timeframe
+	1, // 3: metricraft.Metricraft.getTrafficCongestion:output_type -> metricraft.congestion
 	3, // [3:4] is the sub-list for method output_type
 	2, // [2:3] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name

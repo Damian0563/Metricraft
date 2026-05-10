@@ -27,3 +27,18 @@ export const getDashboard = async (): Promise<dashboardInitPayload> => {
 		}
 	}
 }
+
+
+export const fetchMetric = async (metric: string, timeframe: string = "7d"): Promise<Map<string, number>> => {
+	const config: config = useBackendUrl()
+	const headers = {
+		"Authorization": config.secret,
+		"Session-Token": useCookie("session-token").value || getCookie("session-token") || "",
+	}
+	const data: Map<string, number> = await $fetch(`${config.httphost}/dashboard/fetch?metric=${metric}&timeframe=${timeframe}`, {
+		method: "GET",
+		headers,
+	})
+	console.log(data)
+	return data
+}
