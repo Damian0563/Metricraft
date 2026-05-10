@@ -70,7 +70,7 @@ func main() {
 	router.HandleFunc("/settings/realtime", toggleRealtime)
 	router.HandleFunc("/settings/retention", changeRetention)
 	router.HandleFunc("/settings/metrics", changeMetrics)
-	router.HandleFunc("/dashboard/fetch/:metric/:timeframe", navigator)
+	router.HandleFunc("/dashboard/fetch", navigator)
 	go StartWebSocketServer(router)
 	fmt.Println("Server started on port 8080")
 	http.ListenAndServe(":8080", corsMiddleware(router))
