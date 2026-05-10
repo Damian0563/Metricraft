@@ -93,8 +93,6 @@ protoc -I=./proto --go_out=proto proto/service.proto
 # Run dev container
 docker-compose up -d
 ```
-```
-```
 ## License
 
 Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for details.

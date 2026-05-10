@@ -9,7 +9,7 @@
 
 <script setup lang="ts">
 import type { dashboardInitPayload } from '@/composables/types';
-import { getDashboard } from "~/calls/dashboard";
+import { getDashboard, fetchMetric } from "~/calls/dashboard";
 const localLoading = ref(false);
 const errorMessage = ref("");
 const appName = useState<string>('appName', () => "");
@@ -36,6 +36,15 @@ const initialize = ((newVal: dashboardInitPayload | undefined) => {
 			}, 5200)
 		}
 	}
+})
+
+watch(() => derivedMetrics.value, (val: Record<string, boolean>) => {
+	if (!val || val === undefined) return
+	val.forEach((name, enabled) => {
+		if (enabled) {
+			fetchMetric(name)
+		}
+	})
 })
 const handleLoad = () => {
 	localLoading.value = !localLoading.value

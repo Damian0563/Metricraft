@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-func getCongestion(w http.ResponseWriter, r *http.Request) {
+func navigator(w http.ResponseWriter, r *http.Request) {
 	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
@@ -21,15 +21,26 @@ func getCongestion(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
-	type congestionPayload struct {
-		Timeframe string `json:"timeframe"`
+	metric := r.URL.Query().Get("metric")
+	timeframe := r.URL.Query().Get("timeframe")
+	var response any
+	switch metric {
+	case "Traffic congestion trends":
+		response, err = getCongestion(timeframe)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Println(err)
+			return
+		}
+		fmt.Println(response)
+	default:
+		break
 	}
-	var payload congestionPayload
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	timeframe := payload.Timeframe
-	fmt.Println(timeframe)
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	httpresponse, err := json.Marshal(response)
+	w.Write(httpresponse)
+}
+
+func getCongestion(timeframe string) (map[string]int32, error) {
+	return nil, nil
 }
