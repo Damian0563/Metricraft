@@ -3,7 +3,8 @@
 		<Popup :message="errorMessage" @close="errorMessage = ''" />
 		<Spinner :loading="loading || localLoading" />
 		<Dashboard :realtimeEnabled="realtimeEnabled" :logRetention="logRetention" :derivedMetrics="derivedMetrics"
-			@load="handleLoad" @updateMetrics="handleUpdateMetrics" />
+			@load="handleLoad" @updateMetrics="handleUpdateMetrics" @changeRetention="handleRetentionChange"
+			@changeRealtime="handleRealtimeChange" />
 	</div>
 </template>
 
@@ -42,10 +43,9 @@ watch(() => derivedMetrics.value, (val: Record<string, boolean>) => {
 	if (!val || val === undefined) return
 	Object.entries(val).forEach(([name, enabled]) => {
 		if (enabled) {
-			void fetchMetric(name)
+			fetchMetric(name)
 		}
 	})
-})
 })
 const handleLoad = () => {
 	localLoading.value = !localLoading.value
@@ -53,6 +53,12 @@ const handleLoad = () => {
 const handleUpdateMetrics = (changes: { name: string; enabled: boolean }[]) => {
 	derivedMetrics.value = Object.fromEntries(changes.map(c => [c.name, c.enabled]))
 };
+const handleRealtimeChange = (val: boolean) => {
+	realtimeEnabled.value = val
+}
+const handleRetentionChange = (retention: number) => {
+	logRetention.value = retention
+}
 watch(() => payload.value, initialize, { immediate: true })
 localLoading.value = loading.value
 if (error.value) {

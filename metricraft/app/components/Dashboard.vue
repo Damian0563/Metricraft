@@ -4,7 +4,8 @@
 		<GraphGrid v-if="!settings" />
 		<Settings v-if="settings" :realtimeEnabled="realtimeEnabled" :logRetention="logRetention"
 			:derivedMetrics="derivedMetrics" @realtime-toggle="handleRealtimeToggle" @customize-view="handleCustomizeView"
-			@load="emit('load')" @update-metrics="emit('updateMetrics', $event)" />
+			@load="emit('load')" @update-metrics="emit('updateMetrics', $event)" @change-retention=" emit('changeRetention',
+				$event)" />
 	</div>
 </template>
 
@@ -20,6 +21,8 @@ const props = defineProps<{
 const emit = defineEmits<{
 	load: [value: void];
 	updateMetrics: [value: { name: string; enabled: boolean }[]];
+	changeRetention: [value: Number];
+	changeRealtime: [value: boolean];
 }>();
 const derivedMetrics = toRef(props, 'derivedMetrics');
 const realtimeEnabled = ref(props.realtimeEnabled);
@@ -43,6 +46,7 @@ const connectWebSocket = () => {
 };
 
 const handleRealtimeToggle = (val: boolean) => {
+	emit('changeRealtime', val)
 	toggleRealtime(val)
 	if (val) {
 		connectWebSocket();

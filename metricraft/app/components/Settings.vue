@@ -72,7 +72,8 @@
 				<div class="bg-white rounded-xl shadow-xl p-8 border border-gray-100">
 					<h2 class="text-xl font-semibold text-gray-800 mb-4">Log Retention Policy</h2>
 					<div class="flex flex-col gap-3">
-						<select v-model="logRetention" @change="changeRetention(Number(logRetention))"
+						<select v-model="logRetention"
+							@change="changeRetention(Number(logRetention)); emit('changeRetention', Number(logRetention))"
 							class="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 font-medium focus:outline-none focus:border-[#00F376] transition-colors duration-200">
 							<option value="7">7 days</option>
 							<option value="30">30 days</option>
@@ -104,6 +105,7 @@ const emit = defineEmits<{
 	customizeView: [value: boolean];
 	load: [value: void];
 	updateMetrics: [value: CompactMetric[]];
+	changeRetention: [value: Number];
 }>();
 const customizeDashboard = ref(false)
 const logRetention = ref(props.logRetention)
