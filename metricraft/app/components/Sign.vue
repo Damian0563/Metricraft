@@ -53,7 +53,7 @@
 					<label for="secret" class="block text-sm font-medium text-gray-700 mb-1">Secret Key</label>
 					<div class="w-full flex">
 						<input id="secret" :type="showSecret ? 'text' : 'password'" v-model="secret"
-							placeholder="Enter your secret key" :keyup="localOldUser ? handleTextInput : null" autocomplete="on"
+							placeholder="Enter your secret key" autocomplete="on"
 							class="w-96 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00F376] focus:border-transparent transition" />
 						<svg @click="showSecret = !showSecret" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
 							stroke="#00F376" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
