@@ -9,7 +9,7 @@ package proto
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	durationpb "google.golang.org/protobuf/types/known/durationpb"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -24,7 +24,7 @@ const (
 
 type Timeframe struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Timeframe     *durationpb.Duration   `protobuf:"bytes,1,opt,name=timeframe,proto3" json:"timeframe,omitempty"`
+	Start         *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=start,proto3" json:"start,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -59,23 +59,67 @@ func (*Timeframe) Descriptor() ([]byte, []int) {
 	return file_service_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *Timeframe) GetTimeframe() *durationpb.Duration {
+func (x *Timeframe) GetStart() *timestamppb.Timestamp {
 	if x != nil {
-		return x.Timeframe
+		return x.Start
+	}
+	return nil
+}
+
+type StringInt32Map struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Values        map[string]int32       `protobuf:"bytes,1,rep,name=values,proto3" json:"values,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StringInt32Map) Reset() {
+	*x = StringInt32Map{}
+	mi := &file_service_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StringInt32Map) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StringInt32Map) ProtoMessage() {}
+
+func (x *StringInt32Map) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StringInt32Map.ProtoReflect.Descriptor instead.
+func (*StringInt32Map) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *StringInt32Map) GetValues() map[string]int32 {
+	if x != nil {
+		return x.Values
 	}
 	return nil
 }
 
 type Congestion struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Congestion    map[string]int32       `protobuf:"bytes,1,rep,name=congestion,proto3" json:"congestion,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
+	state         protoimpl.MessageState     `protogen:"open.v1"`
+	Values        map[string]*StringInt32Map `protobuf:"bytes,1,rep,name=values,proto3" json:"values,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Congestion) Reset() {
 	*x = Congestion{}
-	mi := &file_service_proto_msgTypes[1]
+	mi := &file_service_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -87,7 +131,7 @@ func (x *Congestion) String() string {
 func (*Congestion) ProtoMessage() {}
 
 func (x *Congestion) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[1]
+	mi := &file_service_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -100,12 +144,12 @@ func (x *Congestion) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Congestion.ProtoReflect.Descriptor instead.
 func (*Congestion) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{1}
+	return file_service_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *Congestion) GetCongestion() map[string]int32 {
+func (x *Congestion) GetValues() map[string]*StringInt32Map {
 	if x != nil {
-		return x.Congestion
+		return x.Values
 	}
 	return nil
 }
@@ -115,17 +159,20 @@ var File_service_proto protoreflect.FileDescriptor
 const file_service_proto_rawDesc = "" +
 	"\n" +
 	"\rservice.proto\x12\n" +
-	"metricraft\x1a\x1egoogle/protobuf/duration.proto\"D\n" +
-	"\ttimeframe\x127\n" +
-	"\ttimeframe\x18\x01 \x01(\v2\x19.google.protobuf.DurationR\ttimeframe\"\x93\x01\n" +
-	"\n" +
-	"congestion\x12F\n" +
-	"\n" +
-	"congestion\x18\x01 \x03(\v2&.metricraft.congestion.CongestionEntryR\n" +
-	"congestion\x1a=\n" +
-	"\x0fCongestionEntry\x12\x10\n" +
+	"metricraft\x1a\x1fgoogle/protobuf/timestamp.proto\"=\n" +
+	"\ttimeframe\x120\n" +
+	"\x05start\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\x05start\"\x8b\x01\n" +
+	"\x0eStringInt32Map\x12>\n" +
+	"\x06values\x18\x01 \x03(\v2&.metricraft.StringInt32Map.ValuesEntryR\x06values\x1a9\n" +
+	"\vValuesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\x05R\x05value:\x028\x012S\n" +
+	"\x05value\x18\x02 \x01(\x05R\x05value:\x028\x01\"\x9f\x01\n" +
+	"\n" +
+	"congestion\x12:\n" +
+	"\x06values\x18\x01 \x03(\v2\".metricraft.congestion.ValuesEntryR\x06values\x1aU\n" +
+	"\vValuesEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x120\n" +
+	"\x05value\x18\x02 \x01(\v2\x1a.metricraft.StringInt32MapR\x05value:\x028\x012S\n" +
 	"\n" +
 	"Metricraft\x12E\n" +
 	"\x14getTrafficCongestion\x12\x15.metricraft.timeframe\x1a\x16.metricraft.congestionB\x12Z\x10metricraft/protob\x06proto3"
@@ -142,23 +189,27 @@ func file_service_proto_rawDescGZIP() []byte {
 	return file_service_proto_rawDescData
 }
 
-var file_service_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_service_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_service_proto_goTypes = []any{
-	(*Timeframe)(nil),           // 0: metricraft.timeframe
-	(*Congestion)(nil),          // 1: metricraft.congestion
-	nil,                         // 2: metricraft.congestion.CongestionEntry
-	(*durationpb.Duration)(nil), // 3: google.protobuf.Duration
+	(*Timeframe)(nil),             // 0: metricraft.timeframe
+	(*StringInt32Map)(nil),        // 1: metricraft.StringInt32Map
+	(*Congestion)(nil),            // 2: metricraft.congestion
+	nil,                           // 3: metricraft.StringInt32Map.ValuesEntry
+	nil,                           // 4: metricraft.congestion.ValuesEntry
+	(*timestamppb.Timestamp)(nil), // 5: google.protobuf.Timestamp
 }
 var file_service_proto_depIdxs = []int32{
-	3, // 0: metricraft.timeframe.timeframe:type_name -> google.protobuf.Duration
-	2, // 1: metricraft.congestion.congestion:type_name -> metricraft.congestion.CongestionEntry
-	0, // 2: metricraft.Metricraft.getTrafficCongestion:input_type -> metricraft.timeframe
-	1, // 3: metricraft.Metricraft.getTrafficCongestion:output_type -> metricraft.congestion
-	3, // [3:4] is the sub-list for method output_type
-	2, // [2:3] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	5, // 0: metricraft.timeframe.start:type_name -> google.protobuf.Timestamp
+	3, // 1: metricraft.StringInt32Map.values:type_name -> metricraft.StringInt32Map.ValuesEntry
+	4, // 2: metricraft.congestion.values:type_name -> metricraft.congestion.ValuesEntry
+	1, // 3: metricraft.congestion.ValuesEntry.value:type_name -> metricraft.StringInt32Map
+	0, // 4: metricraft.Metricraft.getTrafficCongestion:input_type -> metricraft.timeframe
+	2, // 5: metricraft.Metricraft.getTrafficCongestion:output_type -> metricraft.congestion
+	5, // [5:6] is the sub-list for method output_type
+	4, // [4:5] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_service_proto_init() }
@@ -172,7 +223,7 @@ func file_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_service_proto_rawDesc), len(file_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

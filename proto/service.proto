@@ -1,7 +1,8 @@
 syntax = "proto3";
 package metricraft;
 option go_package = "metricraft/proto";
-import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
 
 service Metricraft {
 
@@ -9,9 +10,13 @@ service Metricraft {
 }
 
 message timeframe{
-  google.protobuf.Duration timeframe = 1;
+  google.protobuf.Timestamp start = 1;
+}
+
+message StringInt32Map {
+  map<string, int32> values = 1;
 }
 
 message congestion{
-  map<string,int32> congestion = 1;
+  map<string, StringInt32Map> values = 1;
 }
