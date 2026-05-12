@@ -1,13 +1,41 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/types/known/timestamppb"
+	pb "metricraft/proto/metricraft/proto"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
+	"time"
 )
 
+func convertTimeframe(timeframe string) time.Time {
+	if timeframe == "" {
+		timeframe = "7d"
+	}
+	timeframe = strings.ReplaceAll(timeframe, "d", "")
+	num, err := strconv.Atoi(timeframe)
+	if err != nil {
+		num = 7
+		fmt.Println(err)
+	}
+	now := time.Now()
+	return now.Add(-time.Hour * 24 * time.Duration(num))
+}
+
 func navigator(w http.ResponseWriter, r *http.Request) {
+	conn, err := grpc.NewClient("dns:///localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		http.Error(w, "Failed to connect", http.StatusInternalServerError)
+		return
+	}
+	defer conn.Close()
 	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
@@ -21,12 +49,16 @@ func navigator(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
+	client := pb.NewMetricraftClient(conn)
 	metric := r.URL.Query().Get("metric")
 	timeframe := r.URL.Query().Get("timeframe")
+	convertedTimeframe := convertTimeframe(timeframe)
+	fmt.Println(metric)
 	var response any
 	switch metric {
 	case "Traffic congestion trends":
-		response, err = getCongestion(timeframe)
+		response, err = client.GetTrafficCongestion(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe)})
+		fmt.Println(response)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Println(err)
@@ -39,8 +71,4 @@ func navigator(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	httpresponse, err := json.Marshal(response)
 	w.Write(httpresponse)
-}
-
-func getCongestion(timeframe string) (map[string]int32, error) {
-	return nil, nil
 }

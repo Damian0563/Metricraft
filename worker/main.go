@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/joho/godotenv"
+	"google.golang.org/grpc"
+	pb "metricraft/proto/metricraft/proto"
 	"metricraft/worker/enter"
+	"net"
 	"net/http"
 	"os"
 )
@@ -38,9 +41,20 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	go func() {
+		lis, err := net.Listen("tcp", "localhost:50051")
+		if err != nil {
+			panic(err)
+		}
+		grpcServer := grpc.NewServer()
+		s := &server{}
+		s.loadFeatures()
+		pb.RegisterMetricraftServer(grpcServer, s)
+		fmt.Println("gRPC server listening on port 50051")
+		grpcServer.Serve(lis)
+	}()
 	fmt.Println("Listening on port 8081")
-	err = http.ListenAndServe(":8081", router)
-	if err != nil {
+	if err := http.ListenAndServe(":8081", router); err != nil {
 		panic(err)
 	}
 }

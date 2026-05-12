@@ -34,7 +34,7 @@ const props = defineProps({
 	},
 })
 watch(() => props.message, (newMessage) => {
-	if (!newMessage) return
+	if (!newMessage || !import.meta.client) return
 	if (intervalId) clearInterval(intervalId)
 	progress.value = 0
 	const duration = 5000
