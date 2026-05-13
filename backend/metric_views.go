@@ -4,8 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+
 	"google.golang.org/protobuf/types/known/timestamppb"
 	pb "metricraft/proto/metricraft/proto"
 	"net/http"
@@ -30,12 +29,6 @@ func convertTimeframe(timeframe string) time.Time {
 }
 
 func navigator(w http.ResponseWriter, r *http.Request) {
-	conn, err := grpc.NewClient("dns:///localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		http.Error(w, "Failed to connect", http.StatusInternalServerError)
-		return
-	}
-	defer conn.Close()
 	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
@@ -47,6 +40,10 @@ func navigator(w http.ResponseWriter, r *http.Request) {
 		return
 	} else if !authed {
 		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	if conn == nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	client := pb.NewMetricraftClient(conn)
@@ -61,7 +58,6 @@ func navigator(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(response)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Println(err)
 			return
 		}
 		fmt.Println(response)

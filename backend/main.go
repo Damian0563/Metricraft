@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"github.com/joho/godotenv"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"net/http"
 	"os"
@@ -10,6 +12,7 @@ import (
 )
 
 var MODE string
+var conn *grpc.ClientConn
 
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -47,6 +50,7 @@ func main() {
 		os.Setenv("host", "http://localhost")
 		os.Setenv("ws", "ws://localhost")
 		os.Setenv("redis", "127.0.0.1:6379")
+		os.Setenv("grpc", "127.0.0.1:50051")
 		if err != nil {
 			fmt.Println(err)
 			log.Fatal("Error loading .env file")
@@ -57,11 +61,13 @@ func main() {
 		os.Setenv("worker", "http://metricraft-metricraft-1")
 		os.Setenv("ws", "ws://metrcraft-backend-1")
 		os.Setenv("redis", "metricraft-redis-1")
+		os.Setenv("grpc", "metricraft-worker-1:50051")
 	} else {
 		os.Setenv("frontend", "https://metricraft-metricraft-1")
 		os.Setenv("worker", "https://metricraft-worker-1")
 		os.Setenv("ws", "wss://metrcraft-backend-1")
 		os.Setenv("redis", "metricraft-redis-1")
+		os.Setenv("grpc", "metricraft-worker-1:50051")
 	}
 	router := http.NewServeMux()
 	router.HandleFunc("/", welcome)
@@ -72,6 +78,11 @@ func main() {
 	router.HandleFunc("/settings/metrics", changeMetrics)
 	router.HandleFunc("/dashboard/fetch", navigator)
 	go StartWebSocketServer(router)
+	conn, err = grpc.NewClient(fmt.Sprintf("dns:///%v", os.Getenv("grpc")), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return
+	}
+	defer conn.Close()
 	fmt.Println("Server started on port 8080")
 	http.ListenAndServe(":8080", corsMiddleware(router))
 }
