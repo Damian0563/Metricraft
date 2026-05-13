@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	pb "metricraft/proto/metricraft/proto"
+	"metricraft/worker/enter"
 )
 
 type server struct {
@@ -16,6 +17,6 @@ func (s *server) loadFeatures() {
 }
 
 func (s *server) GetTrafficCongestion(ctx context.Context, req *pb.Timeframe) (*pb.Congestion, error) {
-	fmt.Println(req)
-	return &pb.Congestion{}, nil
+	start := req.Start.AsTime()
+	return enter.GetTrafficCongestion(ctx, start)
 }

@@ -25,34 +25,41 @@ func main() {
 		}
 		os.Setenv("backend", "http://localhost")
 		os.Setenv("ws", "ws://localhost")
+		os.Setenv("grpc", "127.0.0.1:50051")
 	} else if MODE == "docker" {
 		os.Setenv("backend", "http://metricraft-backend-1")
 		os.Setenv("ws", "ws://metrcraft-backend-1")
+		os.Setenv("grpc", "metricraft-worker-1:50051")
 	} else {
 		os.Setenv("ws", "wss://metrcraft-backend-1")
 		os.Setenv("backend", "https://metricraft-metricraft-1")
+		os.Setenv("grpc", "metricraft-worker-1:50051")
 	}
 	router := http.NewServeMux()
 	router.HandleFunc("/", enter.Enter)
 	ctx := context.Background()
 	errChannel := make(chan error)
 	go enter.InitDB(ctx, errChannel)
-	err = <-errChannel
-	if err != nil {
-		panic(err)
-	}
-	go func() {
-		lis, err := net.Listen("tcp", "localhost:50051")
+	go func(errChannel chan error) {
+		lis, err := net.Listen("tcp", os.Getenv("grpc"))
 		if err != nil {
-			panic(err)
+			errChannel <- err
+			return
 		}
 		grpcServer := grpc.NewServer()
 		s := &server{}
 		s.loadFeatures()
 		pb.RegisterMetricraftServer(grpcServer, s)
 		fmt.Println("gRPC server listening on port 50051")
-		grpcServer.Serve(lis)
-	}()
+		err = grpcServer.Serve(lis)
+		if err != nil {
+			errChannel <- err
+		}
+	}(errChannel)
+	err = <-errChannel
+	if err != nil {
+		panic(err)
+	}
 	fmt.Println("Listening on port 8081")
 	if err := http.ListenAndServe(":8081", router); err != nil {
 		panic(err)
