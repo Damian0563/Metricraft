@@ -6,10 +6,6 @@
 
 An analytics platform for log observability, focused on visual dashboards and reporting capabilities.
 
-## Who Is This For?
-
-Metriccraft is designed for **small to medium teams** that want to self-host their analytics infrastructure. Whether you're a startup tracking user behavior, a DevOps team monitoring service health, or an engineering org needing visibility into HTTP traffic — Metriccraft gives you full control without relying on third-party SaaS platforms.
-
 Key benefits:
 - **Self-hosted**: No data leaves your infrastructure
 - **Privacy-first**: Your logs and metrics stay on your servers
