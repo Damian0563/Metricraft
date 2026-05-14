@@ -95,12 +95,12 @@ With docker-compose:
 
 ```yaml
 services:
-  metricraft:
-    image: your-username/metricraft:latest
-    ports:
-      - "8080:8000"
-		environment:
-			-DEST_PORT=3000
+   metricraft:
+   image: your-username/metricraft:latest
+   ports:
+     - "8080:8000"
+   environment:
+     -DEST_PORT=3000
 ```
 
 <strong>Make sure the port is allowed by CORS policy in your backend.</strong>
@@ -129,8 +129,6 @@ docker push your-username/metricraft:latest
 protoc -I=./proto --go_out=proto proto/service.proto
 ```
 ```
-
-```bash
 # Run dev container
 docker-compose up -d
 ```
