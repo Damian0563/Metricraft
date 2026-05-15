@@ -14,7 +14,11 @@ import (
 	"time"
 )
 
-func convertTimeframe(timeframe string) time.Time {
+type resolutionDays struct {
+	Days int32
+}
+
+func convertTimeframe(timeframe string) (time.Time, resolutionDays) {
 	if timeframe == "" {
 		timeframe = "7d"
 	}
@@ -25,7 +29,15 @@ func convertTimeframe(timeframe string) time.Time {
 		fmt.Println(err)
 	}
 	now := time.Now()
-	return now.Add(-time.Hour * 24 * time.Duration(num))
+	var timeResolution map[int]resolutionDays = map[int]resolutionDays{
+		7:   {Days: 1},
+		14:  {Days: 2},
+		30:  {Days: 3},
+		90:  {Days: 7},
+		180: {Days: 14},
+		365: {Days: 30},
+	}
+	return now.Add(-time.Hour * 24 * time.Duration(num)), timeResolution[num]
 }
 
 func navigator(w http.ResponseWriter, r *http.Request) {
@@ -49,12 +61,11 @@ func navigator(w http.ResponseWriter, r *http.Request) {
 	client := pb.NewMetricraftClient(conn)
 	metric := r.URL.Query().Get("metric")
 	timeframe := r.URL.Query().Get("timeframe")
-	convertedTimeframe := convertTimeframe(timeframe)
-	fmt.Println(metric)
+	convertedTimeframe, resolution := convertTimeframe(timeframe)
 	var response any
 	switch metric {
 	case "Traffic congestion trends":
-		response, err = client.GetTrafficCongestion(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe)})
+		response, err = client.GetTrafficCongestion(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days})
 		fmt.Println(response)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)

@@ -29,7 +29,7 @@ export const getDashboard = async (): Promise<dashboardInitPayload> => {
 }
 
 
-export const fetchMetric = async (metric: string, timeframe: string = "7d"): Promise<Map<string, number>> => {
+export const fetchMetric = async (metric: string, timeframe: string = "30d"): Promise<Map<string, number>> => {
 	const config: config = useBackendUrl()
 	const headers = {
 		"Authorization": config.secret,

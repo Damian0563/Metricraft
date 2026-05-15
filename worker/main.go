@@ -48,7 +48,6 @@ func main() {
 		}
 		grpcServer := grpc.NewServer()
 		s := &server{}
-		s.loadFeatures()
 		pb.RegisterMetricraftServer(grpcServer, s)
 		fmt.Println("gRPC server listening on port 50051")
 		err = grpcServer.Serve(lis)
