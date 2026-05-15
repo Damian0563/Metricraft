@@ -25,6 +25,7 @@ const (
 type Timeframe struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Start         *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=start,proto3" json:"start,omitempty"`
+	Resolution    int32                  `protobuf:"varint,2,opt,name=resolution,proto3" json:"resolution,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -64,6 +65,13 @@ func (x *Timeframe) GetStart() *timestamppb.Timestamp {
 		return x.Start
 	}
 	return nil
+}
+
+func (x *Timeframe) GetResolution() int32 {
+	if x != nil {
+		return x.Resolution
+	}
+	return 0
 }
 
 type StringInt32Map struct {
@@ -159,9 +167,12 @@ var File_service_proto protoreflect.FileDescriptor
 const file_service_proto_rawDesc = "" +
 	"\n" +
 	"\rservice.proto\x12\n" +
-	"metricraft\x1a\x1fgoogle/protobuf/timestamp.proto\"=\n" +
+	"metricraft\x1a\x1fgoogle/protobuf/timestamp.proto\"]\n" +
 	"\ttimeframe\x120\n" +
-	"\x05start\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\x05start\"\x8b\x01\n" +
+	"\x05start\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\x05start\x12\x1e\n" +
+	"\n" +
+	"resolution\x18\x02 \x01(\x05R\n" +
+	"resolution\"\x8b\x01\n" +
 	"\x0eStringInt32Map\x12>\n" +
 	"\x06values\x18\x01 \x03(\v2&.metricraft.StringInt32Map.ValuesEntryR\x06values\x1a9\n" +
 	"\vValuesEntry\x12\x10\n" +

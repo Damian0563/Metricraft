@@ -66,14 +66,14 @@ func Insert(payload Payload) error {
 	return err
 }
 
-func GetTrafficCongestion(ctx context.Context, startDate time.Time) (*pb.Congestion, error) {
+func GetTrafficCongestion(ctx context.Context, startDate time.Time, resolution int32) (*pb.Congestion, error) {
 	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close(ctx)
 	endDate := time.Now()
-	res, err := conn.Query(ctx, "SELECT url, COUNT(*) FROM logs WHERE date BETWEEN $1 AND $2 GROUP BY url ORDER BY COUNT(*) DESC", startDate, endDate)
+	res, err := conn.Query(ctx, "SELECT url,COUNT(*),date FROM logs WHERE date BETWEEN $1 AND $2 GROUP BY url ORDER BY COUNT(*) DESC", startDate, endDate)
 	if err != nil {
 		return nil, err
 	}
@@ -81,11 +81,19 @@ func GetTrafficCongestion(ctx context.Context, startDate time.Time) (*pb.Congest
 	for res.Next() {
 		var url string
 		var count int
-		err = res.Scan(&url, &count)
+		var date time.Time
+		err = res.Scan(&url, &count, &date)
 		if err != nil {
 			return nil, err
 		}
-		congestion["12:00"] = &pb.StringInt32Map{Values: map[string]int32{url: int32(count)}}
+		if _, ok := congestion[date.Format("15:04")]; !ok {
+			congestion[date.Format("02")] = &pb.StringInt32Map{Values: map[string]int32{url: int32(count)}}
+		} else {
+			congestion[date.Format("02")].Values[url] = int32(count)
+		}
+	}
+	if resolution != 1 {
+		fmt.Println("do some congestion work (merge etc)")
 	}
 	fmt.Println(congestion)
 	return &pb.Congestion{Values: congestion}, nil
