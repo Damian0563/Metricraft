@@ -39,6 +39,5 @@ export const fetchMetric = async (metric: string, timeframe: string = "30d"): Pr
 		method: "GET",
 		headers,
 	})
-	console.log(data)
 	return data
 }
