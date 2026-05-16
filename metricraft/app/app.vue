@@ -7,12 +7,16 @@
 <style>
 .page-enter-active,
 .page-leave-active {
-	transition: all 0.1s;
+	transition: all 0.3s ease-out;
 }
 
-.page-enter-from,
+.page-enter-from {
+	opacity: 0;
+	transform: translateX(20px);
+}
+
 .page-leave-to {
 	opacity: 0;
-	filter: blur(0.5rem);
+	transform: translateX(-20px);
 }
 </style>

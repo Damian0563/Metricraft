@@ -6,6 +6,7 @@
 		</ClientOnly>
 		<Popup :message="errorMessage" @close="errorMessage = ''" />
 		<Sign :oldUser="mode" @signup="handleSignup" @load="handleLoad" @popup="createPop" @toggle="mode = !mode" />
+		<Footer />
 	</div>
 </template>
 
