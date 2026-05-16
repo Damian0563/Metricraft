@@ -1,7 +1,7 @@
 <template>
 	<div>
 		<DashboardNav @settings=handleSettings />
-		<GraphGrid v-if="!settings" />
+		<GraphGrid v-if="!settings" :metrics="derivedMetrics" @load="emit('load')" />
 		<Settings v-if="settings" :realtimeEnabled="realtimeEnabled" :logRetention="logRetention"
 			:derivedMetrics="derivedMetrics" @realtime-toggle="handleRealtimeToggle" @customize-view="handleCustomizeView"
 			@load="emit('load')" @update-metrics="emit('updateMetrics', $event)" @change-retention=" emit('changeRetention',
@@ -69,7 +69,6 @@ onMounted(() => {
 		connectWebSocket();
 	}
 });
-
 
 onBeforeUnmount(() => {
 	if (ws) ws.close();
