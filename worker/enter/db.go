@@ -73,11 +73,23 @@ func GetTrafficCongestion(ctx context.Context, startDate time.Time, resolution i
 	}
 	defer conn.Close(ctx)
 	endDate := time.Now()
-	res, err := conn.Query(ctx, "SELECT url,COUNT(*),date FROM logs WHERE date BETWEEN $1 AND $2 GROUP BY url ORDER BY COUNT(*) DESC", startDate, endDate)
+	originalStartDate := startDate
+	increment := time.Hour * 24 * time.Duration(resolution)
+	congestion := make(map[string]*pb.StringInt32Map)
+	for startDate.Before(endDate) {
+		rangeStart := startDate
+		rangeEnd := startDate.Add(increment)
+		if resolution != 1 {
+			congestion[fmt.Sprintf("%v-%v", rangeStart.Format("02/01"), rangeEnd.Add(-time.Hour*24).Format("02/01"))] = &pb.StringInt32Map{Values: map[string]int32{}}
+		} else {
+			congestion[rangeStart.Format("02/01")] = &pb.StringInt32Map{Values: map[string]int32{}}
+		}
+		startDate = rangeEnd
+	}
+	res, err := conn.Query(ctx, "SELECT url,COUNT(*),date FROM logs WHERE date BETWEEN $1 AND $2 GROUP BY url,date ORDER BY COUNT(*) DESC", originalStartDate, endDate)
 	if err != nil {
 		return nil, err
 	}
-	congestion := make(map[string]*pb.StringInt32Map)
 	for res.Next() {
 		var url string
 		var count int
@@ -86,15 +98,19 @@ func GetTrafficCongestion(ctx context.Context, startDate time.Time, resolution i
 		if err != nil {
 			return nil, err
 		}
-		if _, ok := congestion[date.Format("15:04")]; !ok {
-			congestion[date.Format("02")] = &pb.StringInt32Map{Values: map[string]int32{url: int32(count)}}
+		var key string
+		if resolution != 1 {
+			elapsed := date.Sub(originalStartDate)
+			intervals := int(elapsed / increment)
+			rangeStart := originalStartDate.Add(time.Duration(intervals) * increment)
+			rangeEnd := rangeStart.Add(increment)
+			key = fmt.Sprintf("%v-%v", rangeStart.Format("02/01"), rangeEnd.Add(-time.Hour*24).Format("02/01"))
 		} else {
-			congestion[date.Format("02")].Values[url] = int32(count)
+			key = date.Format("02/01")
+		}
+		if entry, ok := congestion[key]; ok {
+			entry.Values[url] = int32(count)
 		}
 	}
-	if resolution != 1 {
-		fmt.Println("do some congestion work (merge etc)")
-	}
-	fmt.Println(congestion)
 	return &pb.Congestion{Values: congestion}, nil
 }

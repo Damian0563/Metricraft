@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -40,7 +41,11 @@ func extactDetails(r *http.Request) (Payload, error) {
 		scheme = "https"
 	}
 	host := r.Host
-	redirect := fmt.Sprintf("%s://%s:%s%s", scheme, host, os.Getenv("DEST_PORT"), r.URL.Path)
+	destPort := os.Getenv("DEST_PORT")
+	if destPort != "" && !strings.Contains(host, ":") {
+		host = fmt.Sprintf("%s:%s", host, destPort)
+	}
+	redirect := fmt.Sprintf("%s://%s%s", scheme, host, r.URL.Path)
 	if r.URL.RawQuery != "" {
 		redirect += "?" + r.URL.RawQuery
 	}
@@ -48,9 +53,14 @@ func extactDetails(r *http.Request) (Payload, error) {
 	start := time.Now()
 	switch method {
 	case "GET":
-		req, _ := http.NewRequest("GET", redirect, nil)
-		for k, v := range r.Header {
-			req.Header.Set(k, v[0])
+		req, err := http.NewRequest("GET", redirect, nil)
+		if err != nil || req == nil {
+			return Payload{}, fmt.Errorf("failed to create request: %v", err)
+		}
+		if r.Header != nil {
+			for k, v := range r.Header {
+				req.Header.Set(k, v[0])
+			}
 		}
 		req.Header.Set("User-Agent", "Metricraft")
 		resp, err := client.Do(req)
@@ -62,8 +72,10 @@ func extactDetails(r *http.Request) (Payload, error) {
 		}
 	case "POST":
 		req, _ := http.NewRequest("POST", redirect, bytes.NewBuffer(data))
-		for k, v := range r.Header {
-			req.Header.Set(k, v[0])
+		if r.Header != nil {
+			for k, v := range r.Header {
+				req.Header.Set(k, v[0])
+			}
 		}
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("User-Agent", "Metricraft")
@@ -76,8 +88,10 @@ func extactDetails(r *http.Request) (Payload, error) {
 		}
 	case "PUT":
 		req, _ := http.NewRequest("PUT", redirect, bytes.NewBuffer(data))
-		for k, v := range r.Header {
-			req.Header.Set(k, v[0])
+		if r.Header != nil {
+			for k, v := range r.Header {
+				req.Header.Set(k, v[0])
+			}
 		}
 		req.Header.Set("User-Agent", "Metricraft")
 		req.Header.Set("Content-Type", "application/json")
@@ -90,8 +104,10 @@ func extactDetails(r *http.Request) (Payload, error) {
 		}
 	case "DELETE":
 		req, _ := http.NewRequest("DELETE", redirect, nil)
-		for k, v := range r.Header {
-			req.Header.Set(k, v[0])
+		if r.Header != nil {
+			for k, v := range r.Header {
+				req.Header.Set(k, v[0])
+			}
 		}
 		req.Header.Set("User-Agent", "Metricraft")
 		resp, err := client.Do(req)
