@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/httprate"
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -9,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
 var MODE string
@@ -69,9 +72,14 @@ func main() {
 		os.Setenv("redis", "metricraft-redis-1")
 		os.Setenv("grpc", "metricraft-worker-1:50051")
 	}
-	router := http.NewServeMux()
+	router := chi.NewRouter()
+	router.Use(corsMiddleware)
+	router.Use(httprate.LimitByIP(20, 1*time.Second))
 	router.HandleFunc("/", welcome)
-	router.HandleFunc("/sign", sign)
+	router.Group(func(r chi.Router) {
+		r.Use(httprate.LimitByIP(5, time.Minute))
+		r.HandleFunc("/sign", sign)
+	})
 	router.HandleFunc("/dashboard/init", dashboardInit)
 	router.HandleFunc("/settings/realtime", toggleRealtime)
 	router.HandleFunc("/settings/retention", changeRetention)
