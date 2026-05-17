@@ -34,12 +34,13 @@ export const sign = async (payload: signPayload): Promise<string | null> => {
 			throw object.err
 		}
 		return object.token
-	} catch (e) {
-		console.log(e)
+	} catch (e: any) {
+		if (e.status === 429) {
+			throw "Too many requests, try again later."
+		}
 		throw "Something went wrong, Check your internet connection and try again."
 	}
 }
-
 
 
 

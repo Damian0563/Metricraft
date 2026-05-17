@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
@@ -79,7 +80,7 @@ func wsHandlerWorker(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func StartWebSocketServer(router *http.ServeMux) {
+func StartWebSocketServer(router *chi.Mux) {
 	router.HandleFunc("/ws/visitors", wsHandlerFrontend)
 	router.HandleFunc("/ws/workers", wsHandlerWorker)
 }
