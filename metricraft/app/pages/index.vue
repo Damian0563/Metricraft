@@ -6,12 +6,14 @@
 		</ClientOnly>
 		<Popup :message="errorMessage" @close="errorMessage = ''" />
 		<Sign :oldUser="mode" @signup="handleSignup" @load="handleLoad" @popup="createPop" @toggle="mode = !mode" />
-		<Footer />
 	</div>
 </template>
 
 
 <script setup lang="ts">
+definePageMeta({
+	layout: 'entry',
+})
 import { welcome } from "~/calls/welcome"
 const errorMessage = ref("")
 const mode = ref(true)

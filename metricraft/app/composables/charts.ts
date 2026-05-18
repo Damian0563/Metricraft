@@ -5,19 +5,10 @@ export const createTrafficCongestionTrends = (
 	data: Record<string, Map<string, number>>
 ): Chart => {
 	try {
-		if (!data) {
-			return new Chart(canvas, {
-				type: 'bar',
-				data: { labels: [], datasets: [] }
-			});
-		}
-		const mapped: Map<string, Map<string, number>>[] = Object.entries(data)[1]
-		const labels = Array.from(mapped.keys())
-		console.log(labels);
-		const values = Array.from(mapped.values()).map((v: any) => {
-			if (v instanceof Map) return Array.from(v.values())[0];
-			return v;
-		});
+		if (!data) throw new Error('Data is empty');
+		const labels: string[] | undefined = Object.entries(data).map(([_, v]) => Object.keys(v))[0];
+		if (!labels) throw new Error('Labels are empty');
+		const values = []
 		return new Chart(canvas, {
 			type: 'bar',
 			data: {
