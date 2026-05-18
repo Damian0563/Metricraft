@@ -1,6 +1,11 @@
 <template>
 	<div>
 		<Navbar />
-		<Footer />
 	</div>
 </template>
+
+<script setup lang="ts">
+definePageMeta({
+	layout: 'entry',
+})
+</script>
