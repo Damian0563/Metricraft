@@ -1,13 +1,13 @@
 <template>
 	<div class="flex flex-col rounded shadow-lg bg-white w-full h-48 md:h-64 lg:h-96 text-black aspect-square">
 		<h1 class="text-2xl font-bold text-center mt-2">{{ props.name }}</h1>
-		<canvas ref="chartRef"></canvas>
+		<canvas ref="chartRef" class="p-12"></canvas>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { Chart } from "chart.js";
-import { onMounted } from "vue";
+import { Chart, CategoryScale, LinearScale, BarController, BarElement, Tooltip } from "chart.js";
+import { onMounted, toRaw } from "vue";
 import { createTrafficCongestionTrends } from "~/composables/charts";
 const props = defineProps<{
 	name: string;
@@ -15,6 +15,7 @@ const props = defineProps<{
 }>();
 const chartRef = ref<HTMLCanvasElement | null>(null);
 let chartInstance: Chart | null = null;
+Chart.register(CategoryScale, LinearScale, BarController, BarElement, Tooltip);
 onMounted((): void => {
 	populateChart(props.data);
 });
@@ -25,7 +26,7 @@ watch(() => props.data, (newData: any): void => {
 
 const populateChart = (data: any): void => {
 	if (props.name === "Traffic congestion trends" && chartRef.value) {
-		chartInstance = createTrafficCongestionTrends(chartRef.value, data);
+		chartInstance = createTrafficCongestionTrends(chartRef.value, toRaw(data));
 	}
 }
 </script>
