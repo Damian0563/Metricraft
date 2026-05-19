@@ -6,27 +6,63 @@ export const createTrafficCongestionTrends = (
 ): Chart => {
 	try {
 		if (!data) throw new Error('Data is empty');
-		const labels: string[] | undefined = Object.entries(data).map(([_, v]) => Object.keys(v))[0];
-		if (!labels) throw new Error('Labels are empty');
-		const values = []
+		let labels: string[] = [];
+		const map: Map<string, Map<string, number>> = new Map(
+			Object.entries(data.values).map(([dateKey, innerWrapper]: [string, any]) => {
+				const actualUrlCounts = innerWrapper.values ? innerWrapper.values : innerWrapper;
+				return [
+					dateKey,
+					new Map(Object.entries(actualUrlCounts))
+				];
+			})
+		);
+		const urlDataMap = new Map<string, number[]>();
+		const totalPoints = map.size;
+		let pointIndex = 0;
+		map.forEach((innerMap: Map<string, number>, key: string) => {
+			labels.push(key);
+			innerMap.forEach((count: number, url: string) => {
+				if (!urlDataMap.has(url)) {
+					urlDataMap.set(url, new Array(totalPoints).fill(0));
+				}
+				urlDataMap.get(url)![pointIndex] = count;
+			});
+			pointIndex++;
+		});
+		const datasets = Array.from(urlDataMap.entries()).map(([url, dataArray], _) => {
+			return {
+				label: url,
+				data: dataArray,
+				borderWidth: 1,
+				backgroundColor: 'rgba(255, 99, 132, 0.5)',
+			};
+		});
 		return new Chart(canvas, {
 			type: 'bar',
 			data: {
 				labels,
-				datasets: [{
-					label: 'Congestion',
-					data: values,
-					backgroundColor: 'rgba(59, 130, 246, 0.5)',
-					borderColor: 'rgb(59, 130, 246)',
-					borderWidth: 1
-				}]
+				datasets
 			},
 			options: {
+				interaction: {
+					mode: 'nearest',
+					intersect: true
+				},
 				responsive: true,
 				maintainAspectRatio: false,
 				scales: {
-					y: { beginAtZero: true }
-				}
+					x: { stacked: true },
+					y: { beginAtZero: true, stacked: true }
+				},
+				plugins: {
+					legend: {
+						display: true,
+						position: 'top'
+					},
+					tooltip: {
+						enabled: true,
+					}
+				},
 			}
 		});
 	} catch (e) {
