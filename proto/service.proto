@@ -18,6 +18,11 @@ message StringInt32Map {
   map<string, int32> values = 1;
 }
 
-message congestion{
-  map<string, StringInt32Map> values = 1;
+message CongestionEntry {
+  string timerange = 1;
+  StringInt32Map pairing = 2;
+}
+
+message congestion {
+  repeated CongestionEntry values = 1;
 }

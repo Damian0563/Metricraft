@@ -75,15 +75,22 @@ func GetTrafficCongestion(ctx context.Context, startDate time.Time, resolution i
 	endDate := time.Now()
 	originalStartDate := startDate
 	increment := time.Hour * 24 * time.Duration(resolution)
-	congestion := make(map[string]*pb.StringInt32Map)
+	congestion := make([]*pb.CongestionEntry, 0)
+	index := make(map[string]int)
 	for startDate.Before(endDate) {
 		rangeStart := startDate
 		rangeEnd := startDate.Add(increment)
+		var timerange string
 		if resolution != 1 {
-			congestion[fmt.Sprintf("%v-%v", rangeStart.Format("02/01"), rangeEnd.Add(-time.Hour*24).Format("02/01"))] = &pb.StringInt32Map{Values: map[string]int32{}}
+			timerange = fmt.Sprintf("%v-%v", rangeStart.Format("02/01"), rangeEnd.Add(-time.Hour*24).Format("02/01"))
 		} else {
-			congestion[rangeStart.Format("02/01")] = &pb.StringInt32Map{Values: map[string]int32{}}
+			timerange = rangeStart.Format("02/01")
 		}
+		index[timerange] = len(congestion)
+		congestion = append(congestion, &pb.CongestionEntry{
+			Timerange: timerange,
+			Pairing:   &pb.StringInt32Map{Values: map[string]int32{}},
+		})
 		startDate = rangeEnd
 	}
 	res, err := conn.Query(ctx, "SELECT url,COUNT(*),date FROM logs WHERE date BETWEEN $1 AND $2 GROUP BY url,date ORDER BY COUNT(*) DESC", originalStartDate, endDate)
@@ -108,9 +115,10 @@ func GetTrafficCongestion(ctx context.Context, startDate time.Time, resolution i
 		} else {
 			key = date.Format("02/01")
 		}
-		if entry, ok := congestion[key]; ok {
-			entry.Values[url] = int32(count)
+		if i, ok := index[key]; ok {
+			congestion[i].Pairing.Values[url] = int32(count)
 		}
 	}
+	fmt.Println(congestion)
 	return &pb.Congestion{Values: congestion}, nil
 }

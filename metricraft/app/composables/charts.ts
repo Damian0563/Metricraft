@@ -1,33 +1,38 @@
 import { Chart } from "chart.js";
 
+type StringInt32Map = {
+	values?: Record<string, number>;
+};
+
+type CongestionEntry = {
+	timerange: string;
+	pairing?: StringInt32Map;
+};
+
+export type TrafficCongestionData = {
+	values: CongestionEntry[];
+};
+
+const getUrlCounts = (pairing: StringInt32Map | undefined): Record<string, number> =>
+	pairing?.values ?? {};
+
 export const createTrafficCongestionTrends = (
 	canvas: HTMLCanvasElement,
-	data: Record<string, Map<string, number>>
+	data: TrafficCongestionData
 ): Chart => {
 	try {
-		if (!data) throw new Error('Data is empty');
-		let labels: string[] = [];
-		const map: Map<string, Map<string, number>> = new Map(
-			Object.entries(data.values).map(([dateKey, innerWrapper]: [string, any]) => {
-				const actualUrlCounts = innerWrapper.values ? innerWrapper.values : innerWrapper;
-				return [
-					dateKey,
-					new Map(Object.entries(actualUrlCounts))
-				];
-			})
-		);
+		if (!data?.values?.length) throw new Error('Data is empty');
+		const labels: string[] = [];
 		const urlDataMap = new Map<string, number[]>();
-		const totalPoints = map.size;
-		let pointIndex = 0;
-		map.forEach((innerMap: Map<string, number>, key: string) => {
-			labels.push(key);
-			innerMap.forEach((count: number, url: string) => {
+		const totalPoints = data.values.length;
+		data.values.forEach((entry: CongestionEntry, pointIndex: number) => {
+			labels.push(entry.timerange);
+			for (const [url, count] of Object.entries(getUrlCounts(entry.pairing))) {
 				if (!urlDataMap.has(url)) {
-					urlDataMap.set(url, new Array(totalPoints).fill(0));
+					urlDataMap.set(url, new Array<number>(totalPoints).fill(0));
 				}
 				urlDataMap.get(url)![pointIndex] = count;
-			});
-			pointIndex++;
+			}
 		});
 		const datasets = Array.from(urlDataMap.entries()).map(([url, dataArray], _) => {
 			return {
