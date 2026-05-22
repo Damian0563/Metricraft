@@ -119,6 +119,5 @@ func GetTrafficCongestion(ctx context.Context, startDate time.Time, resolution i
 			congestion[i].Pairing.Values[url] = int32(count)
 		}
 	}
-	fmt.Println(congestion)
 	return &pb.Congestion{Values: congestion}, nil
 }

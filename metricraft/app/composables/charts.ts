@@ -3,23 +3,21 @@ import { Chart } from "chart.js";
 type StringInt32Map = {
 	values?: Record<string, number>;
 };
-
 type CongestionEntry = {
 	timerange: string;
 	pairing?: StringInt32Map;
 };
-
 export type TrafficCongestionData = {
 	values: CongestionEntry[];
 };
 
-const getUrlCounts = (pairing: StringInt32Map | undefined): Record<string, number> =>
-	pairing?.values ?? {};
-
 export const createTrafficCongestionTrends = (
 	canvas: HTMLCanvasElement,
-	data: TrafficCongestionData
+	data: TrafficCongestionData,
+	colorPicker: ColorPicker
 ): Chart => {
+	const getUrlCounts = (pairing: StringInt32Map | undefined): Record<string, number> =>
+		pairing?.values ?? {};
 	try {
 		if (!data?.values?.length) throw new Error('Data is empty');
 		const labels: string[] = [];
@@ -34,12 +32,13 @@ export const createTrafficCongestionTrends = (
 				urlDataMap.get(url)![pointIndex] = count;
 			}
 		});
+		console.log(colorPicker)
 		const datasets = Array.from(urlDataMap.entries()).map(([url, dataArray], _) => {
 			return {
 				label: url,
 				data: dataArray,
 				borderWidth: 1,
-				backgroundColor: 'rgba(255, 99, 132, 0.5)',
+				backgroundColor: colorPicker.getColorForUrl(url),
 			};
 		});
 		return new Chart(canvas, {

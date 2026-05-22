@@ -26,6 +26,7 @@ type dashboardInitPayload struct {
 	SignedSecret string   `json:"signedSecret"`
 	Settings     Settings `json:"settings"`
 	Error        string   `json:"error"`
+	Urls         []string `json:"urls"`
 }
 
 // This can be expanded later to include more settings

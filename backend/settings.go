@@ -50,6 +50,29 @@ func GetSettings() (Settings, error) {
 	return settings, nil
 }
 
+func GetUrls() ([]string, error) {
+	ctx := context.Background()
+	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close(ctx)
+	res, err := conn.Query(ctx, "SELECT DISTINCT url FROM logs WHERE TRUE ORDER BY url")
+	if err != nil {
+		return nil, err
+	}
+	urls := make([]string, 0)
+	for res.Next() {
+		var url string
+		err = res.Scan(&url)
+		if err != nil {
+			return nil, err
+		}
+		urls = append(urls, url)
+	}
+	return urls, nil
+}
+
 func ChangeMetrics(metrics []Metric) error {
 	ctx := context.Background()
 	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))

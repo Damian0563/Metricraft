@@ -14,6 +14,7 @@ import { getDashboard } from "~/calls/dashboard";
 const localLoading = ref(false);
 const errorMessage = ref("");
 const appName = useState<string>('appName', () => "");
+const urls = useState<string[]>('urls', () => []);
 const derivedMetrics = ref<Record<string, boolean>>({})
 const realtimeEnabled = ref(false);
 const logRetention = ref(30);
@@ -29,6 +30,7 @@ const initialize = ((newVal: dashboardInitPayload | undefined) => {
 		logRetention.value = newVal.settings.retention
 		const raw = newVal.settings.enabled as Record<string, boolean>
 		derivedMetrics.value = raw
+		urls.value = newVal.urls
 	} else {
 		errorMessage.value = newVal.error
 		if (import.meta.client) {
