@@ -119,25 +119,30 @@ func dashboardInit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var Response = dashboardInitPayload{}
+	Response.SignedSecret = ""
 	appName, err := token.GetAppName()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		Response.Error = err.Error()
 		Response.AppName = ""
-		Response.SignedSecret = ""
 	} else {
 		Response.AppName = appName
 		signed, error := token.sign(false)
 		if error != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			Response.Error = "Error occured during signing. Please try again later."
-			Response.SignedSecret = ""
 		} else {
 			w.WriteHeader(http.StatusOK)
 			Response.SignedSecret = signed
-			Response.Error = ""
-			if err == nil {
-				Response.Settings, err = GetSettings()
+			Response.Settings, err = GetSettings()
+			if err != nil {
+				Response.Error = "Error occured during fetching settings. Please try again later."
+				w.WriteHeader(http.StatusInternalServerError)
+			}
+			Response.Urls, err = GetUrls()
+			if err != nil {
+				Response.Error = "Error occured during fetching urls. Please try again later."
+				w.WriteHeader(http.StatusInternalServerError)
 			}
 		}
 		response, _ := json.Marshal(Response)

@@ -6,6 +6,7 @@ export type signPayload = {
 
 export type dashboardInitPayload = {
 	appName: string;
+	urls: string[];
 	signedSecret: string;
 	error: string;
 	settings: { realtime: boolean, retention: number, enabled: Record<string, boolean> };

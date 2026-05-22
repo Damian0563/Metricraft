@@ -49,6 +49,12 @@ export default defineNuxtConfig({
 		plugins: [
 			tailwindcss(),
 		],
+		optimizeDeps: {
+			include: [
+				'chart.js',
+				'culori',
+			]
+		}
 	},
 	app: {
 		head: {
