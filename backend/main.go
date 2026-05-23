@@ -85,6 +85,7 @@ func main() {
 	router.HandleFunc("/settings/retention", changeRetention)
 	router.HandleFunc("/settings/metrics", changeMetrics)
 	router.HandleFunc("/dashboard/fetch", navigator)
+	router.HandleFunc("/verify/send", sendVerification)
 	go StartWebSocketServer(router)
 	conn, err = grpc.NewClient(fmt.Sprintf("dns:///%v", os.Getenv("grpc")), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {

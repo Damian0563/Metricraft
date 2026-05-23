@@ -49,7 +49,7 @@ export const verify = async (mail: string, code: string): Promise<boolean> => {
 		"Content-Type": "application/json",
 	}
 	try {
-		let data: string = await $fetch(`${config.httphost}/verify`, {
+		let data: string = await $fetch(`${config.httphost}/verify/check`, {
 			method: 'POST',
 			headers,
 			body: JSON.stringify({ mail, code }),
@@ -75,22 +75,15 @@ export const sendVerification = async (mail: string): Promise<boolean> => {
 		"Content-Type": "application/json",
 	}
 	try {
-		let data: string = await $fetch(`${config.httphost}/verify/send`, {
+		const data = await $fetch(`${config.httphost}/verify/send`, {
 			method: 'POST',
 			headers,
-			body: mail,
+			body: JSON.stringify({ "mail": mail }),
 		})
-		const object: verifyResponse = JSON.parse(data)
-		console.log("Sent: ", object)
-		if (object.err) {
-			throw object.err
-		}
-		return object.success
+		console.log("Sent: ", data)
+		return true
 	} catch (e: any) {
-		if (e.status === 429) {
-			throw "Too many requests, try again later."
-		}
-		throw "Something went wrong, Check your internet connection and try again."
+		return false
 	}
 }
 
