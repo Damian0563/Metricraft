@@ -57,14 +57,14 @@ export const createTrafficCongestionTrends = (
 				maintainAspectRatio: false,
 				animation: { duration: 250 },
 				interaction: { mode: 'index', intersect: false },
-				layout: { padding: { right: 8, left: 2, bottom: 4 } },
+				layout: { padding: { right: 8, left: 2, bottom: 2 } },
 				scales: {
 					x: {
 						stacked: true,
 						grid: { display: false },
 						border: { display: false },
 						ticks: { autoSkip: false, maxRotation: 90, padding: 6, font: { weight: 'bold' } },
-						title: { display: true, text: 'Time', font: { weight: 'bold', size: 18 }, padding: { top: 8 } },
+						title: { display: true, text: 'Time', font: { weight: 'bold', size: 18 }, padding: { top: 2 } },
 					},
 					y: {
 						stacked: true,
