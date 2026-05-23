@@ -135,6 +135,7 @@ const secret = ref('');
 const confirmSecret = ref('');
 const appName = ref('');
 const showSecret = ref(false);
+const showVerficationCode = ref(false);
 const code = ref('');
 const showConfirmSecret = ref(false);
 const passwordStrength = computed(() => evaluatePasswordStrength(secret.value) || 1);
@@ -178,20 +179,27 @@ const handleSign = async () => {
 		if (!localOldUser.value) {
 			const sent = await sendVerification(payload.mail);
 			if (sent) {
+				emit('popup', 'We sent you a verification code. Please check your email.');
+				await new Promise(resolve => setTimeout(resolve, 1000));
+				showVerficationCode.value = true;
 				const verified = await verify(payload.mail, code.value);
 				if (!verified) {
 					emit('popup', 'Verification code is invalid.');
+					showVerficationCode.value = false;
 					return;
 				}
 			} else {
 				emit('popup', 'Something went wrong, please try again.');
+				showVerficationCode.value = false;
 				return;
 			}
 		}
 		await completeSign(payload);
 	} catch (e) {
+		showVerficationCode.value = false;
 		emit('popup', String(e));
 	} finally {
+		showVerficationCode.value = false;
 		emit('load');
 	}
 }
@@ -200,6 +208,9 @@ const completeSign = async (payload: signPayload) => {
 	const result = await sign(payload);
 	if (result) {
 		emit('signup', result);
+	} else {
+		emit('popup', 'Something went wrong, please try again.');
+		showVerficationCode.value = false;
 	}
 }
 

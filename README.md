@@ -122,6 +122,10 @@ docker build \
 docker push your-username/metricraft:latest
 ```
 
+## .Env configuration
+
+
+
 ## Useful Commands
 
 ```bash
