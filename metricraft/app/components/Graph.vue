@@ -1,7 +1,9 @@
 <template>
-	<div class="flex flex-col rounded shadow-lg bg-white w-full h-48 md:h-64 lg:h-96 text-black aspect-square">
-		<h1 class="text-2xl font-bold text-center mt-2">{{ props.name }}</h1>
-		<canvas ref="chartRef" class="p-12"></canvas>
+	<div class="flex flex-col rounded shadow-lg bg-white w-full h-80 md:h-96 lg:h-108 text-black">
+		<h1 class="text-2xl font-bold text-center mt-6 mb-2 shrink-0">{{ props.name }}</h1>
+		<div class="relative flex-1 min-h-0 p-6">
+			<canvas ref="chartRef"></canvas>
+		</div>
 	</div>
 </template>
 

@@ -132,18 +132,19 @@ func dashboardInit(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 			Response.Error = "Error occured during signing. Please try again later."
 		} else {
-			w.WriteHeader(http.StatusOK)
+			status := http.StatusOK
 			Response.SignedSecret = signed
 			Response.Settings, err = GetSettings()
 			if err != nil {
 				Response.Error = "Error occured during fetching settings. Please try again later."
-				w.WriteHeader(http.StatusInternalServerError)
+				status = http.StatusInternalServerError
 			}
 			Response.Urls, err = GetUrls()
 			if err != nil {
 				Response.Error = "Error occured during fetching urls. Please try again later."
-				w.WriteHeader(http.StatusInternalServerError)
+				status = http.StatusInternalServerError
 			}
+			w.WriteHeader(status)
 		}
 		response, _ := json.Marshal(Response)
 		w.Write(response)
