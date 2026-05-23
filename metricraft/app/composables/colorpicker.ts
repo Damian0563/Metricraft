@@ -1,9 +1,10 @@
 import { oklch, formatHex } from 'culori';
 
 const hash = (str: string): number => {
+	const formatted = str.slice(str.lastIndexOf('/'))
 	let h = 5381;
-	for (let i = 0; i < str.length; i++) {
-		h = ((h << 5) + h + str.charCodeAt(i)) >>> 0;
+	for (let i = 0; i < formatted.length; i++) {
+		h = ((h << 5) + h + formatted.charCodeAt(i)) >>> 0;
 	}
 	return h;
 };

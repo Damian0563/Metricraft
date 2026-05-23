@@ -118,7 +118,7 @@
 <script setup lang="ts">
 import type { signPayload } from '@/composables/types';
 import { validateEmail, evaluatePasswordStrength } from '@/composables/helpers';
-import { sign } from '~/calls/welcome';
+import { sign, verify, sendVerification } from '~/calls/welcome';
 const props = defineProps<{
 	oldUser: boolean;
 }>();
@@ -135,6 +135,7 @@ const secret = ref('');
 const confirmSecret = ref('');
 const appName = ref('');
 const showSecret = ref(false);
+const code = ref('');
 const showConfirmSecret = ref(false);
 const passwordStrength = computed(() => evaluatePasswordStrength(secret.value) || 1);
 const passwordStrengthMessages = [
@@ -174,14 +175,32 @@ const handleSign = async () => {
 	}
 	emit('load');
 	try {
-		const result = await sign(payload);
-		if (result) {
-			emit('signup', result);
+		if (!localOldUser.value) {
+			const sent = await sendVerification(payload.mail);
+			if (sent) {
+				const verified = await verify(payload.mail, code.value);
+				if (!verified) {
+					emit('popup', 'Verification code is invalid.');
+					return;
+				}
+			} else {
+				emit('popup', 'Something went wrong, please try again.');
+				return;
+			}
 		}
+		await completeSign(payload);
 	} catch (e) {
 		emit('popup', String(e));
 	} finally {
 		emit('load');
 	}
 }
+
+const completeSign = async (payload: signPayload) => {
+	const result = await sign(payload);
+	if (result) {
+		emit('signup', result);
+	}
+}
+
 </script>

@@ -28,3 +28,8 @@ export type signResponse = {
 	token: string;
 	err?: string;
 }
+
+export type verifyResponse = {
+	success: boolean;
+	err?: string;
+}
