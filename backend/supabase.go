@@ -9,12 +9,27 @@ import (
 	"time"
 )
 
+func checkUserExists(mail string) (bool, error) {
+	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
+	if err != nil {
+		return false, err
+	}
+	defer conn.Close(context.Background())
+	var exists bool
+	err = conn.QueryRow(context.Background(), "SELECT EXISTS(SELECT 1 FROM users WHERE mail = $1)", mail).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
+}
+
 func createUser(mail string, secret string, appName string) (string, error) {
 	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
 	if err != nil {
 		return "", err
 	}
 	defer conn.Close(context.Background())
+
 	hashedSecret, err := bcrypt.GenerateFromPassword([]byte(secret), bcrypt.DefaultCost)
 	if err != nil {
 		return "", err

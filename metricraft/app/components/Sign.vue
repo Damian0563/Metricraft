@@ -177,8 +177,8 @@ const handleSign = async () => {
 	emit('load');
 	try {
 		if (!localOldUser.value) {
-			const sent = await sendVerification(payload.mail);
-			if (sent) {
+			const sent: verifyResponse = await sendVerification(payload.mail);
+			if (sent.success) {
 				emit('popup', 'We sent you a verification code. Please check your email.');
 				await new Promise(resolve => setTimeout(resolve, 1000));
 				showVerficationCode.value = true;
@@ -189,7 +189,7 @@ const handleSign = async () => {
 					return;
 				}
 			} else {
-				emit('popup', 'Something went wrong, please try again.');
+				emit('popup', String(sent.err));
 				showVerficationCode.value = false;
 				return;
 			}

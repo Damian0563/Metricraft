@@ -122,9 +122,89 @@ docker build \
 docker push your-username/metricraft:latest
 ```
 
-## .Env configuration
+## .Env Configuration
 
+Each service in the stack reads its configuration from a local `.env` file (loaded via [`godotenv`](https://github.com/joho/godotenv) for the Go services and Vite/Nuxt for the frontend). Create one file per service at the paths shown below. All `.env` files are git-ignored by default.
 
+### File locations
+
+| Service | File path |
+|---------|-----------|
+| API Server | `backend/.env` |
+| Worker Proxy | `worker/.env` |
+| Frontend (Nuxt) | `metricraft/.env` |
+
+### Shared variables
+
+These variables must be **identical** across the services that use them, otherwise authentication and inter-service calls will fail.
+
+| Variable | Used by | Description |
+|----------|---------|-------------|
+| `SECRET` | backend, worker, metricraft | Shared bearer token used for service-to-service authorization (sent as the `Authorization` header). Use a long random string. |
+| `MODE` | backend, worker, metricraft | Deployment mode. One of `local`, `docker`, or `prod`. Controls hostnames used for inter-service communication (e.g. `localhost` vs. `metricraft-backend-1`). |
+
+### `backend/.env`
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `SECRET` | yes | Shared service token (see above). |
+| `MODE` | yes | `local` \| `docker` \| `prod`. |
+| `DATABASE_USERS` | yes | PostgreSQL connection string for the Supabase user database, e.g. `postgresql://postgres.<project>:<password>@<host>:5432/postgres`. |
+| `DATABASE_LOGS` | yes | PostgreSQL connection string for the metrics/logs database, e.g. `postgresql://postgres:password@localhost:5432/postgres?sslmode=disable`. |
+| `ALLOWED_ORIGINS` | yes | Comma-separated list of origins permitted by CORS (e.g. `http://localhost:8000,https://app.example.com`). |
+| `API_RESEND` | optional | [Resend](https://resend.com) API key used by the serverless mailing integration to send verification emails. Required only if email delivery is enabled. |
+
+Example:
+
+```dotenv
+SECRET=replace-with-a-long-random-string
+MODE=local
+DATABASE_USERS=postgresql://postgres.<project>:<password>@aws-1-eu-west-3.pooler.supabase.com:5432/postgres
+DATABASE_LOGS=postgresql://postgres:password@localhost:5432/postgres?sslmode=disable
+ALLOWED_ORIGINS=http://localhost:8000
+GOOGLE_APP_PASSWORD=re_xxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+### `worker/.env`
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `SECRET` | yes | Shared service token (must match `backend/.env`). |
+| `MODE` | yes | `local` \| `docker` \| `prod`. |
+| `DATABASE_LOGS` | yes | PostgreSQL connection string for writing captured request/response metrics. Must point to the same database as the backend. |
+| `DEST_PORT` | optional | Port the worker proxy forwards captured traffic to (your upstream application). Defaults to the port present in the request `Host` header when unset. |
+
+Example:
+
+```dotenv
+SECRET=replace-with-a-long-random-string
+MODE=local
+DATABASE_LOGS=postgresql://postgres:password@localhost:5432/postgres?sslmode=disable
+DEST_PORT=3000
+```
+
+### `metricraft/.env`
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `SECRET` | yes | Shared service token (must match `backend/.env`); exposed to the client through Nuxt's `runtimeConfig.public`. |
+| `MODE` | yes | `local` \| `docker` \| `prod`. Selects the backend host the frontend talks to (`http://localhost:8080`, `http://metricraft-backend-1:8080`, or the production URL). |
+| `PORT` | optional | Port the Nuxt dev server binds to. Defaults to `8000`. |
+
+Example:
+
+```dotenv
+PORT=8000
+SECRET=replace-with-a-long-random-string
+MODE=local
+```
+
+### Notes & best practices
+
+- **Never commit `.env` files.** They are included in `.gitignore` (`**.env`); rotate any secret that is accidentally pushed.
+- When using Docker Compose, the values referenced as `${SECRET}`, `${DATABASE_USERS}`, and `${DATABASE_LOGS}` in `docker-compose.dev.yml` are read from a project-level `.env` file at the repository root or from the shell environment.
+- The `MODE` value must be consistent across all three services; mixing `local` and `docker` will cause hostname resolution errors.
+- For production, prefer injecting variables through your orchestrator's secret store (Kubernetes secrets, Docker secrets, etc.) rather than baking them into images via `--build-arg`.
 
 ## Useful Commands
 

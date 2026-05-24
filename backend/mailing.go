@@ -134,9 +134,24 @@ func sendVerification(w http.ResponseWriter, r *http.Request) {
 	}
 	var payload sendVerificationPayload
 	json.NewDecoder(r.Body).Decode(&payload)
+	exists, err := checkUserExists(payload.Mail)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if exists {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 	fmt.Println(payload)
 	mail := payload.Mail
-	err := sendMail(mail, "1234")
+	code := generateCode()
+	err = setCodeValidity(mail, code)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	err = sendMail(mail, code)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
