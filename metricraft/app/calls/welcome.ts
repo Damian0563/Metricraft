@@ -1,4 +1,4 @@
-import type { signPayload, config, welcomeResponse, signResponse } from '@/composables/types';
+import type { signPayload, config, welcomeResponse, signResponse, verifyResponse } from '@/composables/types';
 import { getCookie } from "@/composables/helpers";
 export const welcome = async (): Promise<boolean> => {
 	try {
@@ -68,22 +68,36 @@ export const verify = async (mail: string, code: string): Promise<boolean> => {
 	}
 }
 
-export const sendVerification = async (mail: string): Promise<boolean> => {
+export const sendVerification = async (mail: string): Promise<verifyResponse> => {
 	const config: config = useBackendUrl()
 	const headers = {
 		"Authorization": config.secret,
 		"Content-Type": "application/json",
 	}
 	try {
-		const data = await $fetch(`${config.httphost}/verify/send`, {
+		await $fetch(`${config.httphost}/verify/send`, {
 			method: 'POST',
 			headers,
 			body: JSON.stringify({ "mail": mail }),
 		})
-		console.log("Sent: ", data)
-		return true
+		const res: verifyResponse = {
+			success: true,
+		}
+		return res
 	} catch (e: any) {
-		return false
+		let error: string
+		if (e.status === 429) {
+			error = "Too many requests, try again later."
+		} else if (e.status === 400) {
+			error = "Email already exists."
+		} else {
+			error = "Something went wrong, Check your internet connection and try again."
+		}
+		const res: verifyResponse = {
+			success: false,
+			err: error,
+		}
+		return res
 	}
 }
 

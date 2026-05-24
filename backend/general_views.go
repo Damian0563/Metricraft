@@ -170,7 +170,6 @@ func sign(w http.ResponseWriter, r *http.Request) {
 	}
 	var jsonResponse = make(map[string]interface{})
 	if payload.AppName != "" {
-		// TODO: Check if mail exists
 		if uuid, error_db := createUser(payload.Mail, payload.Secret, payload.AppName); error_db != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			jsonResponse["token"] = ""

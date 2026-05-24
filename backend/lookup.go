@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
+	"math/rand"
 	"os"
 	"strings"
 	"time"
@@ -64,4 +65,46 @@ func checkToken(token string) (bool, error) {
 		return false, nil
 	}
 	return signed == token, nil
+}
+
+func generateCode() string {
+	var code string
+	var index int
+	for index < 6 {
+		code += string(rand.Intn(10))
+		index++
+	}
+	return code
+}
+
+func setCodeValidity(mail string, code string) error {
+	client := redis.NewClient(&redis.Options{
+		Addr:     os.Getenv("redis"),
+		Password: "",
+		DB:       0,
+	})
+	defer client.Close()
+	ctx := context.Background()
+	key := "verify:" + mail
+	err := client.Set(ctx, key, code, 11*time.Minute).Err()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func checkCodeValidity(mail string, code string) (bool, error) {
+	client := redis.NewClient(&redis.Options{
+		Addr:     os.Getenv("redis"),
+		Password: "",
+		DB:       0,
+	})
+	defer client.Close()
+	ctx := context.Background()
+	key := "verify:" + mail
+	signed, err := client.Get(ctx, key).Result()
+	if err != nil || signed == "" {
+		return false, err
+	}
+	return signed == code, nil
 }
