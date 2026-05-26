@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"strconv"
 )
 
 func signToken(token string, rotate bool) (string, error) {
@@ -71,7 +72,7 @@ func generateCode() string {
 	var code string
 	var index int
 	for index < 6 {
-		code += string(rand.Intn(10))
+		code += strconv.Itoa(rand.Intn(10))
 		index++
 	}
 	return code

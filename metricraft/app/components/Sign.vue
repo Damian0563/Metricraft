@@ -87,13 +87,13 @@
 						</svg>
 					</div>
 				</div>
-				<div v-if="!localOldUser" class="flex justify-center text-m h-8 font-bold">
+				<div v-if="!localOldUser" class="flex justify-center text-m h-6 font-bold">
 					<span v-if="matchMessage && confirmSecret.length > 0"
 						:class="matchMessage == 'Secret keys do not match.' ? 'text-red-500' : 'text-green-500'">{{
 							matchMessage
 						}}</span>
 				</div>
-				<div class="h-10" :class="{ 'invisible': localOldUser || secret.length === 0 }">
+				<div class="h-8" :class="{ 'invisible': localOldUser || secret.length === 0 }">
 					<div class="flex flex-col gap-1" v-if="(secret && confirmSecret.length === 0) || (secret === confirmSecret)">
 						<span
 							:class="passwordStrength ? (passwordStrength <= 1 ? 'text-red-500' : passwordStrength <= 2 ? 'text-orange-500' : passwordStrength <= 3 ? 'text-green-700' : 'text-green-500') : 'text-gray-200'">{{
@@ -137,6 +137,7 @@ const appName = ref('');
 const showSecret = ref(false);
 const showVerficationCode = ref(false);
 const code = ref('');
+const validCode = computed(() => code.value.length === 6)
 const showConfirmSecret = ref(false);
 const passwordStrength = computed(() => evaluatePasswordStrength(secret.value) || 1);
 const passwordStrengthMessages = [
@@ -175,34 +176,52 @@ const handleSign = async () => {
 		}
 	}
 	emit('load');
+	let loaderOn = true;
+	const toggleLoader = (on: boolean) => {
+		if (on === loaderOn) return;
+		emit('load');
+		loaderOn = on;
+	};
 	try {
 		if (!localOldUser.value) {
 			const sent: verifyResponse = await sendVerification(payload.mail);
-			if (sent.success) {
-				emit('popup', 'We sent you a verification code. Please check your email.');
-				await new Promise(resolve => setTimeout(resolve, 1000));
-				showVerficationCode.value = true;
-				const verified = await verify(payload.mail, code.value);
-				if (!verified) {
-					emit('popup', 'Verification code is invalid.');
-					showVerficationCode.value = false;
-					return;
-				}
-			} else {
+			if (!sent.success) {
 				emit('popup', String(sent.err));
-				showVerficationCode.value = false;
+				return;
+			}
+			emit('popup', 'We sent you a verification code. Please check your email.');
+			await new Promise(resolve => setTimeout(resolve, 1000)); //just a small delay to make ui smooth
+			showVerficationCode.value = true;
+			toggleLoader(false);
+			await waitForValidCode();
+			toggleLoader(true);
+			const verified = await verify(payload.mail, code.value);
+			if (!verified) {
+				emit('popup', 'Verification code is invalid.');
 				return;
 			}
 		}
 		await completeSign(payload);
 	} catch (e) {
-		showVerficationCode.value = false;
 		emit('popup', String(e));
 	} finally {
 		showVerficationCode.value = false;
-		emit('load');
+		toggleLoader(false);
 	}
 }
+
+const waitForValidCode = () => new Promise<void>((resolve) => {
+	if (validCode.value) {
+		resolve();
+		return;
+	}
+	const stop = watch(validCode, (v) => {
+		if (v) {
+			stop();
+			resolve();
+		}
+	});
+})
 
 const completeSign = async (payload: signPayload) => {
 	const result = await sign(payload);
@@ -214,4 +233,11 @@ const completeSign = async (payload: signPayload) => {
 	}
 }
 
+const handleCopy = () => { }
+onMounted(() => {
+	window.addEventListener('copy', handleCopy);
+})
+onUnmounted(() => {
+	window.removeEventListener('copy', handleCopy);
+})
 </script>
