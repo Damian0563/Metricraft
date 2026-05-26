@@ -99,6 +99,8 @@ const verificationEmailTemplate = `<!DOCTYPE html>
 </html>`
 
 func renderVerificationEmail(to, code string) []byte {
+	// Sanitize to prevent header injection
+	to = strings.ReplaceAll(strings.ReplaceAll(to, "\r", ""), "\n", "")
 	body := strings.ReplaceAll(verificationEmailTemplate, "{{CODE}}", html.EscapeString(code))
 	headers := "From: Metricraft <noreply.metricraft@gmail.com>\r\n" +
 		"To: " + to + "\r\n" +
