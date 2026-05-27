@@ -18,6 +18,7 @@
 			<div class="flex justify-center mb-6 mt-2">
 				<img src="/favicon.ico" alt="logo" class="w-24 h-24 rounded-lg" decoding="async" loading="lazy" />
 			</div>
+			<CodeVerification v-if="showVerficationCode" :status="true" @complete="handleComplete" />
 			<h2 class="text-2xl font-bold text-center text-gray-800 mb-6">
 				{{ localOldUser ? 'Welcome Back' : 'Create Account' }}
 			</h2>
@@ -136,8 +137,7 @@ const confirmSecret = ref('');
 const appName = ref('');
 const showSecret = ref(false);
 const showVerficationCode = ref(false);
-const code = ref('');
-const validCode = computed(() => code.value.length === 6)
+const receivedCode = ref(false);
 const showConfirmSecret = ref(false);
 const passwordStrength = computed(() => evaluatePasswordStrength(secret.value) || 1);
 const passwordStrengthMessages = [
@@ -190,38 +190,34 @@ const handleSign = async () => {
 				return;
 			}
 			emit('popup', 'We sent you a verification code. Please check your email.');
+			toggleLoader(false);
 			await new Promise(resolve => setTimeout(resolve, 1000)); //just a small delay to make ui smooth
 			showVerficationCode.value = true;
 			toggleLoader(false);
 			await waitForValidCode();
-			toggleLoader(true);
-			const verified = await verify(payload.mail, code.value);
-			if (!verified) {
-				emit('popup', 'Verification code is invalid.');
-				return;
-			}
 		}
 		await completeSign(payload);
 	} catch (e) {
 		emit('popup', String(e));
 	} finally {
-		showVerficationCode.value = false;
 		toggleLoader(false);
 	}
 }
 
-const waitForValidCode = () => new Promise<void>((resolve) => {
-	if (validCode.value) {
-		resolve();
-		return;
+const handleComplete = async (code: string) => {
+	showVerficationCode.value = false;
+	const verified = await verify(mail.value, code);
+	if (!verified) {
+		emit('popup', 'Verification code is invalid.');
 	}
-	const stop = watch(validCode, (v) => {
-		if (v) {
-			stop();
-			resolve();
-		}
-	});
-})
+	receivedCode.value = true;
+}
+
+const waitForValidCode = async () => {
+	while (!receivedCode.value) {
+		await new Promise(resolve => setTimeout(resolve, 300));
+	}
+}
 
 const completeSign = async (payload: signPayload) => {
 	const result = await sign(payload);
