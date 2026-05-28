@@ -138,6 +138,7 @@ const appName = ref('');
 const showSecret = ref(false);
 const showVerficationCode = ref(false);
 const receivedCode = ref(false);
+const validCode = ref(false)
 const showConfirmSecret = ref(false);
 const passwordStrength = computed(() => evaluatePasswordStrength(secret.value) || 1);
 const passwordStrengthMessages = [
@@ -206,9 +207,17 @@ const handleSign = async () => {
 
 const handleComplete = async (code: string) => {
 	showVerficationCode.value = false;
-	const verified = await verify(mail.value, code);
-	if (!verified) {
-		emit('popup', 'Verification code is invalid.');
+	if (code === "CLOSED") {
+		validCode.value = false
+		receivedCode.value = true;
+		return;
+	}
+	const verified: verifyResponse = await verify(mail.value, code);
+	if (!verified.success) {
+		emit('popup', String(verified.err));
+		validCode.value = false
+	} else {
+		validCode.value = true
 	}
 	receivedCode.value = true;
 }
@@ -220,6 +229,7 @@ const waitForValidCode = async () => {
 }
 
 const completeSign = async (payload: signPayload) => {
+	if (!validCode.value && !localOldUser.value) return;
 	const result = await sign(payload);
 	if (result) {
 		emit('signup', result);

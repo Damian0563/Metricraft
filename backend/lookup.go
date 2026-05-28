@@ -6,9 +6,9 @@ import (
 	"github.com/redis/go-redis/v9"
 	"math/rand"
 	"os"
+	"strconv"
 	"strings"
 	"time"
-	"strconv"
 )
 
 func signToken(token string, rotate bool) (string, error) {
@@ -105,6 +105,9 @@ func checkCodeValidity(mail string, code string) (bool, error) {
 	key := "verify:" + mail
 	signed, err := client.Get(ctx, key).Result()
 	if err != nil || signed == "" {
+		if err == redis.Nil {
+			return false, nil
+		}
 		return false, err
 	}
 	return signed == code, nil

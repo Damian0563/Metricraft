@@ -85,7 +85,11 @@ func main() {
 	router.Post("/settings/retention", changeRetention)
 	router.Post("/settings/metrics", changeMetrics)
 	router.Get("/dashboard/fetch", navigator)
-	router.Post("/verify/send", sendVerification)
+	router.Group(func(r chi.Router) {
+		r.Use(httprate.LimitByIP(6, time.Minute))
+		r.Post("/verify/send", sendVerification)
+		r.Post("/verify/check", checkVerification)
+	})
 	go StartWebSocketServer(router)
 	conn, err = grpc.NewClient(fmt.Sprintf("dns:///%v", os.Getenv("grpc")), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {

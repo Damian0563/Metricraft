@@ -42,29 +42,36 @@ export const sign = async (payload: signPayload): Promise<string | null> => {
 	}
 }
 
-export const verify = async (mail: string, code: string): Promise<boolean> => {
+export const verify = async (mail: string, code: string): Promise<verifyResponse> => {
 	const config: config = useBackendUrl()
 	const headers = {
 		"Authorization": config.secret,
 		"Content-Type": "application/json",
 	}
 	try {
-		let data: string = await $fetch(`${config.httphost}/verify/check`, {
+		await $fetch(`${config.httphost}/verify/check`, {
 			method: 'POST',
 			headers,
-			body: JSON.stringify({ mail, code }),
+			body: JSON.stringify({ mail: mail, code: code }),
 		})
-		const object: verifyResponse = JSON.parse(data)
-		console.log("Verified: ", object)
-		if (object.err) {
-			throw object.err
+		const res: verifyResponse = {
+			success: true,
 		}
-		return object.success
+		return res
 	} catch (e: any) {
+		let error: string
 		if (e.status === 429) {
-			throw "Too many requests, try again later."
+			error = "Too many requests, try again later."
+		} else if (e.status === 400) {
+			error = "Verification code is invalid."
+		} else {
+			error = "Something went wrong, Check your internet connection and try again."
 		}
-		throw "Something went wrong, Check your internet connection and try again."
+		const res: verifyResponse = {
+			success: false,
+			err: error,
+		}
+		return res
 	}
 }
 
