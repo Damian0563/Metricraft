@@ -19,6 +19,8 @@
 				<img src="/favicon.ico" alt="logo" class="w-24 h-24 rounded-lg" decoding="async" loading="lazy" />
 			</div>
 			<CodeVerification v-if="showVerficationCode" :status="true" @complete="handleComplete" />
+			<ForgotPassword :status="showForgotPassword" :loading="forgotLoading" @submit="handleForgotSubmit"
+				@close="showForgotPassword = false" />
 			<h2 class="text-2xl font-bold text-center text-gray-800 mb-6">
 				{{ localOldUser ? 'Welcome Back' : 'Create Account' }}
 			</h2>
@@ -68,6 +70,10 @@
 							</template>
 						</svg>
 					</div>
+					<button v-if="localOldUser" type="button" @click="showForgotPassword = true"
+						class="mt-2 text-sm font-medium text-gray-500 hover:text-[#00F376] hover:cursor-pointer transition">
+						Forgot password?
+					</button>
 				</div>
 				<div v-if="!localOldUser">
 					<label for="confirmSecret" class="block text-sm font-medium text-gray-700 mb-1">Confirm Secret Key</label>
@@ -140,6 +146,8 @@ const showVerficationCode = ref(false);
 const receivedCode = ref(false);
 const validCode = ref(false)
 const showConfirmSecret = ref(false);
+const showForgotPassword = ref(false);
+const forgotLoading = ref(false);
 const passwordStrength = computed(() => evaluatePasswordStrength(secret.value) || 1);
 const passwordStrengthMessages = [
 	'Weak password, try something more complex',
@@ -236,6 +244,22 @@ const completeSign = async (payload: signPayload) => {
 	} else {
 		emit('popup', 'Something went wrong, please try again.');
 		showVerficationCode.value = false;
+	}
+}
+
+const handleForgotSubmit = async (recoveryMail: string) => {
+	if (!validateEmail(recoveryMail)) {
+		emit('popup', 'Please enter a valid email.');
+		return;
+	}
+	forgotLoading.value = true;
+	try {
+		emit('popup', 'If an account exists for that email, a recovery link has been sent.');
+		showForgotPassword.value = false;
+	} catch (e) {
+		emit('popup', String(e));
+	} finally {
+		forgotLoading.value = false;
 	}
 }
 
