@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"html"
 	"net/http"
 	"net/smtp"
@@ -141,7 +140,6 @@ func sendVerification(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	fmt.Println(payload)
 	mail := payload.Mail
 	code := generateCode()
 	err = setCodeValidity(mail, code)
@@ -152,6 +150,29 @@ func sendVerification(w http.ResponseWriter, r *http.Request) {
 	err = sendMail(mail, code)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func checkVerification(w http.ResponseWriter, r *http.Request) {
+	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	type checkVerificationPayload struct {
+		Mail string `json:"mail"`
+		Code string `json:"code"`
+	}
+	var payload checkVerificationPayload
+	json.NewDecoder(r.Body).Decode(&payload)
+	valid, err := checkCodeValidity(payload.Mail, payload.Code)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if !valid {
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	w.WriteHeader(http.StatusOK)

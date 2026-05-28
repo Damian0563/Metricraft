@@ -1,7 +1,15 @@
 <template>
 	<div v-if="props.status"
 		class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
-		<div class="bg-white p-8 shadow-xl rounded-xl w-full max-w-md">
+		<div class="relative bg-white p-8 shadow-xl rounded-xl w-full max-w-md">
+			<button type="button" @click="closeModal" aria-label="Close"
+				class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+					stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+					<line x1="18" y1="6" x2="6" y2="18" />
+					<line x1="6" y1="6" x2="18" y2="18" />
+				</svg>
+			</button>
 			<div class="flex justify-center mb-4">
 				<div class="w-14 h-14 rounded-full bg-[#00F376]/15 flex items-center justify-center">
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#00F376" stroke-width="2"
@@ -12,6 +20,7 @@
 				</div>
 			</div>
 			<h2 class="text-2xl font-bold text-center text-gray-800 mb-2">Verify your email</h2>
+
 			<p class="text-sm text-gray-500 text-center mb-6">
 				Enter the 6-digit code we just sent to your inbox.
 			</p>
@@ -94,6 +103,10 @@ const handlePaste = (e: ClipboardEvent) => {
 const resetCode = () => {
 	digits.value = Array(6).fill('');
 	nextTick(() => inputRefs.value[0]?.focus());
+};
+
+const closeModal = () => {
+	emit('complete', 'CLOSED');
 };
 
 watch(() => props.status, async (val) => {
