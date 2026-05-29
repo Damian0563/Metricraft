@@ -125,8 +125,7 @@ func sendVerification(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	type sendVerificationPayload struct {
-		Mail    string `json:"mail"`
-		AppName string `json:"appName"`
+		Mail string `json:"mail"`
 	}
 	var payload sendVerificationPayload
 	json.NewDecoder(r.Body).Decode(&payload)
