@@ -94,21 +94,24 @@ func setCodeValidity(mail string, code string) error {
 	return nil
 }
 
-func checkCodeValidity(mail string, code string) (bool, error) {
+func checkCodeValidity(routine chan existsErrResponse, mail string, code string) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     os.Getenv("redis"),
 		Password: "",
 		DB:       0,
 	})
+	var origin string = "checkCodeValidity"
 	defer client.Close()
 	ctx := context.Background()
 	key := "verify:" + mail
 	signed, err := client.Get(ctx, key).Result()
 	if err != nil || signed == "" {
 		if err == redis.Nil {
-			return false, nil
+			routine <- existsErrResponse{Exists: false, Err: nil, Origin: origin}
+			return
 		}
-		return false, err
+		routine <- existsErrResponse{Exists: false, Err: err, Origin: origin}
+		return
 	}
-	return signed == code, nil
+	routine <- existsErrResponse{Exists: signed == code, Err: nil, Origin: origin}
 }

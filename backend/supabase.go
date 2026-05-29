@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
@@ -9,18 +11,59 @@ import (
 	"time"
 )
 
-func checkUserExists(mail string) (bool, error) {
+func checkUserExists(routine chan existsErrResponse, mail string) {
 	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
+	var origin string = "checkUserExists"
 	if err != nil {
-		return false, err
+		routine <- existsErrResponse{Exists: false, Err: err, Origin: origin}
+		return
 	}
 	defer conn.Close(context.Background())
 	var exists bool
 	err = conn.QueryRow(context.Background(), "SELECT EXISTS(SELECT 1 FROM users WHERE mail = $1)", mail).Scan(&exists)
 	if err != nil {
-		return false, err
+		routine <- existsErrResponse{Exists: false, Err: err, Origin: origin}
+		return
 	}
-	return exists, nil
+	routine <- existsErrResponse{Exists: exists, Err: err, Origin: origin}
+}
+
+func checkAllowed(routine chan existsErrResponse, mail string, appName string) {
+	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
+	var origin string = "checkAllowed"
+	if err != nil {
+		routine <- existsErrResponse{Exists: false, Err: err, Origin: origin}
+		return
+	}
+	defer conn.Close(context.Background())
+	var allowed_users string
+	var owner string
+	err = conn.QueryRow(context.Background(), "SELECT allowed_users,mail FROM users WHERE app_name=$1", appName).Scan(&allowed_users, &owner)
+	if err != nil {
+		routine <- existsErrResponse{Exists: false, Err: err, Origin: origin}
+		return
+	}
+	if owner == mail {
+		routine <- existsErrResponse{Exists: true, Err: errors.New("Owner is allowed to sign in"), Origin: origin}
+	} else if allowed_users == "" && owner == "" {
+		routine <- existsErrResponse{Exists: false, Err: nil, Origin: origin}
+	} else if allowed_users != "" && owner != "" {
+		var allowed []string
+		err = json.Unmarshal([]byte(allowed_users), &allowed)
+		if err != nil {
+			routine <- existsErrResponse{Exists: false, Err: err, Origin: origin}
+			return
+		}
+		for _, user := range allowed {
+			if user == mail {
+				routine <- existsErrResponse{Exists: true, Err: nil, Origin: origin}
+				return
+			}
+		}
+		routine <- existsErrResponse{Exists: false, Err: errors.New("Permission needed from the owner"), Origin: origin}
+	} else {
+		routine <- existsErrResponse{Exists: false, Err: errors.New("Something went wrong"), Origin: origin}
+	}
 }
 
 func createUser(mail string, secret string, appName string) (string, error) {

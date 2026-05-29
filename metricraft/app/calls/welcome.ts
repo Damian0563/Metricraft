@@ -42,7 +42,7 @@ export const sign = async (payload: signPayload): Promise<string | null> => {
 	}
 }
 
-export const verify = async (mail: string, code: string): Promise<verifyResponse> => {
+export const verify = async (mail: string, code: string, appName: string): Promise<verifyResponse> => {
 	const config: config = useBackendUrl()
 	const headers = {
 		"Authorization": config.secret,
@@ -52,7 +52,7 @@ export const verify = async (mail: string, code: string): Promise<verifyResponse
 		await $fetch(`${config.httphost}/verify/check`, {
 			method: 'POST',
 			headers,
-			body: JSON.stringify({ mail: mail, code: code }),
+			body: JSON.stringify({ mail: mail, code: code, appName: appName }),
 		})
 		const res: verifyResponse = {
 			success: true,

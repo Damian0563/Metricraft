@@ -125,22 +125,24 @@ func sendVerification(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	type sendVerificationPayload struct {
-		Mail string `json:"mail"`
+		Mail    string `json:"mail"`
+		AppName string `json:"appName"`
 	}
 	var payload sendVerificationPayload
 	json.NewDecoder(r.Body).Decode(&payload)
-	exists, err := checkUserExists(payload.Mail)
-	if err != nil {
+	var routine = make(chan existsErrResponse, 1)
+	mail := payload.Mail
+	go checkUserExists(routine, mail)
+	response := <-routine
+	if response.Err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
-	}
-	if exists {
+	} else if response.Exists {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	mail := payload.Mail
 	code := generateCode()
-	err = setCodeValidity(mail, code)
+	err := setCodeValidity(mail, code)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -159,19 +161,55 @@ func checkVerification(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	type checkVerificationPayload struct {
-		Mail string `json:"mail"`
-		Code string `json:"code"`
+		AppName string `json:"appName"`
+		Mail    string `json:"mail"`
+		Code    string `json:"code"`
 	}
 	var payload checkVerificationPayload
 	json.NewDecoder(r.Body).Decode(&payload)
-	valid, err := checkCodeValidity(payload.Mail, payload.Code)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+	var routine = make(chan existsErrResponse, 2)
+	go checkAllowed(routine, payload.Mail, payload.AppName)
+	go checkCodeValidity(routine, payload.Mail, payload.Code)
+	var (
+		codeValid   bool
+		permitted   bool
+		internalErr bool
+	)
+	for received := 2; received > 0; received-- {
+		select {
+		case response := <-routine:
+			switch response.Origin {
+			case "checkCodeValidity":
+				if response.Err != nil {
+					internalErr = true
+				} else {
+					codeValid = response.Exists
+				}
+			case "checkAllowed":
+				msg := ""
+				if response.Err != nil {
+					msg = response.Err.Error()
+				}
+				switch {
+				case msg == "Owner is allowed to sign in", response.Err == nil && response.Exists:
+					permitted = true
+				case msg == "Permission needed from the owner", response.Err == nil && !response.Exists:
+					permitted = false
+				default:
+					internalErr = true
+				}
+			}
+		}
 	}
-	if !valid {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+	switch {
+	case internalErr:
+		http.Error(w, "Something went wrong, please try again later", http.StatusInternalServerError)
+	case !codeValid:
+		http.Error(w, "Invalid or expired verification code", http.StatusBadRequest)
+	case !permitted:
+		http.Error(w, "Permission needed from the owner", http.StatusForbidden)
+	default:
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Verification successful"))
 	}
-	w.WriteHeader(http.StatusOK)
 }

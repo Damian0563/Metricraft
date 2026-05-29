@@ -220,7 +220,7 @@ const handleComplete = async (code: string) => {
 		receivedCode.value = true;
 		return;
 	}
-	const verified: verifyResponse = await verify(mail.value, code);
+	const verified: verifyResponse = await verify(mail.value, code, appName.value);
 	if (!verified.success) {
 		emit('popup', String(verified.err));
 		validCode.value = false
