@@ -63,13 +63,16 @@ export const verify = async (mail: string, code: string, appName: string): Promi
 		if (e.status === 429) {
 			error = "Too many requests, try again later."
 		} else if (e.status === 400) {
-			error = "Verification code is invalid."
+			error = "Verification code is invalid or has expired."
+		} else if (e.status === 403) {
+			error = "You don't have permission to access this app. Please contact the owner."
 		} else {
 			error = "Something went wrong, Check your internet connection and try again."
 		}
 		const res: verifyResponse = {
 			success: false,
 			err: error,
+			status: e.status,
 		}
 		return res
 	}

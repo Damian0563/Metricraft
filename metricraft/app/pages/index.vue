@@ -5,7 +5,9 @@
 			<Spinner :loading="loading || localLoading" />
 		</ClientOnly>
 		<Popup :message="errorMessage" @close="errorMessage = ''" />
-		<Sign :oldUser="mode" @signup="handleSignup" @load="handleLoad" @popup="createPop" @toggle="mode = !mode" />
+		<Notice :message="noticeMessage" @close="noticeMessage = ''" />
+		<Sign :oldUser="mode" @signup="handleSignup" @load="handleLoad" @popup="createPop" @notice="createNotice"
+			@toggle="mode = !mode" />
 	</div>
 </template>
 
@@ -16,6 +18,7 @@ definePageMeta({
 })
 import { welcome } from "~/calls/welcome"
 const errorMessage = ref("")
+const noticeMessage = ref("")
 const mode = ref(true)
 const localLoading = ref(false)
 const { data: oldUserStatus, pending: loading, error } = await useAsyncData('welcome', () => welcome())
@@ -47,5 +50,9 @@ const handleSignup = async (uuid: string) => {
 
 const createPop = (msg: string) => {
 	errorMessage.value = msg
+}
+
+const createNotice = (msg: string) => {
+	noticeMessage.value = msg
 }
 </script>

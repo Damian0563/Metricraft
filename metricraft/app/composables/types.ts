@@ -32,4 +32,5 @@ export type signResponse = {
 export type verifyResponse = {
 	success: boolean;
 	err?: string;
+	status?: number;
 }

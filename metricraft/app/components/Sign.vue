@@ -135,6 +135,7 @@ const emit = defineEmits<{
 	signup: [value: string];
 	load: [value: void];
 	popup: [value: string];
+	notice: [value: string];
 	toggle: [value: void];
 }>();
 const mail = ref('');
@@ -193,6 +194,8 @@ const handleSign = async () => {
 	};
 	try {
 		if (!localOldUser.value) {
+			receivedCode.value = false;
+			validCode.value = false;
 			const sent: verifyResponse = await sendVerification(payload.mail);
 			if (!sent.success) {
 				emit('popup', String(sent.err));
@@ -222,7 +225,11 @@ const handleComplete = async (code: string) => {
 	}
 	const verified: verifyResponse = await verify(mail.value, code, appName.value);
 	if (!verified.success) {
-		emit('popup', String(verified.err));
+		if (verified.status === 403) {
+			emit('notice', String(verified.err));
+		} else {
+			emit('popup', String(verified.err));
+		}
 		validCode.value = false
 	} else {
 		validCode.value = true

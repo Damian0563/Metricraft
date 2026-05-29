@@ -40,8 +40,11 @@ func checkAllowed(routine chan existsErrResponse, mail string, appName string) {
 	var owner string
 	err = conn.QueryRow(context.Background(), "SELECT allowed_users,mail FROM users WHERE app_name=$1", appName).Scan(&allowed_users, &owner)
 	if err != nil {
-		routine <- existsErrResponse{Exists: false, Err: err, Origin: origin}
-		return
+		if err == pgx.ErrNoRows {
+			//first check with worker for appName to make sure it is not malicious
+			routine <- existsErrResponse{Exists: true, Err: nil, Origin: origin}
+			return
+		}
 	}
 	if owner == mail {
 		routine <- existsErrResponse{Exists: true, Err: errors.New("Owner is allowed to sign in"), Origin: origin}
