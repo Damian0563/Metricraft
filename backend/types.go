@@ -18,6 +18,12 @@ type User struct {
 	Settings Settings `json:"settings,omitempty"`
 }
 
+type existsErrResponse struct {
+	Exists bool
+	Err    error
+	Origin string
+}
+
 type Token struct {
 	token string
 }
