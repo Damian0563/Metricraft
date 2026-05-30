@@ -63,7 +63,12 @@ func checkAllowed(routine chan existsErrResponse, mail string, appName string) {
 				return
 			}
 		}
-		routine <- existsErrResponse{Exists: false, Err: errors.New("Permission needed from the owner"), Origin: origin}
+		err := sendPermissionRequest(owner, mail, appName)
+		if err != nil {
+			routine <- existsErrResponse{Exists: false, Err: err, Origin: origin}
+		} else {
+			routine <- existsErrResponse{Exists: false, Err: errors.New("Permission needed from the owner"), Origin: origin}
+		}
 	} else {
 		routine <- existsErrResponse{Exists: false, Err: errors.New("Something went wrong"), Origin: origin}
 	}
