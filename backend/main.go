@@ -42,11 +42,8 @@ func corsMiddleware(next http.Handler) http.Handler {
 
 func main() {
 	var err error
-	err = godotenv.Load()
-	if err != nil {
-		fmt.Println(err)
-		log.Fatal("Error loading .env file")
-		return
+	if err = godotenv.Load(); err != nil {
+		fmt.Println("No .env file loaded, relying on environment variables:", err)
 	}
 	MODE = os.Getenv("MODE")
 	if MODE == "local" {
@@ -60,16 +57,16 @@ func main() {
 			return
 		}
 	} else if MODE == "docker" {
-		os.Setenv("frontend", "http://metricraft-frontend-1")
-		os.Setenv("worker", "http://metricraft-metricraft-1")
-		os.Setenv("ws", "ws://metrcraft-backend-1")
-		os.Setenv("redis", "metricraft-redis-1")
+		os.Setenv("frontend", "http://metricraft-metricraft-1")
+		os.Setenv("worker", "http://metricraft-worker-1")
+		os.Setenv("ws", "ws://metricraft-backend-1")
+		os.Setenv("redis", "metricraft-redis-1:6379")
 		os.Setenv("grpc", "metricraft-worker-1:50051")
 	} else {
 		os.Setenv("frontend", "https://metricraft-metricraft-1")
 		os.Setenv("worker", "https://metricraft-worker-1")
-		os.Setenv("ws", "wss://metrcraft-backend-1")
-		os.Setenv("redis", "metricraft-redis-1")
+		os.Setenv("ws", "wss://metricraft-backend-1")
+		os.Setenv("redis", "metricraft-redis-1:6379")
 		os.Setenv("grpc", "metricraft-worker-1:50051")
 	}
 	router := chi.NewRouter()

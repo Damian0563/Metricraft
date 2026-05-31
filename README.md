@@ -114,13 +114,39 @@ services:
 To build and push the image to Docker Hub:
 
 ```bash
-# Build with environment variables
+# Build arguments per service:
+#   all services : SECRET, APPNAME
+#   backend      : ALLOWED_ORIGINS, DATABASE_USERS, DATABASE_LOGS
+#   worker       : DATABASE_LOGS
+#   frontend     : DOMAIN (public backend base URL the browser uses)
+# MODE is set explicitly inside each Dockerfile (defaults to "docker").
+
+# Frontend (metricraft) — DOMAIN must be the public URL of the backend,
+# reachable from the end user's browser.
 docker build \
   --build-arg SECRET=your-secret \
-  --build-arg DATABASE_USERS=your-supabase-url \
-  --build-arg DATABASE_LOGS=your-postgres-url \
+  --build-arg APPNAME=your-app-name \
+  --build-arg DOMAIN=https://metrics.example.com \
   -t your-username/metricraft:latest \
   ./metricraft
+
+# Backend
+docker build \
+  --build-arg SECRET=your-secret \
+  --build-arg APPNAME=your-app-name \
+  --build-arg ALLOWED_ORIGINS=https://metrics.example.com \
+  --build-arg DATABASE_USERS=your-supabase-url \
+  --build-arg DATABASE_LOGS=your-postgres-url \
+  -t your-username/metricraft-backend:latest \
+  ./backend
+
+# Worker
+docker build \
+  --build-arg SECRET=your-secret \
+  --build-arg APPNAME=your-app-name \
+  --build-arg DATABASE_LOGS=your-postgres-url \
+  -t your-username/metricraft-worker:latest \
+  ./worker
 
 # Push to Docker Hub
 docker push your-username/metricraft:latest
@@ -206,7 +232,10 @@ MODE=local
 ### Notes & best practices
 
 - **Never commit `.env` files.** They are included in `.gitignore` (`**.env`); rotate any secret that is accidentally pushed.
-- When using Docker Compose, the values referenced as `${SECRET}`, `${DATABASE_USERS}`, and `${DATABASE_LOGS}` in `docker-compose.dev.yml` are read from a project-level `.env` file at the repository root or from the shell environment.
+- When using Docker Compose, the build-arg values referenced in `docker-compose.dev.yml` (`${SECRET}`, `${APPNAME}`, `${ALLOWED_ORIGINS}`, `${DATABASE_USERS}`, `${DATABASE_LOGS}`, and `${DOMAIN}`) are read from a project-level `.env` file at the repository root or from the shell environment.
+- `DOMAIN` (frontend build arg) must be the **public** backend base URL reachable from the end user's browser (e.g. `https://metrics.example.com`), not an internal Docker hostname. When set, it overrides the `MODE`-based host selection in `nuxt.config.ts`.
+- For Docker/Compose deployments, `DATABASE_LOGS` must point at the `postgresql` service hostname, **not** `localhost` (inside a container `localhost` is the container itself). Use e.g. `postgresql://postgres:password@postgresql:5432/postgres?sslmode=disable`. The `localhost` form in the examples above is only valid for `MODE=local` (running the binaries directly on the host).
+- The backend (`:8080`) and worker (`:8081`) ports are published by `docker-compose.dev.yml` so the browser and captured traffic can reach them. Ensure `ALLOWED_ORIGINS` (backend) exactly matches the frontend's public origin (scheme + host, no trailing slash).
 - The `MODE` value must be consistent across all three services; mixing `local` and `docker` will cause hostname resolution errors.
 - For production, prefer injecting variables through your orchestrator's secret store (Kubernetes secrets, Docker secrets, etc.) rather than baking them into images via `--build-arg`.
 

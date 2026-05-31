@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: postgres
     volumes:
-      - postgresql:/var/lib/postgresql
+      - postgresql:/var/lib/postgresql/data
     networks:
       - metricraft-network
     restart: no
@@ -22,18 +22,27 @@ services:
       context: ./backend
       args:
         SECRET: ${SECRET}
+        APPNAME: ${APPNAME}
+        ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
         DATABASE_USERS: ${DATABASE_USERS}
+        DATABASE_LOGS: ${DATABASE_LOGS}
+    ports:
+      - "8080:8080"
     networks:
       - metricraft-network
     depends_on:
       - postgresql
+      - redis
 
   worker:
     build:
       context: ./worker
       args:
         SECRET: ${SECRET}
+        APPNAME: ${APPNAME}
         DATABASE_LOGS: ${DATABASE_LOGS}
+    ports:
+      - "8081:8081"
     networks:
       - metricraft-network
     depends_on:
@@ -44,8 +53,8 @@ services:
       context: ./metricraft
       args:
         SECRET: ${SECRET}
-        DATABASE_USERS: ${DATABASE_USERS}
-        DATABASE_LOGS: ${DATABASE_LOGS}
+        APPNAME: ${APPNAME}
+        DOMAIN: ${DOMAIN}
     ports:
       - "80:8000"
     networks:

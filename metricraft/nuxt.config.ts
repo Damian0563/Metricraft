@@ -9,7 +9,13 @@ const getConfig = (): config => {
 			throw new Error("no config file");
 		}
 		let config: config = { "secret": import.meta.env.SECRET || "", "httphost": "", "wsshost": "", "port": 0 };
-		if (mode === "local") {
+		const domain = import.meta.env.DOMAIN;
+		if (domain) {
+			// DOMAIN is the public backend base URL the browser uses, e.g.
+			// "https://metrics.example.com" or "http://203.0.113.10:8080".
+			config.httphost = domain;
+			config.wsshost = domain.replace(/^http/, "ws");
+		} else if (mode === "local") {
 			config.httphost = "http://localhost:8080";
 			config.wsshost = "ws://localhost:8080";
 		} else if (mode === "docker") {
