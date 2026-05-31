@@ -1,0 +1,6 @@
+**/.env
+**/.git
+**/node_modules
+metricraft/.nuxt
+metricraft/.output
+**/*.log

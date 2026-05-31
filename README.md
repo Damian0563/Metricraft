@@ -111,16 +111,21 @@ services:
 
 ## Building and Pushing
 
+### Build arguments
+
+All configuration that is fixed at image-build time is passed via `--build-arg`. `MODE` is set explicitly inside each Dockerfile (defaults to `docker`) and is not a build arg. `DATABASE_LOGS` is **not** a build arg — it is injected at runtime by `docker-compose.dev.yml` and points at the internal `postgresql` service.
+
+| Build arg | Services | Required | Description |
+|-----------|----------|----------|-------------|
+| `SECRET` | backend, worker, frontend | yes | Shared bearer token for service-to-service authorization; must be identical across all three. |
+| `APPNAME` | backend, worker, frontend | yes | Identifier of the application/tenant the deployment serves. |
+| `ALLOWED_ORIGINS` | backend | yes | Comma-separated list of browser origins permitted by CORS (scheme + host, no trailing slash), e.g. `https://metrics.example.com`. |
+| `DATABASE_USERS` | backend | yes | Connection string for the Supabase user/auth database. Supplied by the self-hoster; use a least-privilege role and append `?sslmode=require`. |
+| `DOMAIN` | frontend | yes | Public base URL of the backend as reached from the end user's browser, e.g. `https://metrics.example.com`. Overrides the `MODE`-based host selection. |
+
 To build and push the image to Docker Hub:
 
 ```bash
-# Build arguments per service:
-#   all services : SECRET, APPNAME
-#   backend      : ALLOWED_ORIGINS, DATABASE_USERS, DATABASE_LOGS
-#   worker       : DATABASE_LOGS
-#   frontend     : DOMAIN (public backend base URL the browser uses)
-# MODE is set explicitly inside each Dockerfile (defaults to "docker").
-
 # Frontend (metricraft) — DOMAIN must be the public URL of the backend,
 # reachable from the end user's browser.
 docker build \
@@ -136,7 +141,6 @@ docker build \
   --build-arg APPNAME=your-app-name \
   --build-arg ALLOWED_ORIGINS=https://metrics.example.com \
   --build-arg DATABASE_USERS=your-supabase-url \
-  --build-arg DATABASE_LOGS=your-postgres-url \
   -t your-username/metricraft-backend:latest \
   ./backend
 
@@ -144,13 +148,56 @@ docker build \
 docker build \
   --build-arg SECRET=your-secret \
   --build-arg APPNAME=your-app-name \
-  --build-arg DATABASE_LOGS=your-postgres-url \
   -t your-username/metricraft-worker:latest \
   ./worker
 
 # Push to Docker Hub
 docker push your-username/metricraft:latest
 ```
+
+### All-in-one image
+
+The repository root contains a single multi-stage `Dockerfile` that bundles **everything** — PostgreSQL (logs/metrics), Redis, the Go backend, the Go worker proxy, and the Nuxt frontend — into one image, managed by `supervisord`. Users do **not** need to provide their own database or cache: they build the image once, push it to their registry, and run a single container alongside their application.
+
+Internal services communicate over `localhost` (the image sets `MODE=standalone`). `DATABASE_LOGS` points at the bundled PostgreSQL and is not user-configurable; only `DEST_PORT` is supplied at runtime.
+
+Build it from the repo root (note the trailing `.`):
+
+```bash
+docker build \
+  --build-arg SECRET=your-secret \
+  --build-arg APPNAME=your-app-name \
+  --build-arg ALLOWED_ORIGINS=http://your-host \
+  --build-arg DATABASE_USERS=your-supabase-url \
+  --build-arg DOMAIN=http://your-host:8080 \
+  -t your-username/metricraft:latest \
+  .
+
+docker push your-username/metricraft:latest
+```
+
+Then add the single image to your `docker-compose` next to your app:
+
+```yaml
+services:
+  metricraft:
+    image: your-username/metricraft:latest
+    environment:
+      DEST_PORT: "3000"            # the port of YOUR upstream app
+    ports:
+      - "80:8000"                  # frontend
+      - "8080:8080"                # backend API + WebSocket
+      - "8081:8081"                # worker proxy (route your traffic here)
+    volumes:
+      - metricraft-db:/var/lib/postgresql/data   # persists the logs database
+
+  # ... your own application service(s) ...
+
+volumes:
+  metricraft-db:
+```
+
+Exposed ports inside the image: `8000` (frontend), `8080` (backend), `8081` (worker proxy). The PostgreSQL data directory is a volume (`/var/lib/postgresql/data`) so the logs database survives container recreation.
 
 ## .Env Configuration
 
@@ -232,9 +279,10 @@ MODE=local
 ### Notes & best practices
 
 - **Never commit `.env` files.** They are included in `.gitignore` (`**.env`); rotate any secret that is accidentally pushed.
-- When using Docker Compose, the build-arg values referenced in `docker-compose.dev.yml` (`${SECRET}`, `${APPNAME}`, `${ALLOWED_ORIGINS}`, `${DATABASE_USERS}`, `${DATABASE_LOGS}`, and `${DOMAIN}`) are read from a project-level `.env` file at the repository root or from the shell environment.
+- When using Docker Compose, the build-arg values referenced in `docker-compose.dev.yml` (`${SECRET}`, `${APPNAME}`, `${ALLOWED_ORIGINS}`, and `${DOMAIN}`) are read from a project-level `.env` file at the repository root or from the shell environment.
 - `DOMAIN` (frontend build arg) must be the **public** backend base URL reachable from the end user's browser (e.g. `https://metrics.example.com`), not an internal Docker hostname. When set, it overrides the `MODE`-based host selection in `nuxt.config.ts`.
-- For Docker/Compose deployments, `DATABASE_LOGS` must point at the `postgresql` service hostname, **not** `localhost` (inside a container `localhost` is the container itself). Use e.g. `postgresql://postgres:password@postgresql:5432/postgres?sslmode=disable`. The `localhost` form in the examples above is only valid for `MODE=local` (running the binaries directly on the host).
+- `DATABASE_USERS` is **developer-managed**: it is baked into `backend/Dockerfile` as a constant rather than exposed as a per-deployment build arg. Edit it there. Because the credential ends up in an image layer, only push the backend image to a **private** registry (or override it at runtime in your orchestrator).
+- `DATABASE_LOGS` **stays inside the Docker network**: it is injected at runtime by `docker-compose.dev.yml` (`environment:`) and targets the internal `postgresql` service (`postgresql://postgres:password@postgresql:5432/postgres?sslmode=disable`). The `postgresql` service has no published `ports`, so the logs database is never reachable from outside the network. The `localhost` form in the `.env` examples above is only valid for `MODE=local`.
 - The backend (`:8080`) and worker (`:8081`) ports are published by `docker-compose.dev.yml` so the browser and captured traffic can reach them. Ensure `ALLOWED_ORIGINS` (backend) exactly matches the frontend's public origin (scheme + host, no trailing slash).
 - The `MODE` value must be consistent across all three services; mixing `local` and `docker` will cause hostname resolution errors.
 - For production, prefer injecting variables through your orchestrator's secret store (Kubernetes secrets, Docker secrets, etc.) rather than baking them into images via `--build-arg`.

@@ -10,7 +10,6 @@ services:
     networks:
       - metricraft-network
     restart: no
-
   redis:
     image: redis:latest
     networks:
@@ -25,7 +24,8 @@ services:
         APPNAME: ${APPNAME}
         ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
         DATABASE_USERS: ${DATABASE_USERS}
-        DATABASE_LOGS: ${DATABASE_LOGS}
+    environment:
+      DATABASE_LOGS: postgresql://postgres:password@postgresql:5432/postgres?sslmode=disable
     ports:
       - "8080:8080"
     networks:
@@ -40,7 +40,8 @@ services:
       args:
         SECRET: ${SECRET}
         APPNAME: ${APPNAME}
-        DATABASE_LOGS: ${DATABASE_LOGS}
+    environment:
+      DATABASE_LOGS: postgresql://postgres:password@postgresql:5432/postgres?sslmode=disable
     ports:
       - "8081:8081"
     networks:

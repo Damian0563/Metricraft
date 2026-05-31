@@ -56,18 +56,13 @@ func main() {
 			log.Fatal("Error loading .env file")
 			return
 		}
-	} else if MODE == "docker" {
-		os.Setenv("frontend", "http://metricraft-metricraft-1")
-		os.Setenv("worker", "http://metricraft-worker-1")
-		os.Setenv("ws", "ws://metricraft-backend-1")
-		os.Setenv("redis", "metricraft-redis-1:6379")
-		os.Setenv("grpc", "metricraft-worker-1:50051")
-	} else {
-		os.Setenv("frontend", "https://metricraft-metricraft-1")
-		os.Setenv("worker", "https://metricraft-worker-1")
-		os.Setenv("ws", "wss://metricraft-backend-1")
-		os.Setenv("redis", "metricraft-redis-1:6379")
-		os.Setenv("grpc", "metricraft-worker-1:50051")
+	} else if MODE == "standalone" {
+		// All services bundled in one container; communicate over localhost
+		os.Setenv("frontend", "http://localhost")
+		os.Setenv("worker", "http://localhost")
+		os.Setenv("ws", "ws://localhost")
+		os.Setenv("redis", "127.0.0.1:6379")
+		os.Setenv("grpc", "127.0.0.1:50051")
 	}
 	router := chi.NewRouter()
 	router.Use(corsMiddleware)
