@@ -18,12 +18,6 @@ const getConfig = (): config => {
 		} else if (mode === "local") {
 			config.httphost = "http://localhost:8080";
 			config.wsshost = "ws://localhost:8080";
-		} else if (mode === "docker") {
-			config.httphost = "http://metricraft-backend-1:8080";
-			config.wsshost = "ws://metricraft-backend-1:8080";
-		} else if (mode === "prod") {
-			config.httphost = "https://metricraft-backend-1:8080";
-			config.wsshost = "wss://metricraft-backend-1:8080";
 		}
 		else {
 			throw new Error("invalid mode");

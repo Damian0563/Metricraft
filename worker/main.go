@@ -26,14 +26,11 @@ func main() {
 		os.Setenv("backend", "http://localhost")
 		os.Setenv("ws", "ws://localhost")
 		os.Setenv("grpc", "127.0.0.1:50051")
-	} else if MODE == "docker" {
-		os.Setenv("backend", "http://metricraft-backend-1")
-		os.Setenv("ws", "ws://metricraft-backend-1")
-		os.Setenv("grpc", "metricraft-worker-1:50051")
-	} else {
-		os.Setenv("ws", "wss://metricraft-backend-1")
-		os.Setenv("backend", "https://metricraft-backend-1")
-		os.Setenv("grpc", "metricraft-worker-1:50051")
+	} else if MODE == "standalone" {
+		// All services bundled in one container; communicate over localhost
+		os.Setenv("backend", "http://localhost")
+		os.Setenv("ws", "ws://localhost")
+		os.Setenv("grpc", "127.0.0.1:50051")
 	}
 	router := http.NewServeMux()
 	router.HandleFunc("/", enter.Enter)

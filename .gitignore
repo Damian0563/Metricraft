@@ -2,7 +2,3 @@
 metricraft/node_modules
 metricraft/.nuxt
 metricraft/.output
-
-# Dockerfiles contain developer-defined secrets/constants (not docker-compose)
-Dockerfile
-**/Dockerfile
