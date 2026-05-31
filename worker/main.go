@@ -28,11 +28,11 @@ func main() {
 		os.Setenv("grpc", "127.0.0.1:50051")
 	} else if MODE == "docker" {
 		os.Setenv("backend", "http://metricraft-backend-1")
-		os.Setenv("ws", "ws://metrcraft-backend-1")
+		os.Setenv("ws", "ws://metricraft-backend-1")
 		os.Setenv("grpc", "metricraft-worker-1:50051")
 	} else {
-		os.Setenv("ws", "wss://metrcraft-backend-1")
-		os.Setenv("backend", "https://metricraft-metricraft-1")
+		os.Setenv("ws", "wss://metricraft-backend-1")
+		os.Setenv("backend", "https://metricraft-backend-1")
 		os.Setenv("grpc", "metricraft-worker-1:50051")
 	}
 	router := http.NewServeMux()
@@ -41,7 +41,7 @@ func main() {
 	errChannel := make(chan error)
 	go enter.InitDB(ctx, errChannel)
 	go func(errChannel chan error) {
-		lis, err := net.Listen("tcp", os.Getenv("grpc"))
+		lis, err := net.Listen("tcp", ":50051")
 		if err != nil {
 			errChannel <- err
 			return
