@@ -14,20 +14,20 @@ import (
 
 func main() {
 	var err error
-	err = godotenv.Load()
+	godotenv.Load()
 	MODE := os.Getenv("MODE")
+	if os.Getenv("SECRET") == "" || os.Getenv("DATABASE_LOGS") == "" {
+		panic("Secret must be set")
+	}
 	if MODE == "local" {
-		if err != nil {
-			panic(err)
-		}
-		if os.Getenv("SECRET") == "" || os.Getenv("DATABASE_LOGS") == "" {
-			panic("Secret must be set")
-		}
 		os.Setenv("backend", "http://localhost")
 		os.Setenv("ws", "ws://localhost")
 		os.Setenv("grpc", "127.0.0.1:50051")
-	} else if MODE == "standalone" {
-		// All services bundled in one container; communicate over localhost
+	} else if MODE == "docker" {
+		os.Setenv("backend", "http://backend")
+		os.Setenv("ws", "ws://backend")
+		os.Setenv("grpc", "127.0.0.1:50051")
+	} else {
 		os.Setenv("backend", "http://localhost")
 		os.Setenv("ws", "ws://localhost")
 		os.Setenv("grpc", "127.0.0.1:50051")
