@@ -7,7 +7,6 @@ import (
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -42,22 +41,22 @@ func corsMiddleware(next http.Handler) http.Handler {
 
 func main() {
 	var err error
-	if err = godotenv.Load(); err != nil {
-		fmt.Println("No .env file loaded, relying on environment variables:", err)
-	}
+	godotenv.Load()
 	MODE = os.Getenv("MODE")
 	if MODE == "local" {
 		os.Setenv("host", "http://localhost")
 		os.Setenv("ws", "ws://localhost")
 		os.Setenv("redis", "127.0.0.1:6379")
 		os.Setenv("grpc", "127.0.0.1:50051")
-		if err != nil {
-			fmt.Println(err)
-			log.Fatal("Error loading .env file")
-			return
-		}
-	} else if MODE == "standalone" {
-		// All services bundled in one container; communicate over localhost
+		os.Setenv("frontend", "http://localhost")
+		os.Setenv("worker", "http://localhost")
+	} else if MODE == "docker" {
+		os.Setenv("frontend", "http://metricraft")
+		os.Setenv("worker", "http://worker")
+		os.Setenv("ws", "ws://backend")
+		os.Setenv("redis", "redis:6379")
+		os.Setenv("grpc", "worker:50051")
+	} else {
 		os.Setenv("frontend", "http://localhost")
 		os.Setenv("worker", "http://localhost")
 		os.Setenv("ws", "ws://localhost")

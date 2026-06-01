@@ -13,12 +13,17 @@ import (
 
 func InitDB(ctx context.Context, errChannel chan error) {
 	time.Sleep(15 * time.Second)
+	appName := os.Getenv("APPNAME")
+	if appName == "" {
+		errChannel <- fmt.Errorf("APPNAME must be set")
+		return
+	}
 	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_LOGS"))
 	if err != nil {
 		errChannel <- err
 		return
 	}
-	_, err = conn.Exec(context.Background(), "CREATE TABLE IF NOT EXISTS settings (realtime BOOL, enabled TEXT, retention INTEGER)")
+	_, err = conn.Exec(context.Background(), "CREATE TABLE IF NOT EXISTS settings (realtime BOOL, enabled TEXT, retention INTEGER, appName TEXT)")
 	if err != nil {
 		errChannel <- err
 		return
@@ -30,13 +35,17 @@ func InitDB(ctx context.Context, errChannel chan error) {
 		return
 	}
 	if count == 0 {
-		conn.Exec(context.Background(), "INSERT INTO settings (realtime, enabled, retention) VALUES (true, '{\"Geographical traffic\":true,\"P95 Latency\":true,\"Traffic congestion trends\":false,\"Uptime Score\":true,\"Geographic performance\":false,\"Status code distribution\":false,\"Median response time\":true,\"Throughput\":true}', 30)")
+		conn.Exec(context.Background(), "INSERT INTO settings (realtime, enabled, retention, appName) VALUES (true, '{\"Geographical traffic\":true,\"P95 Latency\":true,\"Traffic congestion trends\":false,\"Uptime Score\":true,\"Geographic performance\":false,\"Status code distribution\":false,\"Median response time\":true,\"Throughput\":true}', 30, %s)", appName)
 	}
 	if _, err = conn.Exec(context.Background(), "CREATE TABLE IF NOT EXISTS logs (date TIMESTAMP,responseTime INTEGER, url TEXT NOT NULL, \"user\" TEXT NOT NULL,country TEXT NOT NULL ,payload TEXT, headers TEXT NOT NULL, method TEXT NOT NULL, status INTEGER NOT NULL)"); err != nil {
 		errChannel <- err
 		return
 	}
 	if _, err = conn.Exec(context.Background(), "CREATE INDEX IF NOT EXISTS idx_date ON logs (date)"); err != nil {
+		errChannel <- err
+		return
+	}
+	if _, err = conn.Exec(context.Background(), "CREATE INDEX IF NOT EXISTS idx_url ON logs (url)"); err != nil {
 		errChannel <- err
 		return
 	}

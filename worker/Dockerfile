@@ -1,18 +1,13 @@
 FROM golang:1.26-alpine
 WORKDIR /app
 
-ARG SECRET
-ARG APPNAME
+ARG SECRET=replace-me
+ARG APPNAME=metricraft
 
 ENV SECRET=$SECRET
 ENV APPNAME=$APPNAME
-
-# DATABASE_LOGS is NOT set here on purpose: it is injected at runtime by
-# docker-compose and points at the internal "postgresql" service, so it
-# never leaves the Docker network.
-
-# Explicit deployment mode (overrides any value in a copied .env)
-ENV MODE=standalone
+ENV DATABASE_LOGS=postgresql://postgres:password@postgresql:5432/postgres?sslmode=disable
+ENV DEST_PORT=3000
 
 COPY . ./
 RUN go mod download
