@@ -85,7 +85,6 @@ The root `Dockerfile` has three stages:
 |-----------|----------|-------------|
 | `SECRET` | yes | Shared bearer token for service-to-service authorization. |
 | `APPNAME` | yes | Identifier of the application/tenant the deployment serves. |
-| `ALLOWED_ORIGINS` | yes | Comma-separated browser origins permitted by CORS (scheme + host, no trailing slash). Must match where the UI is served. |
 | `DATABASE_USERS` | yes | Connection string for your external Supabase user/auth database. Use a least-privilege role and `?sslmode=require`. |
 | `DOMAIN` | yes | Public base URL of the backend as reached from the end user's browser, e.g. `http://your-host:8080` or `https://metrics.example.com` (behind a reverse proxy). |
 
@@ -98,7 +97,6 @@ PostgreSQL (`postgresql://postgres:password@127.0.0.1:5432/postgres?sslmode=disa
 docker build \
   --build-arg SECRET=your-secret \
   --build-arg APPNAME=your-app-name \
-  --build-arg ALLOWED_ORIGINS=http://your-host \
   --build-arg DATABASE_USERS=your-supabase-url \
   --build-arg DOMAIN=http://your-host:8080 \
   -t your-username/metricraft:latest \
@@ -166,6 +164,6 @@ to `DEST_PORT` and streams metrics to the backend.
   in image layers. Build per-deployment and push only to a **private** registry, or front
   the database with a least-privilege role and network restrictions.
 - **Reverse proxy / TLS:** for HTTPS, terminate TLS in front of the container and forward to
-  `:8000` (UI) and `:8080` (API/WS, including WebSocket upgrades); set `DOMAIN` and
-  `ALLOWED_ORIGINS` to the public HTTPS origin.
+  `:8000` (UI) and `:8080` (API/WS, including WebSocket upgrades); set `DOMAIN` to the
+  public HTTPS origin.
 - **Backups:** back up the `/var/lib/postgresql/data` volume to retain historical metrics.

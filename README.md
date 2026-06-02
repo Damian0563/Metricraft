@@ -129,63 +129,25 @@ volumes:
   metricraft-db:
 ```
 
-Set build args so `DOMAIN` and `ALLOWED_ORIGINS` match the public URL the reverse proxy serves (e.g. `http://localhost` when using the Caddyfile above). See [Environment Configuration](#environment-configuration).
-
-<strong>`ALLOWED_ORIGINS` must match the browser origin (scheme + host, no trailing slash).</strong>
+Set the `DOMAIN` build arg to the public URL the reverse proxy serves (e.g. `http://localhost` when using the Caddyfile above). See [Environment Configuration](#environment-configuration).
 
 ## Building and Pushing
 
 ### Build arguments
 
-All configuration that is fixed at image-build time is passed via `--build-arg`. Each Dockerfile also declares default values for every `ENV` variable so images run without extra runtime configuration (override placeholders before production use). `MODE` is set inside each Dockerfile (`standalone` for the all-in-one image, `docker` for per-service images) and is not a build arg.
-
+All configuration that is fixed at image-build time is passed via `--build-arg`. Each Dockerfile also declares default values for every `ENV` variable so images run without extra runtime configuration (override placeholders before production use).
 | Build arg | Services | Required | Description |
 |-----------|----------|----------|-------------|
 | `SECRET` | backend, worker, frontend | yes | Shared bearer token for service-to-service authorization; must be identical across all three. |
 | `APPNAME` | backend, worker, frontend | yes | Identifier of the application/tenant the deployment serves. |
-| `ALLOWED_ORIGINS` | backend, all-in-one | yes | Comma-separated list of browser origins permitted by CORS (scheme + host, no trailing slash), e.g. `https://metrics.example.com`. |
 | `DATABASE_USERS` | backend, all-in-one | yes | Connection string for the Supabase user/auth database. Use a least-privilege role and append `?sslmode=require`. |
 | `DOMAIN` | frontend, all-in-one | yes | Public base URL of the backend as reached from the end user's browser through the reverse proxy, e.g. `https://metrics.example.com`. |
-| `GOOGLE_APP_PASSWORD` | backend, all-in-one | no | SMTP/app password for verification emails. Defaults to `replace-me` in the Dockerfile. |
-
-To build and push the image to Docker Hub:
-
-```bash
-# Frontend (metricraft) — DOMAIN must be the public URL of the backend,
-# reachable from the end user's browser.
-docker build \
-  --build-arg SECRET=your-secret \
-  --build-arg APPNAME=your-app-name \
-  --build-arg DOMAIN=https://metrics.example.com \
-  -t your-username/metricraft:latest \
-  ./metricraft
-
-# Backend
-docker build \
-  --build-arg SECRET=your-secret \
-  --build-arg APPNAME=your-app-name \
-  --build-arg ALLOWED_ORIGINS=https://metrics.example.com \
-  --build-arg DATABASE_USERS=your-supabase-url \
-  --build-arg GOOGLE_APP_PASSWORD=your-smtp-app-password \
-  -t your-username/metricraft-backend:latest \
-  ./backend
-
-# Worker
-docker build \
-  --build-arg SECRET=your-secret \
-  --build-arg APPNAME=your-app-name \
-  -t your-username/metricraft-worker:latest \
-  ./worker
-
-# Push to Docker Hub
-docker push your-username/metricraft:latest
-```
 
 ### All-in-one image
 
-The repository root contains a single multi-stage `Dockerfile` that bundles **everything** — PostgreSQL (logs/metrics), Redis, the Go backend, the Go worker proxy, and the Nuxt frontend — into one image, managed by `supervisord`. Users do **not** need to provide their own database or cache: they build the image once, push it to their registry, and run a single container alongside their application.
+The repository root contains a single multi-stage `Dockerfile` that bundles **everything** — PostgreSQL (logs/metrics), Redis, the Go backend, the Go worker proxy, and the Nuxt frontend — into one image, managed by `supervisord`. Users do **not** need to provide their own database or cache: they build the image once, push it to their registry, and run a single container alongside their application with reverse-proxy in place.
 
-Internal services communicate over `localhost` (the image sets `MODE=standalone`). `DATABASE_LOGS`, `GOOGLE_APP_PASSWORD`, and `DEST_PORT` are set in the Dockerfile; override `DEST_PORT` at runtime for your upstream app.
+Internal services communicate over `localhost`. `DATABASE_LOGS`, `GOOGLE_APP_PASSWORD`, and `DEST_PORT` are set in the Dockerfile; override `DEST_PORT` at runtime for your upstream app.
 
 Build it from the repo root (note the trailing `.`):
 
@@ -193,7 +155,6 @@ Build it from the repo root (note the trailing `.`):
 docker build \
   --build-arg SECRET=your-secret \
   --build-arg APPNAME=your-app-name \
-  --build-arg ALLOWED_ORIGINS=https://metrics.example.com \
   --build-arg DATABASE_USERS=your-supabase-url \
   --build-arg DOMAIN=https://metrics.example.com \
   -t your-username/metricraft:latest \
@@ -202,7 +163,7 @@ docker build \
 docker push your-username/metricraft:latest
 ```
 
-Then run it behind a reverse proxy (see [Getting Started](#getting-started)). The container exposes `8000` (frontend), `8080` (backend), and `8081` (worker) on the Docker network only — publish **one** public port through the proxy on `:80` (UI + API) and optionally `:8081` (worker ingress):
+Then run it behind a reverse proxy (see [Getting Started](#getting-started)). The container exposes `8000` (frontend) and `8080` (backend), on the Docker network only — publish **one** public port through the proxy on `:80` (UI + API):
 
 ```yaml
 services:
@@ -213,7 +174,6 @@ services:
     expose:
       - "8000"
       - "8080"
-      - "8081"
     volumes:
       - metricraft-db:/var/lib/postgresql/data
 
@@ -221,7 +181,6 @@ services:
     image: caddy:2-alpine
     ports:
       - "80:80"
-      - "8081:8081"
     volumes:
       - ./docker/Caddyfile.standalone:/etc/caddy/Caddyfile
     depends_on:
@@ -241,9 +200,8 @@ The included Caddyfiles route by path on a single public hostname:
 |--------------|----------|---------|
 | `/sign`, `/dashboard/*`, `/settings/*`, `/verify/*`, `/ws/*` | backend `:8080` | REST API and WebSocket |
 | everything else | frontend `:8000` | Nuxt UI |
-| separate listener `:8081` | worker `:8081` | Captured app traffic (optional) |
 
-Because the browser calls the API on the **same origin** as the UI, set `DOMAIN` and `ALLOWED_ORIGINS` to that public URL (e.g. `https://metrics.example.com`), not an internal Docker hostname.
+Because the browser calls the API on the **same origin** as the UI, set `DOMAIN` to that public URL (e.g. `https://metrics.example.com`), not an internal Docker hostname.
 
 For multi-service development (`docker-compose.dev.yml`), use `docker/Caddyfile` — it targets the `backend` and `metricraft` service names instead.
 
@@ -254,7 +212,6 @@ Configuration is supplied in one of three ways, depending on how you run the sta
 | Setup | Where variables live |
 |-------|---------------------|
 | **Local development** | Per-service `.env` files (see below), loaded via [`godotenv`](https://github.com/joho/godotenv) for Go services and at Nuxt build/dev time for the frontend. |
-| **Docker Compose dev** (`docker-compose.dev.yml`) | Root `.env` for build args; services run behind `docker/Caddyfile` with `MODE=docker`. Only the reverse proxy publishes host ports. |
 | **All-in-one image** (root `Dockerfile`) | Build args baked into the image; override `DEST_PORT` at runtime. Served via `docker/Caddyfile.standalone`. See [deployment.md](deployment.md). |
 
 All `.env` files are git-ignored by default (`**.env` in `.gitignore`).
@@ -276,8 +233,6 @@ These values must be **identical** wherever they appear, or authentication and i
 | Variable | Used by | Description |
 |----------|---------|-------------|
 | `SECRET` | backend, worker, frontend | Shared bearer token for service-to-service authorization (sent as the `Authorization` header). Use a long random string. |
-| `APPNAME` | backend, worker, frontend | Identifier of the application/tenant the deployment serves. Required by the worker to initialize the logs database schema. |
-
 ### `backend/.env`
 
 | Variable | Required | Description |
@@ -286,7 +241,6 @@ These values must be **identical** wherever they appear, or authentication and i
 | `MODE` | yes | `local` for host development; Docker images set `standalone` automatically. |
 | `DATABASE_USERS` | yes | PostgreSQL connection string for the Supabase user database, e.g. `postgresql://postgres.<project>:<password>@<host>:5432/postgres?sslmode=require`. |
 | `DATABASE_LOGS` | yes | PostgreSQL connection string for the metrics/logs database, e.g. `postgresql://postgres:password@localhost:5432/postgres?sslmode=disable`. |
-| `ALLOWED_ORIGINS` | yes | Comma-separated list of origins permitted by CORS (scheme + host, no trailing slash), e.g. `http://localhost:8000`. |
 | `GOOGLE_APP_PASSWORD` | optional | SMTP/app password used to send verification emails. Required only if email delivery is enabled. |
 
 Example:
@@ -296,7 +250,6 @@ SECRET=replace-with-a-long-random-string
 MODE=local
 DATABASE_USERS=postgresql://postgres.<project>:<password>@aws-1-eu-west-3.pooler.supabase.com:5432/postgres?sslmode=require
 DATABASE_LOGS=postgresql://postgres:password@localhost:5432/postgres?sslmode=disable
-ALLOWED_ORIGINS=http://localhost:8000
 GOOGLE_APP_PASSWORD=your-smtp-app-password
 ```
 
@@ -346,9 +299,8 @@ When running `docker-compose -f docker-compose.dev.yml up`, create a `.env` file
 |----------|----------|---------|
 | `SECRET` | yes | backend, worker, frontend |
 | `APPNAME` | yes | backend, worker, frontend |
-| `ALLOWED_ORIGINS` | yes | backend — set to the public UI origin, e.g. `http://localhost` |
 | `DATABASE_USERS` | yes | backend |
-| `DOMAIN` | yes | frontend — same public URL as `ALLOWED_ORIGINS`, e.g. `http://localhost` |
+| `DOMAIN` | yes | frontend — public URL served by the reverse proxy, e.g. `http://localhost` |
 | `GOOGLE_APP_PASSWORD` | no | backend |
 | `DEST_PORT` | no | worker — defaults to `3000` |
 
@@ -357,7 +309,6 @@ Example root `.env`:
 ```dotenv
 SECRET=replace-with-a-long-random-string
 APPNAME=my-app
-ALLOWED_ORIGINS=http://localhost
 DOMAIN=http://localhost
 DATABASE_USERS=postgresql://postgres.<project>:<password>@<host>:5432/postgres?sslmode=require
 GOOGLE_APP_PASSWORD=your-smtp-app-password
@@ -377,7 +328,7 @@ When running the bundled image, build-time configuration is already baked in. Ov
 ### Notes & best practices
 
 - **Never commit `.env` files.** Rotate any secret that is accidentally pushed.
-- **`DOMAIN` and `ALLOWED_ORIGINS` must match the reverse proxy's public URL** (e.g. both `https://metrics.example.com`), not internal Docker hostnames or backend port numbers.
+- **`DOMAIN` must match the reverse proxy's public URL** (e.g. `https://metrics.example.com`), not internal Docker hostnames or backend port numbers.
 - Put the reverse proxy in front of Metricraft; use `expose` (not `ports`) on Metricraft services and publish only the proxy's `:80`/`:443`.
 - Worker ingress can stay on the Docker network (`worker:8081`) when your upstream app runs in the same compose stack; publish `:8081` on the proxy only when traffic enters from outside Docker.
 - `DATABASE_USERS` is passed as a build arg and ends up in the backend image layer. Push backend/all-in-one images to a **private** registry, or override the variable in your orchestrator at runtime.

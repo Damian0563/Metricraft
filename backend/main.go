@@ -9,7 +9,6 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -18,17 +17,7 @@ var conn *grpc.ClientConn
 
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		origin := r.Header.Get("Origin")
-		if origin != "" {
-			allowedOrigins := strings.Split(os.Getenv("ALLOWED_ORIGINS"), ",")
-			for _, allowed := range allowedOrigins {
-				allowed = strings.TrimSpace(allowed)
-				if allowed != "" && origin == allowed {
-					w.Header().Set("Access-Control-Allow-Origin", origin)
-					break
-				}
-			}
-		}
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, session-token")
 		if r.Method == "OPTIONS" {
