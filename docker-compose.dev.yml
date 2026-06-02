@@ -22,7 +22,6 @@ services:
       args:
         SECRET: ${SECRET}
         APPNAME: ${APPNAME}
-        ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
         DATABASE_USERS: ${DATABASE_USERS}
         GOOGLE_APP_PASSWORD: ${GOOGLE_APP_PASSWORD}
     environment:

@@ -23,10 +23,6 @@ func main() {
 		os.Setenv("backend", "http://localhost")
 		os.Setenv("ws", "ws://localhost")
 		os.Setenv("grpc", "127.0.0.1:50051")
-	} else if MODE == "docker" {
-		os.Setenv("backend", "http://backend")
-		os.Setenv("ws", "ws://backend")
-		os.Setenv("grpc", "127.0.0.1:50051")
 	} else {
 		os.Setenv("backend", "http://localhost")
 		os.Setenv("ws", "ws://localhost")

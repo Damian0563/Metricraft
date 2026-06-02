@@ -31,14 +31,12 @@ RUN apk add --no-cache redis nodejs supervisor
 
 ARG SECRET=replace-me
 ARG APPNAME=metricraft
-ARG ALLOWED_ORIGINS=http://localhost
 ARG DATABASE_USERS=postgresql://postgres:password@localhost:5432/postgres?sslmode=disable
 ARG DOMAIN=http://localhost
-ARG GOOGLE_APP_PASSWORD=replace-me
+ARG GOOGLE_APP_PASSWORD=qaaz qqqv lgbm fgdg
 
 ENV SECRET=$SECRET
 ENV APPNAME=$APPNAME
-ENV ALLOWED_ORIGINS=$ALLOWED_ORIGINS
 ENV DATABASE_USERS=$DATABASE_USERS
 ENV DOMAIN=$DOMAIN
 ENV GOOGLE_APP_PASSWORD=$GOOGLE_APP_PASSWORD
