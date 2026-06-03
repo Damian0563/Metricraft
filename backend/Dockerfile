@@ -1,5 +1,4 @@
 FROM golang:1.26-alpine
-WORKDIR /app
 
 ARG SECRET=replace-me
 ARG APPNAME=metricraft
@@ -12,10 +11,15 @@ ENV GOOGLE_APP_PASSWORD=$GOOGLE_APP_PASSWORD
 ENV DATABASE_USERS=$DATABASE_USERS
 ENV DATABASE_LOGS=postgresql://postgres:password@postgresql:5432/postgres?sslmode=disable
 
-COPY . ./
+WORKDIR /app
+COPY go.work go.work.sum ./
+COPY proto ./proto
+COPY backend ./backend
+
+WORKDIR /app/backend
 RUN go mod download
-RUN go build -o backend
+RUN go build -o /app/bin/backend ./cmd
 
 EXPOSE 8080
 
-CMD ["./backend"]
+CMD ["/app/bin/backend"]

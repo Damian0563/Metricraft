@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"github.com/gorilla/websocket"
 	"os"
+	"worker/db"
+	"worker/types"
 )
 
-func Leave(payload Payload) error {
+func Leave(payload types.Payload) error {
 	host := os.Getenv("ws")
 	conn, _, err := websocket.DefaultDialer.Dial(host+":8080/ws/workers", nil)
 	if err != nil {
@@ -21,5 +23,5 @@ func Leave(payload Payload) error {
 	if err != nil {
 		return err
 	}
-	return Insert(payload)
+	return db.Insert(payload)
 }

@@ -73,12 +73,10 @@ func Navigator(w http.ResponseWriter, r *http.Request) {
 	switch metric {
 	case "Traffic congestion trends":
 		response, err = client.GetTrafficCongestion(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days})
-		fmt.Println(response)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		fmt.Println(response)
 	default:
 		break
 	}

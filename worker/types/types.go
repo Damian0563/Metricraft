@@ -1,0 +1,28 @@
+package types
+
+import (
+	pb "metricraft/proto/metricraft/proto"
+	"time"
+)
+
+type CountryOrigin struct {
+	Country string `json:"country"`
+}
+
+type Server struct {
+	pb.UnimplementedMetricraftServer
+}
+
+type Payload struct {
+	Headers map[string]string
+	Url     string
+	Body    map[string]any
+	Method  string
+	Metrics ResponseMetrics
+	Time    time.Time
+}
+
+type ResponseMetrics struct {
+	StatusCode int
+	Duration   int64
+}

@@ -16,6 +16,14 @@ import (
 var MODE string
 var conn *grpc.ClientConn
 
+func loadEnv() {
+	for _, path := range []string{".env", "../.env", "backend/.env"} {
+		if err := godotenv.Load(path); err == nil {
+			return
+		}
+	}
+}
+
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -31,7 +39,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 
 func main() {
 	var err error
-	godotenv.Load()
+	loadEnv()
 	MODE = os.Getenv("MODE")
 	if MODE == "local" {
 		os.Setenv("host", "http://localhost")
@@ -40,12 +48,6 @@ func main() {
 		os.Setenv("grpc", "127.0.0.1:50051")
 		os.Setenv("frontend", "http://localhost")
 		os.Setenv("worker", "http://localhost")
-	} else if MODE == "docker" {
-		os.Setenv("frontend", "http://metricraft")
-		os.Setenv("worker", "http://worker")
-		os.Setenv("ws", "ws://backend")
-		os.Setenv("redis", "redis:6379")
-		os.Setenv("grpc", "worker:50051")
 	} else {
 		os.Setenv("frontend", "http://localhost")
 		os.Setenv("worker", "http://localhost")

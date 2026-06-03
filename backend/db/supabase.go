@@ -131,7 +131,7 @@ func GetUserByToken(token string) (types.User, error) {
 	}
 	defer conn.Close(context.Background())
 	var user types.User
-	err = conn.QueryRow(context.Background(), "SELECT mail, app_name, uuid FROM users WHERE uuid = $1", token).Scan(&user.Mail, &user.AppName, &user.UUID, &user.Settings.Realtime)
+	err = conn.QueryRow(context.Background(), "SELECT mail, app_name, uuid FROM users WHERE uuid = $1", token).Scan(&user.Mail, &user.AppName, &user.UUID)
 	if err != nil {
 		return types.User{}, err
 	}
