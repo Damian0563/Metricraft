@@ -2,7 +2,6 @@ package auth
 
 import (
 	"backend/db"
-	"backend/types"
 	"net/http"
 	"strings"
 )
@@ -13,10 +12,6 @@ type Token struct {
 
 func NewToken(token string) Token {
 	return Token{token: token}
-}
-
-func (t Token) GetUser() (types.User, error) {
-	return db.GetUserByToken(t.token)
 }
 
 func (t Token) GetAppName() (string, error) {
