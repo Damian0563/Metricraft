@@ -21,7 +21,6 @@ require (
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.10 // indirect
-	github.com/resend/resend-go/v3 v3.7.0 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	golang.org/x/net v0.51.0 // indirect

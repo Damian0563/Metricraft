@@ -15,7 +15,7 @@ jobs:
       with:
         go-version: ^1.26.x
     - name: Build
-      run: cd worker && go build .
+      run: cd worker/cmd && go build .
     - name: Test
       run: |
         cd worker/enter && go test -v .

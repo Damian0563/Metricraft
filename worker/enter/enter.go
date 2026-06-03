@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"worker/types"
 )
 
 var client = &http.Client{Timeout: 30 * time.Second}
@@ -23,7 +24,7 @@ func Enter(w http.ResponseWriter, r *http.Request) {
 	Leave(payload)
 }
 
-func extactDetails(r *http.Request) (Payload, error) {
+func extactDetails(r *http.Request) (types.Payload, error) {
 	started := time.Now()
 	var headers map[string]string = make(map[string]string)
 	headers["X-Forwarded-For"] = r.Header.Get("X-Forwarded-For")
@@ -49,13 +50,13 @@ func extactDetails(r *http.Request) (Payload, error) {
 	if r.URL.RawQuery != "" {
 		redirect += "?" + r.URL.RawQuery
 	}
-	var metrics ResponseMetrics
+	var metrics types.ResponseMetrics
 	start := time.Now()
 	switch method {
 	case "GET":
 		req, err := http.NewRequest("GET", redirect, nil)
 		if err != nil || req == nil {
-			return Payload{}, fmt.Errorf("failed to create request: %v", err)
+			return types.Payload{}, fmt.Errorf("failed to create request: %v", err)
 		}
 		if r.Header != nil {
 			for k, v := range r.Header {
@@ -68,7 +69,7 @@ func extactDetails(r *http.Request) (Payload, error) {
 			metrics.StatusCode = resp.StatusCode
 			resp.Body.Close()
 		} else {
-			return Payload{}, err
+			return types.Payload{}, err
 		}
 	case "POST":
 		req, _ := http.NewRequest("POST", redirect, bytes.NewBuffer(data))
@@ -84,7 +85,7 @@ func extactDetails(r *http.Request) (Payload, error) {
 			metrics.StatusCode = resp.StatusCode
 			resp.Body.Close()
 		} else {
-			return Payload{}, err
+			return types.Payload{}, err
 		}
 	case "PUT":
 		req, _ := http.NewRequest("PUT", redirect, bytes.NewBuffer(data))
@@ -100,7 +101,7 @@ func extactDetails(r *http.Request) (Payload, error) {
 			metrics.StatusCode = resp.StatusCode
 			resp.Body.Close()
 		} else {
-			return Payload{}, err
+			return types.Payload{}, err
 		}
 	case "DELETE":
 		req, _ := http.NewRequest("DELETE", redirect, nil)
@@ -115,9 +116,9 @@ func extactDetails(r *http.Request) (Payload, error) {
 			metrics.StatusCode = resp.StatusCode
 			resp.Body.Close()
 		} else {
-			return Payload{}, err
+			return types.Payload{}, err
 		}
 	}
 	metrics.Duration = time.Since(start).Milliseconds()
-	return Payload{Headers: headers, Time: started, Url: redirect, Body: body, Method: method, Metrics: metrics}, nil
+	return types.Payload{Headers: headers, Time: started, Url: redirect, Body: body, Method: method, Metrics: metrics}, nil
 }
