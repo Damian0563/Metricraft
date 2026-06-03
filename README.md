@@ -6,10 +6,6 @@
 
 An analytics platform for log observability, focused on visual dashboards and reporting capabilities.
 
-## Who Is This For?
-
-Metriccraft is designed for **small to medium teams** that want to self-host their analytics infrastructure. Whether you're a startup tracking user behavior, a DevOps team monitoring service health, or an engineering org needing visibility into HTTP traffic — Metriccraft gives you full control without relying on third-party SaaS platforms.
-
 Key benefits:
 - **Self-hosted**: No data leaves your infrastructure
 - **Privacy-first**: Your logs and metrics stay on your servers
@@ -104,29 +100,12 @@ Build the bundled image from the repo root, then run it with a reverse proxy —
 
 ```yaml
 services:
-  metricraft:
-    image: your-username/metricraft:latest
-    environment:
-      DEST_PORT: "3000"            # port of YOUR upstream app
-    expose:
-      - "8000"                     # frontend (internal)
-      - "8080"                     # backend API + WebSocket (internal)
-      - "8081"                     # worker proxy (internal)
-    volumes:
-      - metricraft-db:/var/lib/postgresql/data
-
-  reverse-proxy:
-    image: caddy:2-alpine
-    ports:
-      - "80:80"                    # UI + API (path-routed)
-      - "8081:8081"                # worker proxy ingress (optional)
-    volumes:
-      - ./docker/Caddyfile.standalone:/etc/caddy/Caddyfile
-    depends_on:
-      - metricraft
-
-volumes:
-  metricraft-db:
+   metricraft:
+   image: your-username/metricraft:latest
+   ports:
+     - "8080:8000"
+   environment:
+     -DEST_PORT=3000
 ```
 
 Set the `DOMAIN` build arg to the public URL the reverse proxy serves (e.g. `http://localhost` when using the Caddyfile above). See [Environment Configuration](#environment-configuration).
@@ -341,9 +320,8 @@ When running the bundled image, build-time configuration is already baked in. Ov
 # Compile proto files
 protoc -I=./proto --go_out=proto proto/service.proto
 ```
-
-```bash
-# Run dev stack (Postgres + Redis only)
+```
+# Run dev container
 docker-compose up -d
 
 # Run full stack behind reverse proxy
