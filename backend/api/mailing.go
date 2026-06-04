@@ -313,10 +313,10 @@ func CheckVerification(w http.ResponseWriter, r *http.Request) {
 					if err := sendPermissionRequest(response.Owner, payload.Mail, payload.AppName); err != nil {
 						internalErr = true
 					} else {
-						malicious = true
+						permitted = true
 					}
 				case msg == "App name verification needed.", response.Err == nil && response.Exists:
-					permitted = verifyAppName(payload.AppName)
+					malicious = !verifyAppName(payload.AppName)
 				default:
 					internalErr = true
 				}
