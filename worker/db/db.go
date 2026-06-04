@@ -36,7 +36,11 @@ func InitDB(ctx context.Context, errChannel chan error) {
 		return
 	}
 	if count == 0 {
-		conn.Exec(context.Background(), "INSERT INTO settings (realtime, enabled, retention, appName) VALUES (true, '{\"Geographical traffic\":true,\"P95 Latency\":true,\"Traffic congestion trends\":false,\"Uptime Score\":true,\"Geographic performance\":false,\"Status code distribution\":false,\"Median response time\":true,\"Throughput\":true}', 30, %s)", appName)
+		_, err = conn.Exec(context.Background(), "INSERT INTO settings (realtime, enabled, retention, appname) VALUES (true, '{\"Geographical traffic\":true,\"P95 Latency\":true,\"Traffic congestion trends\":false,\"Uptime Score\":true,\"Geographic performance\":false,\"Status code distribution\":false,\"Median response time\":true,\"Throughput\":true}', 30, $1)", appName)
+		if err != nil {
+			errChannel <- err
+			return
+		}
 	}
 	if _, err = conn.Exec(context.Background(), "CREATE TABLE IF NOT EXISTS logs (date TIMESTAMP,responseTime INTEGER, url TEXT NOT NULL, \"user\" TEXT NOT NULL,country TEXT NOT NULL ,payload TEXT, headers TEXT NOT NULL, method TEXT NOT NULL, status INTEGER NOT NULL)"); err != nil {
 		errChannel <- err
@@ -72,7 +76,7 @@ func Insert(payload types.Payload) error {
 			country = "Unknown"
 		}
 	}
-	_, err = conn.Exec(ctx, "INSERT INTO logs (date, responseTime, url, \"user\",country, payload, headers, method, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", payload.Time, payload.Metrics.Duration, payload.Url, realip, country, string(body), string(headers), payload.Method, payload.Metrics.StatusCode)
+	_, err = conn.Exec(ctx, "INSERT INTO logs (date, responseTime, url, \"user\",country, payload, headers, method, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)", payload.Time, payload.Metrics.Duration, payload.Url, realip, country, string(body), string(headers), payload.Method, payload.Metrics.StatusCode)
 	return err
 }
 

@@ -283,12 +283,13 @@ func CheckVerification(w http.ResponseWriter, r *http.Request) {
 	var payload checkVerificationPayload
 	json.NewDecoder(r.Body).Decode(&payload)
 	var routine = make(chan types.ExistsErrResponse, 2)
-	go db.CheckAllowed(routine, payload.Mail, payload.AppName, sendPermissionRequest)
+	go db.CheckAllowed(routine, payload.Mail, payload.AppName)
 	go db.CheckCodeValidity(routine, payload.Mail, payload.Code)
 	var (
 		codeValid   bool
 		permitted   bool
 		internalErr bool
+		malicious   bool
 	)
 	for received := 2; received > 0; received-- {
 		select {
@@ -309,7 +310,13 @@ func CheckVerification(w http.ResponseWriter, r *http.Request) {
 				case msg == "Owner is allowed to sign in", response.Err == nil && response.Exists:
 					permitted = true
 				case msg == "Permission needed from the owner", response.Err == nil && !response.Exists:
-					permitted = false
+					if err := sendPermissionRequest(response.Owner, payload.Mail, payload.AppName); err != nil {
+						internalErr = true
+					} else {
+						permitted = true
+					}
+				case msg == "App name verification needed.", response.Err == nil && response.Exists:
+					malicious = !verifyAppName(payload.AppName)
 				default:
 					internalErr = true
 				}
@@ -322,7 +329,9 @@ func CheckVerification(w http.ResponseWriter, r *http.Request) {
 	case !codeValid:
 		http.Error(w, "Invalid or expired verification code", http.StatusBadRequest)
 	case !permitted:
-		http.Error(w, "Permission needed from the owner", http.StatusForbidden)
+		http.Error(w, "Permission needed from the owner", http.StatusUnauthorized)
+	case malicious:
+		http.Error(w, "Invalid app name", http.StatusForbidden)
 	default:
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("Verification successful"))

@@ -22,6 +22,7 @@ type ExistsErrResponse struct {
 	Exists bool
 	Err    error
 	Origin string
+	Owner  string
 }
 
 type DashboardInitPayload struct {
