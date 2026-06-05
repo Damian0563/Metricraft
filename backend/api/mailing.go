@@ -310,10 +310,10 @@ func CheckVerification(w http.ResponseWriter, r *http.Request) {
 				case msg == "Owner is allowed to sign in", response.Err == nil && response.Exists:
 					permitted = true
 				case msg == "Permission needed from the owner", response.Err == nil && !response.Exists:
-					if err := sendPermissionRequest(response.Owner, payload.Mail, payload.AppName); err != nil {
+					if err := db.AddToPendingList(payload.Mail, payload.AppName); err != nil {
 						internalErr = true
 					} else {
-						err = db.AddToPendingList(payload.Mail, payload.AppName)
+						err = sendPermissionRequest(response.Owner, payload.Mail, payload.AppName)
 						if err != nil {
 							internalErr = true
 						} else {

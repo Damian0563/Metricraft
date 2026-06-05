@@ -216,7 +216,7 @@ These values must be **identical** wherever they appear, or authentication and i
 |----------|----------|-------------|
 | `SECRET` | yes | Shared service token (see above). |
 | `MODE` | yes | `local` for host development; Docker images set `standalone` automatically. |
-| `DATABASE_USERS` | yes | PostgreSQL connection string for the Supabase user database, e.g. `postgresql://postgres.<project>:<password>@<host>:5432/postgres`. |
+| `DATABASE_USERS` | yes | PostgreSQL connection string for the Supabase user database, e.g. `postgresql://postgres.<project>:<password>@<host>:5432/postgres`. See [`users.md`](users.md) for the required table schema. |
 | `DATABASE_LOGS` | yes | PostgreSQL connection string for the metrics/logs database, e.g. `postgresql://postgres:password@localhost:5432/postgres?sslmode=disable`. |
 | `GOOGLE_APP_PASSWORD` | optional | SMTP/app password used to send verification emails. Required only if email delivery is enabled. |
 
@@ -225,7 +225,7 @@ Example:
 ```dotenv
 SECRET=replace-with-a-long-random-string
 MODE=local
-DATABASE_USERS=postgresql://postgres.fsrfdaomtdjlweokqtvc:hjErWW0q9VckaYZb@aws-1-eu-west-3.pooler.supabase.com:5432/postgres
+DATABASE_USERS=postgresql://postgres.supabase_pooler_creds.pooler.supabase.com:5432/postgres
 DATABASE_LOGS=postgresql://postgres:password@localhost:5432/postgres?sslmode=disable
 GOOGLE_APP_PASSWORD=your-smtp-app-password
 ```
@@ -320,8 +320,6 @@ protoc -I=./proto --go_out=proto proto/service.proto
 # Run dev container
 docker-compose up -d
 
-# Run full stack behind reverse proxy
-docker-compose -f docker-compose.dev.yml up -d
 ```
 ## License
 

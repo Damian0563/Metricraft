@@ -74,6 +74,7 @@ func Navigator(w http.ResponseWriter, r *http.Request) {
 	case "Traffic congestion trends":
 		response, err = client.GetTrafficCongestion(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days})
 		if err != nil {
+			fmt.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
