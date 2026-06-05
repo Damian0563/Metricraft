@@ -44,3 +44,7 @@ type Metric struct {
 	Name    string `json:"name"`
 	Enabled bool   `json:"enabled"`
 }
+
+type PendingUsers struct {
+	Mail string `json:"mail"`
+}

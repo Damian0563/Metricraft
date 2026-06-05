@@ -93,6 +93,25 @@ func AddToPendingList(mail string, appName string) error {
 	return err
 }
 
+func GetPendingUsers() ([]string, error) {
+	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close(context.Background())
+	var pendingUsers string
+	err = conn.QueryRow(context.Background(), "SELECT pending_users FROM users WHERE owner=true").Scan(&pendingUsers)
+	if err != nil {
+		return nil, err
+	}
+	var users []string
+	err = json.Unmarshal([]byte(pendingUsers), &users)
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
 func CreateUser(mail string, secret string, appName string) (string, error) {
 	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
 	if err != nil {

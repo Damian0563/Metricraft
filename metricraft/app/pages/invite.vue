@@ -113,8 +113,7 @@
 							<div class="flex items-center gap-3">
 								<div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
 									<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
-										<path fill-rule="evenodd"
-											d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+										<path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
 											clip-rule="evenodd" />
 									</svg>
 								</div>
@@ -144,6 +143,7 @@
 
 <script setup lang="ts">
 import { getCookie, validateEmail } from "@/composables/helpers";
+import { getPendingUsers } from "@/calls/invite";
 const appName = useState<string>('appName');
 const mode = ref<'manual' | 'batch'>('manual')
 const emailInput = ref('')
@@ -151,11 +151,7 @@ const emails = ref<string[]>([])
 const csvFile = ref<File | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 const errorMessage = ref('')
-const pendingUsers = ref([
-	{ mail: 'alex@example.com' },
-	{ mail: 'sam@example.com' },
-	{ mail: 'jordan@example.com' },
-])
+const { data: pendingUsers } = await useAsyncData('pendingUsers', () => getPendingUsers(), { default: () => [] })
 
 const addEmail = () => {
 	const email = emailInput.value.trim()

@@ -12,6 +12,10 @@ export type dashboardInitPayload = {
 	settings: { realtime: boolean, retention: number, enabled: Record<string, boolean> };
 }
 
+export type pendingUsersPayload = {
+	users: Array<{ mail: string }>;
+}
+
 export type config = {
 	secret: string,
 	httphost: string,
