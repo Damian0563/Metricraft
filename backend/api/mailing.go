@@ -313,10 +313,15 @@ func CheckVerification(w http.ResponseWriter, r *http.Request) {
 					if err := sendPermissionRequest(response.Owner, payload.Mail, payload.AppName); err != nil {
 						internalErr = true
 					} else {
-						permitted = true
+						err = db.AddToPendingList(payload.Mail, payload.AppName)
+						if err != nil {
+							internalErr = true
+						} else {
+							permitted = false
+						}
 					}
 				case msg == "App name verification needed.", response.Err == nil && response.Exists:
-					malicious = !verifyAppName(payload.AppName)
+					malicious = !db.VerifyAppName(payload.AppName)
 				default:
 					internalErr = true
 				}

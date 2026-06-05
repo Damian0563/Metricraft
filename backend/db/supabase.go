@@ -69,23 +69,61 @@ func CheckAllowed(routine chan types.ExistsErrResponse, mail string, appName str
 	}
 }
 
+func AddToPendingList(mail string, appName string) error {
+	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
+	if err != nil {
+		return err
+	}
+	defer conn.Close(context.Background())
+	var pendingUsers string
+	err = conn.QueryRow(context.Background(), "SELECT pending_users FROM users WHERE app_name=$1 AND owner=true", appName).Scan(&pendingUsers)
+	if err != nil {
+		return err
+	}
+	var pending []string
+	err = json.Unmarshal([]byte(pendingUsers), &pending)
+	if err != nil {
+		return err
+	}
+	pending = append(pending, mail)
+	if err != nil {
+		return err
+	}
+	_, err = conn.Exec(context.Background(), "UPDATE users SET pending_users=$1 WHERE app_name=$2 AND owner=true", pending, appName)
+	return err
+}
+
 func CreateUser(mail string, secret string, appName string) (string, error) {
 	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
 	if err != nil {
 		return "", err
 	}
 	defer conn.Close(context.Background())
-
 	hashedSecret, err := bcrypt.GenerateFromPassword([]byte(secret), bcrypt.DefaultCost)
 	if err != nil {
 		return "", err
 	}
 	uuid := uuid.New().String()
-	_, err = conn.Exec(context.Background(), "INSERT INTO users (created_at, mail, secret, app_name, uuid) VALUES ($1, $2, $3, $4, $5)", time.Now(), mail, string(hashedSecret), appName, uuid)
+	owner := checkAppNameExists(appName)
+	_, err = conn.Exec(context.Background(), "INSERT INTO users (created_at, mail, secret, app_name, uuid,owner) VALUES ($1, $2, $3, $4, $5,$6)", time.Now(), mail, string(hashedSecret), appName, uuid, owner)
 	if err != nil {
 		return "", err
 	}
 	return uuid, nil
+}
+
+func checkAppNameExists(appName string) bool {
+	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
+	if err != nil {
+		return false
+	}
+	defer conn.Close(context.Background())
+	var exists bool
+	err = conn.QueryRow(context.Background(), "SELECT EXISTS(SELECT 1 FROM settings WHERE appname = $1)", appName).Scan(&exists)
+	if err != nil {
+		return false
+	}
+	return exists
 }
 
 func SignIn(mail string, secret string) (string, bool) {

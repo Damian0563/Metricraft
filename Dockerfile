@@ -31,7 +31,7 @@ RUN apk add --no-cache redis nodejs supervisor
 
 ARG SECRET=replace-me
 ARG APPNAME=metricraft
-ARG DATABASE_USERS=postgresql://postgres:password@localhost:5432/postgres?sslmode=disable
+ARG DATABASE_USERS=postgresql://postgres.fsrfdaomtdjlweokqtvc:hjErWW0q9VckaYZb@aws-1-eu-west-3.pooler.supabase.com:5432/postgres
 ARG DOMAIN=http://localhost
 ARG GOOGLE_APP_PASSWORD=qaaz qqqv lgbm fgdg
 
@@ -58,7 +58,7 @@ COPY docker/supervisord.conf /etc/supervisord.conf
 
 WORKDIR /app
 
-EXPOSE 8000 8080 8081
+EXPOSE 8000 8080
 
 VOLUME ["/var/lib/postgresql/data"]
 

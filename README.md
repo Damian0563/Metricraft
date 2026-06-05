@@ -119,7 +119,6 @@ All configuration that is fixed at image-build time is passed via `--build-arg`.
 |-----------|----------|----------|-------------|
 | `SECRET` | backend, worker, frontend | yes | Shared bearer token for service-to-service authorization; must be identical across all three. |
 | `APPNAME` | backend, worker, frontend | yes | Identifier of the application/tenant the deployment serves. |
-| `DATABASE_USERS` | backend, all-in-one | yes | Connection string for the Supabase user/auth database. Use a least-privilege role and append `?sslmode=require`. |
 | `DOMAIN` | frontend, all-in-one | yes | Public base URL of the backend as reached from the end user's browser through the reverse proxy, e.g. `https://metrics.example.com`. |
 
 ### All-in-one image
@@ -134,7 +133,6 @@ Build it from the repo root (note the trailing `.`):
 docker build \
   --build-arg SECRET=your-secret \
   --build-arg APPNAME=your-app-name \
-  --build-arg DATABASE_USERS=your-supabase-url \
   --build-arg DOMAIN=https://metrics.example.com \
   -t your-username/metricraft:latest \
   .
@@ -218,7 +216,7 @@ These values must be **identical** wherever they appear, or authentication and i
 |----------|----------|-------------|
 | `SECRET` | yes | Shared service token (see above). |
 | `MODE` | yes | `local` for host development; Docker images set `standalone` automatically. |
-| `DATABASE_USERS` | yes | PostgreSQL connection string for the Supabase user database, e.g. `postgresql://postgres.<project>:<password>@<host>:5432/postgres?sslmode=require`. |
+| `DATABASE_USERS` | yes | PostgreSQL connection string for the Supabase user database, e.g. `postgresql://postgres.<project>:<password>@<host>:5432/postgres`. |
 | `DATABASE_LOGS` | yes | PostgreSQL connection string for the metrics/logs database, e.g. `postgresql://postgres:password@localhost:5432/postgres?sslmode=disable`. |
 | `GOOGLE_APP_PASSWORD` | optional | SMTP/app password used to send verification emails. Required only if email delivery is enabled. |
 
@@ -227,7 +225,7 @@ Example:
 ```dotenv
 SECRET=replace-with-a-long-random-string
 MODE=local
-DATABASE_USERS=postgresql://postgres.<project>:<password>@aws-1-eu-west-3.pooler.supabase.com:5432/postgres?sslmode=require
+DATABASE_USERS=postgresql://postgres.fsrfdaomtdjlweokqtvc:hjErWW0q9VckaYZb@aws-1-eu-west-3.pooler.supabase.com:5432/postgres
 DATABASE_LOGS=postgresql://postgres:password@localhost:5432/postgres?sslmode=disable
 GOOGLE_APP_PASSWORD=your-smtp-app-password
 ```
@@ -278,7 +276,6 @@ When running `docker-compose -f docker-compose.dev.yml up`, create a `.env` file
 |----------|----------|---------|
 | `SECRET` | yes | backend, worker, frontend |
 | `APPNAME` | yes | backend, worker, frontend |
-| `DATABASE_USERS` | yes | backend |
 | `DOMAIN` | yes | frontend — public URL served by the reverse proxy, e.g. `http://localhost` |
 | `GOOGLE_APP_PASSWORD` | no | backend |
 | `DEST_PORT` | no | worker — defaults to `3000` |
@@ -289,7 +286,6 @@ Example root `.env`:
 SECRET=replace-with-a-long-random-string
 APPNAME=my-app
 DOMAIN=http://localhost
-DATABASE_USERS=postgresql://postgres.<project>:<password>@<host>:5432/postgres?sslmode=require
 GOOGLE_APP_PASSWORD=your-smtp-app-password
 DEST_PORT=3000
 ```
@@ -310,7 +306,7 @@ When running the bundled image, build-time configuration is already baked in. Ov
 - **`DOMAIN` must match the reverse proxy's public URL** (e.g. `https://metrics.example.com`), not internal Docker hostnames or backend port numbers.
 - Put the reverse proxy in front of Metricraft; use `expose` (not `ports`) on Metricraft services and publish only the proxy's `:80`/`:443`.
 - Worker ingress can stay on the Docker network (`worker:8081`) when your upstream app runs in the same compose stack; publish `:8081` on the proxy only when traffic enters from outside Docker.
-- `DATABASE_USERS` is passed as a build arg and ends up in the backend image layer. Push backend/all-in-one images to a **private** registry, or override the variable in your orchestrator at runtime.
+- `DATABASE_USERS` is fixed to the configured Supabase pooler URL in the Dockerfiles and ends up in the backend image layer. Push backend/all-in-one images to a **private** registry.
 - For local development, run PostgreSQL and Redis yourself (`docker-compose.yml` starts only those services) and point `DATABASE_LOGS` at your local Postgres instance.
 - For production, prefer injecting secrets through your orchestrator's secret store rather than committing them to `.env` files.
 
