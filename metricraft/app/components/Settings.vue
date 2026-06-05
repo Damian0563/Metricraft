@@ -59,7 +59,7 @@
 					<h2 class="text-xl font-semibold text-gray-800 mb-4">Team</h2>
 					<span @click="navigateTo(`/invite`)"
 						class="text-base font-medium text-gray-700 hover:cursor-pointer hover:text-[#00F376] transition-colors duration-200">
-						Invite team members
+						Manage team members
 					</span>
 				</div>
 				<div class="bg-white rounded-xl shadow-xl p-8 border border-gray-100">

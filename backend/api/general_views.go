@@ -6,6 +6,7 @@ import (
 	"backend/types"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -111,6 +112,42 @@ func ChangeRetention(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+func HandleInvite(w http.ResponseWriter, r *http.Request) {
+	mail := r.URL.Query().Get("user")
+	fmt.Println(mail, r.URL.Query().Get("user"))
+	w.WriteHeader(http.StatusOK)
+}
+
+func PendingInvites(w http.ResponseWriter, r *http.Request) {
+	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	token := auth.NewToken(r.Header.Get("Session-Token"))
+	authed := token.ValidateRequest(&w, false)
+	if !authed {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	pendingUsers, err := db.GetPendingUsers()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	var jsonResponse = make(map[string][]types.PendingUsers)
+	var formattedUsers []types.PendingUsers
+	for _, user := range pendingUsers {
+		formattedUsers = append(formattedUsers, types.PendingUsers{Mail: user})
+	}
+	jsonResponse["users"] = formattedUsers
+	response, err := json.Marshal(jsonResponse)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Write(response)
+}
+
 func DashboardInit(w http.ResponseWriter, r *http.Request) {
 	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -119,6 +156,7 @@ func DashboardInit(w http.ResponseWriter, r *http.Request) {
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, false)
 	if !authed {
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	var Response = types.DashboardInitPayload{}
