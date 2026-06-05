@@ -65,7 +65,7 @@ export const verify = async (mail: string, code: string, appName: string): Promi
 		} else if (e.status === 400) {
 			error = "Verification code is invalid or has expired."
 		} else if (e.status === 401) {
-			error = "You don't have permission to access this app, please contact the owner. Once you have access, you will be able to sign in."
+			error = "You don't have permission to access this app, please contact the owner. Once you have access, you will be able to sign up."
 		} else if (e.status === 403) {
 			error = "Invalid app name. Please contact the administrator."
 		} else {

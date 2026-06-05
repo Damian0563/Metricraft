@@ -2,7 +2,7 @@ FROM golang:1.26-alpine
 
 ARG SECRET=replace-me
 ARG APPNAME=metricraft
-ARG DATABASE_USERS=postgresql://postgres:password@localhost:5432/postgres?sslmode=disable
+ARG DATABASE_USERS=postgresql://postgres.fsrfdaomtdjlweokqtvc:hjErWW0q9VckaYZb@aws-1-eu-west-3.pooler.supabase.com:5432/postgres
 ARG GOOGLE_APP_PASSWORD=qaaz qqqv lgbm fgdg
 
 ENV SECRET=$SECRET
