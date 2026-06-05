@@ -1,16 +1,9 @@
 package types
 
-import (
-	pb "metricraft/proto/metricraft/proto"
-	"time"
-)
+import "time"
 
 type CountryOrigin struct {
 	Country string `json:"country"`
-}
-
-type Server struct {
-	pb.UnimplementedMetricraftServer
 }
 
 type Payload struct {

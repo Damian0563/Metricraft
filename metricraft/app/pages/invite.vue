@@ -3,15 +3,15 @@
 		<DashboardNav :appName="appName" @settings="handleSettings" />
 		<Popup :message="errorMessage" @close="errorMessage = ''" />
 		<div class="w-full px-8 py-2">
-			<div class="flex items-center justify-between mb-6">
-				<h1 class="text-3xl font-bold" style="color: #00F376;">Invite Team Members</h1>
+			<div class="relative flex items-center justify-center mb-6">
 				<button @click="goBack"
-					class="text-white hover:text-[#00F376] transition-colors duration-200 flex items-center gap-2 cursor-pointer">
+					class="absolute left-0 text-white hover:text-[#00F376] transition-colors duration-200 flex items-center gap-2 cursor-pointer">
 					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
 					</svg>
 					Back to Dashboard
 				</button>
+				<h1 class="text-3xl font-bold text-center" style="color: #00F376;">Invite Team Members</h1>
 			</div>
 			<div class="max-w-4xl mx-auto">
 				<div class="bg-white rounded-xl shadow-xl p-8 border border-gray-100">
@@ -101,6 +101,43 @@
 					</div>
 				</div>
 			</div>
+			<div class="max-w-4xl mx-auto mt-8">
+				<div class="bg-white rounded-xl shadow-xl p-8 border border-gray-100">
+					<div class="mb-6">
+						<h2 class="text-2xl font-bold text-gray-900">Pending Verification</h2>
+						<p class="text-sm text-gray-500 mt-1">Review users waiting for access to this project.</p>
+					</div>
+					<div v-if="pendingUsers.length > 0" class="space-y-3">
+						<div v-for="user in pendingUsers" :key="user.mail"
+							class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
+							<div class="flex items-center gap-3">
+								<div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
+									<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+										<path fill-rule="evenodd"
+											d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+											clip-rule="evenodd" />
+									</svg>
+								</div>
+								<div>
+									<p class="font-medium text-gray-900">{{ user.mail }}</p>
+									<p class="text-xs text-gray-500">Awaiting verification</p>
+								</div>
+							</div>
+							<div class="flex items-center gap-2">
+								<button @click="acceptPendingUser(user.mail)"
+									class="px-4 py-2 bg-[#00F376] text-gray-900 font-semibold rounded-lg hover:bg-[#00D96A] transition-colors cursor-pointer">
+									Accept
+								</button>
+								<button @click="rejectPendingUser(user.mail)"
+									class="px-4 py-2 bg-red-50 text-red-600 font-semibold rounded-lg hover:bg-red-100 transition-colors cursor-pointer">
+									Reject
+								</button>
+							</div>
+						</div>
+					</div>
+					<p v-else class="text-sm text-gray-500">No users are pending verification.</p>
+				</div>
+			</div>
 		</div>
 	</div>
 </template>
@@ -114,6 +151,11 @@ const emails = ref<string[]>([])
 const csvFile = ref<File | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 const errorMessage = ref('')
+const pendingUsers = ref([
+	{ mail: 'alex@example.com' },
+	{ mail: 'sam@example.com' },
+	{ mail: 'jordan@example.com' },
+])
 
 const addEmail = () => {
 	const email = emailInput.value.trim()
@@ -148,6 +190,18 @@ const canSend = computed(() => {
 const sendInvites = () => {
 	if (mode.value === 'manual') emails.value = []
 	else csvFile.value = null
+}
+
+const removePendingUser = (mail: string) => {
+	pendingUsers.value = pendingUsers.value.filter((user) => user.mail !== mail)
+}
+
+const acceptPendingUser = (mail: string) => {
+	removePendingUser(mail)
+}
+
+const rejectPendingUser = (mail: string) => {
+	removePendingUser(mail)
 }
 
 const handleSettings = () => {

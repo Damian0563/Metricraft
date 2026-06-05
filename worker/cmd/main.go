@@ -11,7 +11,7 @@ import (
 	"os"
 	"worker/db"
 	"worker/enter"
-	"worker/types"
+	"worker/rpc"
 )
 
 func loadEnv() {
@@ -50,7 +50,7 @@ func main() {
 			return
 		}
 		grpcServer := grpc.NewServer()
-		s := &types.Server{}
+		s := &rpc.Server{}
 		pb.RegisterMetricraftServer(grpcServer, s)
 		fmt.Println("gRPC server listening on port 50051")
 		err = grpcServer.Serve(lis)
