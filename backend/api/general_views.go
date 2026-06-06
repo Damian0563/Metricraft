@@ -6,7 +6,6 @@ import (
 	"backend/types"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -114,7 +113,34 @@ func ChangeRetention(w http.ResponseWriter, r *http.Request) {
 
 func HandleInvite(w http.ResponseWriter, r *http.Request) {
 	mail := r.URL.Query().Get("user")
-	fmt.Println(mail, r.URL.Query().Get("user"))
+	decision := r.URL.Query().Get("action")
+	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	} else if mail == "" || decision == "" {
+		http.Error(w, "Invalid payload", http.StatusBadRequest)
+		return
+	}
+	token := auth.NewToken(r.Header.Get("Session-Token"))
+	authed := token.ValidateRequest(&w, false)
+	if !authed {
+		return
+	}
+	appName, err := token.GetAppName()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	err = db.HandleInvite(mail, decision, appName)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	err = notifyOfDecision(mail, decision, appName)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -124,12 +150,12 @@ func PendingInvites(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	token := auth.NewToken(r.Header.Get("Session-Token"))
-	authed := token.ValidateRequest(&w, false)
+	authed := token.ValidateRequest(&w, true)
 	if !authed {
-		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
-	pendingUsers, err := db.GetPendingUsers()
+	appName, err := token.GetAppName()
+	pendingUsers, err := db.GetPendingUsers(appName)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -156,7 +182,6 @@ func DashboardInit(w http.ResponseWriter, r *http.Request) {
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, false)
 	if !authed {
-		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	var Response = types.DashboardInitPayload{}
