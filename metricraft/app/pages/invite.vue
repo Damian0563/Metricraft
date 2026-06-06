@@ -101,33 +101,56 @@
 					</div>
 				</div>
 			</div>
-			<div class="max-w-4xl mx-auto mt-8">
+			<div class="max-w-6xl mx-auto mt-8 grid gap-8 lg:grid-cols-2">
+				<div class="bg-white rounded-xl shadow-xl p-8 border border-gray-100">
+					<div class="mb-6">
+						<h2 class="text-2xl font-bold text-gray-900">Current Team</h2>
+						<p class="text-sm text-gray-500 mt-1">Users who currently have access to this project.</p>
+					</div>
+					<div class="space-y-3">
+						<div v-for="user in teamUsers" :key="user.mail"
+							class="flex flex-col gap-3 p-4 bg-gray-50 rounded-lg border border-gray-100 xl:flex-row xl:items-center xl:justify-between">
+							<div class="flex min-w-0 items-center gap-3">
+								<div class="h-10 w-10 shrink-0 rounded-full bg-[#00F376]/10 flex items-center justify-center text-[#00F376] font-semibold">
+									{{ user.initials }}
+								</div>
+								<div class="min-w-0">
+									<p class="font-medium text-gray-900 break-all">{{ user.mail }}</p>
+									<p class="text-xs text-gray-500">{{ user.role }}</p>
+								</div>
+							</div>
+							<span class="w-fit shrink-0 px-3 py-1 rounded-full bg-[#00F376]/10 text-[#00A652] text-xs font-semibold uppercase tracking-wide">
+								Active
+							</span>
+						</div>
+					</div>
+				</div>
 				<div class="bg-white rounded-xl shadow-xl p-8 border border-gray-100">
 					<div class="mb-6">
 						<h2 class="text-2xl font-bold text-gray-900">Pending Verification</h2>
 						<p class="text-sm text-gray-500 mt-1">Review users waiting for access to this project.</p>
 					</div>
-					<div v-if="pendingUsers.length > 0" class="space-y-3">
-						<div v-for="user in pendingUsers" :key="user.mail"
-							class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
-							<div class="flex items-center gap-3">
-								<div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
+					<div v-if="pendingUserList.length > 0" class="space-y-3">
+						<div v-for="user in pendingUserList" :key="user.mail"
+							class="flex flex-col gap-3 p-4 bg-gray-50 rounded-lg border border-gray-100 xl:flex-row xl:items-center xl:justify-between">
+							<div class="flex min-w-0 items-center gap-3">
+								<div class="h-10 w-10 shrink-0 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
 									<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
 										<path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
 											clip-rule="evenodd" />
 									</svg>
 								</div>
-								<div>
-									<p class="font-medium text-gray-900">{{ user.mail }}</p>
+								<div class="min-w-0">
+									<p class="font-medium text-gray-900 break-all">{{ user.mail }}</p>
 									<p class="text-xs text-gray-500">Awaiting verification</p>
 								</div>
 							</div>
-							<div class="flex items-center gap-2">
-								<button @click="acceptPendingUser(user.mail)"
+							<div class="flex shrink-0 items-center gap-2">
+								<button @click="handlePendingUser(user.mail, true)"
 									class="px-4 py-2 bg-[#00F376] text-gray-900 font-semibold rounded-lg hover:bg-[#00D96A] transition-colors cursor-pointer">
 									Accept
 								</button>
-								<button @click="rejectPendingUser(user.mail)"
+								<button @click="handlePendingUser(user.mail, false)"
 									class="px-4 py-2 bg-red-50 text-red-600 font-semibold rounded-lg hover:bg-red-100 transition-colors cursor-pointer">
 									Reject
 								</button>
@@ -143,7 +166,7 @@
 
 <script setup lang="ts">
 import { getCookie, validateEmail } from "@/composables/helpers";
-import { getPendingUsers } from "@/calls/invite";
+import { getPendingUsers, handlePermissionDecision } from "@/calls/invite";
 const appName = useState<string>('appName');
 const mode = ref<'manual' | 'batch'>('manual')
 const emailInput = ref('')
@@ -151,7 +174,13 @@ const emails = ref<string[]>([])
 const csvFile = ref<File | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 const errorMessage = ref('')
-const { data: pendingUsers } = await useAsyncData('pendingUsers', () => getPendingUsers(), { default: () => [] })
+const teamUsers = ref([
+	{ mail: 'alex@metricraft.dev', role: 'Owner', initials: 'AL' },
+	{ mail: 'sam@metricraft.dev', role: 'Developer', initials: 'SA' },
+	{ mail: 'jordan@metricraft.dev', role: 'Analyst', initials: 'JO' },
+])
+const { data: pendingUsers, error: pendingUsersError } = await useAsyncData('pendingUsers', () => getPendingUsers(), { default: () => [] })
+const pendingUserList = computed(() => pendingUsers.value ?? [])
 
 const addEmail = () => {
 	const email = emailInput.value.trim()
@@ -189,15 +218,12 @@ const sendInvites = () => {
 }
 
 const removePendingUser = (mail: string) => {
-	pendingUsers.value = pendingUsers.value.filter((user) => user.mail !== mail)
+	pendingUsers.value = pendingUserList.value.filter(user => user.mail !== mail)
 }
 
-const acceptPendingUser = (mail: string) => {
+const handlePendingUser = (mail: string, action: boolean) => {
 	removePendingUser(mail)
-}
-
-const rejectPendingUser = (mail: string) => {
-	removePendingUser(mail)
+	handlePermissionDecision(mail, action)
 }
 
 const handleSettings = () => {

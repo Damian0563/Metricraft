@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
 	"os"
+	"slices"
 	"time"
 )
 
@@ -92,15 +93,49 @@ func AddToPendingList(mail string, appName string) error {
 	_, err = conn.Exec(context.Background(), "UPDATE users SET pending_users=$1 WHERE app_name=$2 AND owner=true", pending, appName)
 	return err
 }
+func unMarshalUsers(jsonString string, jsonSlice *[]string) {
+	err := json.Unmarshal([]byte(jsonString), jsonSlice)
+	if err != nil {
+		return
+	}
+}
 
-func GetPendingUsers() ([]string, error) {
+func HandleInvite(mail string, decision string, appName string) error {
+	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
+	if err != nil {
+		return err
+	}
+	defer conn.Close(context.Background())
+	var pendingUsers string
+	var allowedUsers string
+	err = conn.QueryRow(context.Background(), "SELECT allowed_users,pending_users FROM users WHERE app_name=$1 AND owner=true", appName).Scan(&allowedUsers, &pendingUsers)
+	if err != nil {
+		return err
+	}
+	var pending []string
+	var allowed []string
+	unMarshalUsers(pendingUsers, &pending)
+	unMarshalUsers(allowedUsers, &allowed)
+	idx := slices.Index(pending, mail)
+	if idx == -1 {
+		return errors.New("User not found")
+	}
+	pending = slices.Delete(pending, idx, idx+1)
+	if decision == "true" {
+		allowed = append(allowed, mail)
+	}
+	_, err = conn.Exec(context.Background(), "UPDATE users SET pending_users=$1,allowed_users=$2 WHERE app_name=$3 AND owner=true", pending, allowed, appName)
+	return err
+}
+
+func GetPendingUsers(appName string) ([]string, error) {
 	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close(context.Background())
 	var pendingUsers string
-	err = conn.QueryRow(context.Background(), "SELECT pending_users FROM users WHERE owner=true").Scan(&pendingUsers)
+	err = conn.QueryRow(context.Background(), "SELECT pending_users FROM users WHERE app_name=$1 AND owner=true", appName).Scan(&pendingUsers)
 	if err != nil {
 		return nil, err
 	}

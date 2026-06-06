@@ -20,3 +20,19 @@ export const getPendingUsers = async (): Promise<PendingUser[]> => {
 		return [];
 	}
 }
+
+export const handlePermissionDecision = async (mail: string, action: boolean): Promise<void> => {
+	try {
+		const config: config = useBackendUrl()
+		const headers = {
+			"Authorization": config.secret,
+			"Session-Token": useCookie("session-token").value || getCookie("session-token") || "",
+		}
+		await $fetch(`${config.httphost}/invites/handle?user=${mail}&action=${action}`, {
+			method: "POST",
+			headers,
+		})
+	} catch (error) {
+		console.error(error);
+	}
+}
