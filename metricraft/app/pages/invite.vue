@@ -107,19 +107,21 @@
 						<h2 class="text-2xl font-bold text-gray-900">Current Team</h2>
 						<p class="text-sm text-gray-500 mt-1">Users who currently have access to this project.</p>
 					</div>
-					<div class="space-y-3">
-						<div v-for="user in teamUsers" :key="user.mail"
+					<div class="space-y-3" v-if="teamUserList.length > 0">
+						<div v-for="(user, index) in teamUserList" :key="user.mail"
 							class="flex flex-col gap-3 p-4 bg-gray-50 rounded-lg border border-gray-100 xl:flex-row xl:items-center xl:justify-between">
 							<div class="flex min-w-0 items-center gap-3">
-								<div class="h-10 w-10 shrink-0 rounded-full bg-[#00F376]/10 flex items-center justify-center text-[#00F376] font-semibold">
+								<div
+									class="h-10 w-10 shrink-0 rounded-full bg-[#00F376]/10 flex items-center justify-center text-[#00F376] font-semibold">
 									{{ user.initials }}
 								</div>
 								<div class="min-w-0">
 									<p class="font-medium text-gray-900 break-all">{{ user.mail }}</p>
-									<p class="text-xs text-gray-500">{{ user.role }}</p>
+									<p class="text-xs text-gray-500" v-if="index === 0"> Owner </p>
 								</div>
 							</div>
-							<span class="w-fit shrink-0 px-3 py-1 rounded-full bg-[#00F376]/10 text-[#00A652] text-xs font-semibold uppercase tracking-wide">
+							<span
+								class="w-fit shrink-0 px-3 py-1 rounded-full bg-[#00F376]/10 text-[#00A652] text-xs font-semibold uppercase tracking-wide">
 								Active
 							</span>
 						</div>
@@ -166,7 +168,7 @@
 
 <script setup lang="ts">
 import { getCookie, validateEmail } from "@/composables/helpers";
-import { getPendingUsers, handlePermissionDecision } from "@/calls/invite";
+import { getPendingUsers, handlePermissionDecision, getTeamUsers } from "@/calls/invite";
 const appName = useState<string>('appName');
 const mode = ref<'manual' | 'batch'>('manual')
 const emailInput = ref('')
@@ -174,13 +176,13 @@ const emails = ref<string[]>([])
 const csvFile = ref<File | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 const errorMessage = ref('')
-const teamUsers = ref([
-	{ mail: 'alex@metricraft.dev', role: 'Owner', initials: 'AL' },
-	{ mail: 'sam@metricraft.dev', role: 'Developer', initials: 'SA' },
-	{ mail: 'jordan@metricraft.dev', role: 'Analyst', initials: 'JO' },
-])
 const { data: pendingUsers, error: pendingUsersError } = await useAsyncData('pendingUsers', () => getPendingUsers(), { default: () => [] })
+const { data: teamUsers, error: teamUsersError } = await useAsyncData('teamUsers', () => getTeamUsers(), { default: () => [] })
 const pendingUserList = computed(() => pendingUsers.value ?? [])
+const teamUserList = computed(() => teamUsers.value ?? [])
+
+watch(pendingUsersError, () => errorMessage.value = pendingUsersError.value?.message ?? '')
+watch(teamUsersError, () => errorMessage.value = teamUsersError.value?.message ?? '')
 
 const addEmail = () => {
 	const email = emailInput.value.trim()
@@ -224,6 +226,9 @@ const removePendingUser = (mail: string) => {
 const handlePendingUser = (mail: string, action: boolean) => {
 	removePendingUser(mail)
 	handlePermissionDecision(mail, action)
+	// if (action) {
+	// 	teamUsers.value.push({ mail: mail, initials: mail[0: 2] })
+	// }
 }
 
 const handleSettings = () => {
