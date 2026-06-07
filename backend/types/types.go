@@ -48,3 +48,8 @@ type Metric struct {
 type PendingUsers struct {
 	Mail string `json:"mail"`
 }
+
+type AllowedUsers struct {
+	Mail     string `json:"mail"`
+	Initials string `json:"initials"`
+}

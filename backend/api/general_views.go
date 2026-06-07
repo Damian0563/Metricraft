@@ -111,6 +111,38 @@ func ChangeRetention(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+func TeamMembers(w http.ResponseWriter, r *http.Request) {
+	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	token := auth.NewToken(r.Header.Get("Session-Token"))
+	authed := token.ValidateRequest(&w, false)
+	if !authed {
+		return
+	}
+	appName, err := token.GetAppName()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	type teamMembersPayload struct {
+		Users []types.AllowedUsers `json:"users"`
+	}
+	var payload teamMembersPayload
+	payload.Users, err = db.GetTeamUsers(appName)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	response, err := json.Marshal(payload)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Write(response)
+}
+
 func HandleInvite(w http.ResponseWriter, r *http.Request) {
 	mail := r.URL.Query().Get("user")
 	decision := r.URL.Query().Get("action")

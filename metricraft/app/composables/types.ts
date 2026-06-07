@@ -16,6 +16,10 @@ export type pendingUsersPayload = {
 	users: Array<{ mail: string }>;
 }
 
+export type allowedUsersPayload = {
+	users: Array<{ mail: string, initials: string }>;
+}
+
 export type config = {
 	secret: string,
 	httphost: string,

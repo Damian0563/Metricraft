@@ -10,6 +10,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"os"
 	"slices"
+	"strings"
 	"time"
 )
 
@@ -93,6 +94,7 @@ func AddToPendingList(mail string, appName string) error {
 	_, err = conn.Exec(context.Background(), "UPDATE users SET pending_users=$1 WHERE app_name=$2 AND owner=true", pending, appName)
 	return err
 }
+
 func unMarshalUsers(jsonString string, jsonSlice *[]string) {
 	err := json.Unmarshal([]byte(jsonString), jsonSlice)
 	if err != nil {
@@ -126,6 +128,31 @@ func HandleInvite(mail string, decision string, appName string) error {
 	}
 	_, err = conn.Exec(context.Background(), "UPDATE users SET pending_users=$1,allowed_users=$2 WHERE app_name=$3 AND owner=true", pending, allowed, appName)
 	return err
+}
+
+func GetTeamUsers(appName string) ([]types.AllowedUsers, error) {
+	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close(context.Background())
+	var teamUsers string
+	var owner string
+	err = conn.QueryRow(context.Background(), "SELECT mail,allowed_users FROM users WHERE app_name=$1 AND owner=true", appName).Scan(&owner, &teamUsers)
+	if err != nil {
+		return nil, err
+	}
+	var users []string
+	err = json.Unmarshal([]byte(teamUsers), &users)
+	if err != nil {
+		return nil, err
+	}
+	users = slices.Insert(users, 0, owner)
+	var response []types.AllowedUsers
+	for _, user := range users {
+		response = append(response, types.AllowedUsers{Mail: user, Initials: strings.ToUpper(user[0:2])})
+	}
+	return response, nil
 }
 
 func GetPendingUsers(appName string) ([]string, error) {
