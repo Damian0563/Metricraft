@@ -13,7 +13,7 @@
 				</button>
 				<h1 class="text-3xl font-bold text-center" style="color: #00F376;">Invite Team Members</h1>
 			</div>
-			<div class="max-w-4xl mx-auto">
+			<div class="max-w-7xl mx-auto">
 				<div class="bg-white rounded-xl shadow-xl p-8 border border-gray-100">
 					<div class="flex gap-4 mb-8 border-b border-gray-200">
 						<button @click="mode = 'manual'"
@@ -101,7 +101,7 @@
 					</div>
 				</div>
 			</div>
-			<div class="max-w-6xl mx-auto mt-8 grid gap-8 lg:grid-cols-2">
+			<div class="max-w-7xl mx-auto mt-8 grid gap-8 lg:grid-cols-2">
 				<div class="bg-white rounded-xl shadow-xl p-8 border border-gray-100">
 					<div class="mb-6">
 						<h2 class="text-2xl font-bold text-gray-900">Current Team</h2>
@@ -167,8 +167,11 @@
 </template>
 
 <script setup lang="ts">
+import type { allowedUsersPayload, pendingUsersPayload } from "@/composables/types";
 import { getCookie, validateEmail } from "@/composables/helpers";
 import { getPendingUsers, handlePermissionDecision, getTeamUsers } from "@/calls/invite";
+type PendingUser = pendingUsersPayload["users"][number]
+type TeamUser = allowedUsersPayload["users"][number]
 const appName = useState<string>('appName');
 const mode = ref<'manual' | 'batch'>('manual')
 const emailInput = ref('')
@@ -176,8 +179,8 @@ const emails = ref<string[]>([])
 const csvFile = ref<File | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 const errorMessage = ref('')
-const { data: pendingUsers, error: pendingUsersError } = await useAsyncData('pendingUsers', () => getPendingUsers(), { default: () => [] })
-const { data: teamUsers, error: teamUsersError } = await useAsyncData('teamUsers', () => getTeamUsers(), { default: () => [] })
+const { data: pendingUsers, error: pendingUsersError } = await useAsyncData<PendingUser[]>('pendingUsers', () => getPendingUsers(), { default: () => [] })
+const { data: teamUsers, error: teamUsersError } = await useAsyncData<TeamUser[]>('teamUsers', () => getTeamUsers(), { default: () => [] })
 const pendingUserList = computed(() => pendingUsers.value ?? [])
 const teamUserList = computed(() => teamUsers.value ?? [])
 
@@ -223,12 +226,16 @@ const removePendingUser = (mail: string) => {
 	pendingUsers.value = pendingUserList.value.filter(user => user.mail !== mail)
 }
 
-const handlePendingUser = (mail: string, action: boolean) => {
-	removePendingUser(mail)
-	handlePermissionDecision(mail, action)
-	// if (action) {
-	// 	teamUsers.value.push({ mail: mail, initials: mail[0: 2] })
-	// }
+const handlePendingUser = async (mail: string, action: boolean) => {
+	try {
+		await handlePermissionDecision(mail, action)
+		removePendingUser(mail)
+		if (action) {
+			teamUsers.value?.push({ mail, initials: mail.slice(0, 2).toUpperCase() })
+		}
+	} catch (error) {
+		errorMessage.value = error instanceof Error ? error.message : 'Failed to change invite status.'
+	}
 }
 
 const handleSettings = () => {

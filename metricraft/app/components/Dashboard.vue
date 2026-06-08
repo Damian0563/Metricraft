@@ -1,6 +1,6 @@
 <template>
 	<div>
-		<DashboardNav @settings=handleSettings />
+		<DashboardNav @settings=handleSettings @team=handleTeam />
 		<GraphGrid v-if="!settings" :metrics="derivedMetrics" @load="emit('load')" />
 		<Settings v-if="settings" :realtimeEnabled="realtimeEnabled" :logRetention="logRetention"
 			:derivedMetrics="derivedMetrics" @realtime-toggle="handleRealtimeToggle" @customize-view="handleCustomizeView"
@@ -60,6 +60,9 @@ const handleSettings = () => {
 	navigateTo('/dashboard?settings')
 }
 
+const handleTeam = () => {
+	navigateTo('/invite')
+}
 const handleCustomizeView = (val: boolean) => {
 	console.log(val);
 };

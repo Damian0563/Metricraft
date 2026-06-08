@@ -227,8 +227,6 @@ const handleComplete = async (code: string) => {
 	if (!verified.success) {
 		if (verified.status === 403) {
 			emit('notice', String(verified.err));
-		} else {
-			emit('popup', String(verified.err));
 		}
 		validCode.value = false
 	} else {

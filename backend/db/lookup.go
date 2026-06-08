@@ -24,7 +24,7 @@ func SignToken(token string, rotate bool) (string, error) {
 		return client.Get(ctx, token).Result()
 	}
 	signed := token + ":" + uuid.New().String()
-	err := client.Set(ctx, token, signed, 1*time.Hour).Err()
+	err := client.Set(ctx, token, signed, 24*time.Hour).Err()
 	if err != nil {
 		return "", err
 	}
@@ -40,7 +40,7 @@ func UpdateToken(token string) error {
 	defer client.Close()
 	ctx := context.Background()
 	parts := strings.Split(token, ":")
-	err := client.Set(ctx, parts[0], token, 1*time.Hour).Err()
+	err := client.Set(ctx, parts[0], token, 24*time.Hour).Err()
 	if err != nil {
 		return err
 	}
