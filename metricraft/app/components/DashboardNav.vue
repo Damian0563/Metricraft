@@ -17,6 +17,10 @@
 					<div class="relative">
 						<div v-if="options"
 							class="absolute top-0 right-0 z-10 mt-6 mr-2 bg-white rounded-xl shadow-xl p-4 min-w-48 border border-gray-100 justfy-center">
+							<span @click="emit('team'); options = false"
+								class="text-sm font-medium text-gray-700 mt-4 hover:cursor-pointer text-center block">
+								Team
+							</span>
 							<span @click="emit('settings'); options = false"
 								class="text-sm font-medium text-gray-700 mt-4 hover:cursor-pointer text-center block">
 								Settings
@@ -38,6 +42,7 @@ import { invalidateCookie } from "~/composables/helpers"
 const appName = useState<string>('appName');
 const emit = defineEmits<{
 	settings: [value: void];
+	team: [value: void];
 }>();
 const options = ref(false)
 const signOut = () => {
