@@ -125,7 +125,7 @@
 <script setup lang="ts">
 import type { signPayload } from '@/composables/types';
 import { validateEmail, evaluatePasswordStrength } from '@/composables/helpers';
-import { sign, verify, sendVerification } from '~/calls/welcome';
+import { sign, verify, sendVerification, sendRecovery } from '~/calls/welcome';
 const props = defineProps<{
 	oldUser: boolean;
 }>();
@@ -259,8 +259,9 @@ const handleForgotSubmit = async (recoveryMail: string) => {
 	}
 	forgotLoading.value = true;
 	try {
-		emit('popup', 'If an account exists for that email, a recovery link has been sent.');
 		showForgotPassword.value = false;
+		await sendRecovery(recoveryMail);
+		emit('popup', 'Recovery link has been sent.');
 	} catch (e) {
 		emit('popup', String(e));
 	} finally {

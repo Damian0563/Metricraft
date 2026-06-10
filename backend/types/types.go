@@ -53,3 +53,7 @@ type AllowedUsers struct {
 	Mail     string `json:"mail"`
 	Initials string `json:"initials"`
 }
+type SendRecoveryUser struct {
+	Mail string `json:"mail"`
+	Id   string `json:"id:omitempty"`
+}

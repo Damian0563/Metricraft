@@ -3,6 +3,7 @@ package api
 import (
 	"backend/auth"
 	"backend/db"
+	mailer "backend/mail"
 	"backend/types"
 	"encoding/json"
 	"errors"
@@ -168,7 +169,7 @@ func HandleInvite(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	err = notifyOfDecision(mail, decision, appName)
+	err = mailer.NotifyDecision(mail, decision, appName)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

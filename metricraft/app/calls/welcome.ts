@@ -80,6 +80,26 @@ export const verify = async (mail: string, code: string, appName: string): Promi
 	}
 }
 
+export const sendRecovery = async (mail: string): Promise<void> => {
+	const config: config = useBackendUrl()
+	const headers = {
+		"Authorization": config.secret,
+		"Content-Type": "application/json",
+	}
+	try {
+		await $fetch(`${config.httphost}/recovery/send`, {
+			method: 'POST',
+			headers,
+			body: JSON.stringify({ "mail": mail }),
+		})
+	} catch (e: any) {
+		if (e.status === 429) {
+			throw "Too many requests, try again later."
+		}
+		throw "Something went wrong, Check your internet connection and try again."
+	}
+}
+
 export const sendVerification = async (mail: string): Promise<verifyResponse> => {
 	const config: config = useBackendUrl()
 	const headers = {

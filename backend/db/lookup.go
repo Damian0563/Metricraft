@@ -31,6 +31,21 @@ func SignToken(token string, rotate bool) (string, error) {
 	return signed, nil
 }
 
+func SetRecovery(token string, recovery string) error {
+	client := redis.NewClient(&redis.Options{
+		Addr:     os.Getenv("redis"),
+		Password: "",
+		DB:       0,
+	})
+	defer client.Close()
+	ctx := context.Background()
+	err := client.Set(ctx, token, recovery, 10*time.Minute).Err()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func UpdateToken(token string) error {
 	client := redis.NewClient(&redis.Options{
 		Addr:     os.Getenv("redis"),
