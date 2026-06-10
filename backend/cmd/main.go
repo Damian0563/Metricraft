@@ -76,6 +76,10 @@ func main() {
 		r.Post("/verify/send", api.SendVerification)
 		r.Post("/verify/check", api.CheckVerification)
 	})
+	router.Group(func(r chi.Router) {
+		r.Use(httprate.LimitByIP(4, time.Minute))
+		r.Post("/recovery/send", api.SendRecovery)
+	})
 	go api.StartWebSocketServer(router)
 	conn, err = grpc.NewClient(fmt.Sprintf("dns:///%v", os.Getenv("grpc")), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {

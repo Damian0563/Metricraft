@@ -71,6 +71,23 @@ func CheckAllowed(routine chan types.ExistsErrResponse, mail string, appName str
 	}
 }
 
+func GetRecoveryUser(recoveryMail string) (types.SendRecoveryUser, error) {
+	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
+	if err != nil {
+		return types.SendRecoveryUser{}, err
+	}
+	defer conn.Close(context.Background())
+	var id string
+	var mail string
+	err = conn.QueryRow(context.Background(), "SELECT id,mail FROM recovery WHERE mail=$1", recoveryMail).Scan(&id, &mail)
+	if err != nil {
+		return types.SendRecoveryUser{}, err
+	} else if id == "" {
+		return types.SendRecoveryUser{}, errors.New("User to be recovered not found.")
+	}
+	return types.SendRecoveryUser{Mail: mail, Id: id}, nil
+}
+
 func AddToPendingList(mail string, appName string) error {
 	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
 	if err != nil {
