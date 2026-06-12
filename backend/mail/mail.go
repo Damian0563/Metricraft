@@ -48,12 +48,8 @@ func NotifyDecision(to, decision, appName string) error {
 	return send(to, subject, body)
 }
 
-func SendLink(to, subject, title, message, linkURL, linkText string) error {
-	body := strings.ReplaceAll(linkEmailTemplate, "{{TITLE}}", html.EscapeString(title))
-	body = strings.ReplaceAll(body, "{{MESSAGE}}", html.EscapeString(message))
-	body = strings.ReplaceAll(body, "{{LINK_URL}}", html.EscapeString(linkURL))
-	body = strings.ReplaceAll(body, "{{LINK_TEXT}}", html.EscapeString(linkText))
-
+func SendRecovery(to, subject, linkURL string) error {
+	body := strings.ReplaceAll(linkEmailTemplate, "{{LINK_URL}}", html.EscapeString(linkURL))
 	return send(to, subject, body)
 }
 

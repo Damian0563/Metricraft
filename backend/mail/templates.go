@@ -274,7 +274,7 @@ const linkEmailTemplate = `<!DOCTYPE html>
 </head>
 <body style="margin:0;padding:0;background-color:#0A0E13;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#ffffff;">
   <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
-    {{TITLE}} - {{MESSAGE}}
+    Password Recovery
   </div>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#0A0E13;padding:32px 16px;">
     <tr>
@@ -298,17 +298,14 @@ const linkEmailTemplate = `<!DOCTYPE html>
           <tr>
             <td style="padding:40px 32px 8px 32px;">
               <h1 style="margin:0 0 12px 0;font-size:26px;line-height:1.3;color:#ffffff;font-weight:600;letter-spacing:-0.3px;">
-                {{TITLE}}
+                Password Recovery
               </h1>
-              <p style="margin:0;font-size:15px;line-height:1.6;color:#9aa5b1;">
-                {{MESSAGE}}
-              </p>
             </td>
           </tr>
           <tr>
             <td align="center" style="padding:32px 32px 24px 32px;">
               <a href="{{LINK_URL}}" style="display:inline-block;padding:16px 28px;background:#00F376;border:1px solid #00F376;border-radius:12px;color:#0A0E13;font-size:15px;font-weight:800;text-decoration:none;letter-spacing:0.2px;box-shadow:0 0 0 1px rgba(0,243,118,0.15),0 0 24px rgba(0,243,118,0.25);">
-                {{LINK_TEXT}}
+                Reset Password
               </a>
             </td>
           </tr>

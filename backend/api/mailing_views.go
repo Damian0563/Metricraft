@@ -5,6 +5,7 @@ import (
 	"backend/mail"
 	"backend/types"
 	"encoding/json"
+	"fmt"
 	"github.com/google/uuid"
 	"net/http"
 	"os"
@@ -34,7 +35,17 @@ func SendRecovery(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
 			return
 		}
-		//Send mail
+		if base := os.Getenv("ALLOWED_ORIGINS"); base != "" {
+			link := fmt.Sprintf("%s/recovery/%s", base, id)
+			err = mail.SendRecovery(user.Mail, "Password Recovery", link)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+			} else {
+				w.WriteHeader(http.StatusOK)
+			}
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
 	}
 }
 
