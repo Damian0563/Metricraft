@@ -55,5 +55,5 @@ type AllowedUsers struct {
 }
 type SendRecoveryUser struct {
 	Mail string `json:"mail"`
-	Id   string `json:"id:omitempty"`
+	Id   string `json:"id,omitempty"`
 }
