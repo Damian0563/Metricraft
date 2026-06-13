@@ -260,12 +260,14 @@ const handleForgotSubmit = async (recoveryMail: string) => {
 	forgotLoading.value = true;
 	try {
 		showForgotPassword.value = false;
+		emit('load');
 		await sendRecovery(recoveryMail);
 		emit('popup', 'Recovery link has been sent.');
 	} catch (e) {
 		emit('popup', String(e));
 	} finally {
 		forgotLoading.value = false;
+		emit('load');
 	}
 }
 

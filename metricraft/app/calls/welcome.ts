@@ -100,6 +100,31 @@ export const sendRecovery = async (mail: string): Promise<void> => {
 	}
 }
 
+export const checkRecovery = async (id: string, password: string): Promise<void> => {
+	const config: config = useBackendUrl()
+	const headers = {
+		"Authorization": config.secret,
+		"Content-Type": "application/json",
+	}
+	try {
+		await $fetch(`${config.httphost}/recovery/check?id=${encodeURIComponent(id)}`, {
+			method: 'POST',
+			headers,
+			body: JSON.stringify({ password }),
+		})
+	} catch (e: any) {
+		if (e.status === 429) {
+			throw "Too many requests, try again later."
+		}
+		else if (e.status === 400) {
+			throw "Bad request, try again."
+		} else if (e.status === 403) {
+			throw "Recovery link is invalid or has expired."
+		}
+		throw "Something went wrong, Check your internet connection and try again."
+	}
+}
+
 export const sendVerification = async (mail: string): Promise<verifyResponse> => {
 	const config: config = useBackendUrl()
 	const headers = {

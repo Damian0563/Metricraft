@@ -39,7 +39,52 @@ func SetRecovery(token string, recovery string) error {
 	})
 	defer client.Close()
 	ctx := context.Background()
-	err := client.Set(ctx, token, recovery, 10*time.Minute).Err()
+	err := client.Set(ctx, "recovery:"+recovery, token, 10*time.Minute).Err()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func FetchRecoveryUser(recovery string) (string, error) {
+	client := redis.NewClient(&redis.Options{
+		Addr:     os.Getenv("redis"),
+		Password: "",
+		DB:       0,
+	})
+	defer client.Close()
+	ctx := context.Background()
+	token, err := client.Get(ctx, "recovery:"+recovery).Result()
+	if err != nil {
+		return "", err
+	}
+	return token, nil
+}
+
+func InvalidateRecovery(recovery string) error {
+	client := redis.NewClient(&redis.Options{
+		Addr:     os.Getenv("redis"),
+		Password: "",
+		DB:       0,
+	})
+	defer client.Close()
+	ctx := context.Background()
+	err := client.Del(ctx, "recovery:"+recovery).Err()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func InvalidateSession(token string) error {
+	client := redis.NewClient(&redis.Options{
+		Addr:     os.Getenv("redis"),
+		Password: "",
+		DB:       0,
+	})
+	defer client.Close()
+	ctx := context.Background()
+	err := client.Del(ctx, token).Err()
 	if err != nil {
 		return err
 	}

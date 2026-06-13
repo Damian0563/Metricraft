@@ -11,6 +11,35 @@ import (
 	"os"
 )
 
+func CheckRecovery(w http.ResponseWriter, r *http.Request) {
+	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	userId, err := db.FetchRecoveryUser(id)
+	if err != nil {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+	var payload types.RecoveryCheckPayload
+	if err = json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if err = db.ChangePassword(userId, payload.Password); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	} else {
+		db.InvalidateSession(userId)
+		db.InvalidateRecovery(id)
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
 func SendRecovery(w http.ResponseWriter, r *http.Request) {
 	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
