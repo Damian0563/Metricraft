@@ -79,13 +79,27 @@ func GetRecoveryUser(recoveryMail string) (types.SendRecoveryUser, error) {
 	defer conn.Close(context.Background())
 	var id string
 	var mail string
-	err = conn.QueryRow(context.Background(), "SELECT id,mail FROM recovery WHERE mail=$1", recoveryMail).Scan(&id, &mail)
+	err = conn.QueryRow(context.Background(), "SELECT uuid,mail FROM users WHERE mail=$1", recoveryMail).Scan(&id, &mail)
 	if err != nil {
 		return types.SendRecoveryUser{}, err
 	} else if id == "" {
 		return types.SendRecoveryUser{}, errors.New("User to be recovered not found.")
 	}
 	return types.SendRecoveryUser{Mail: mail, Id: id}, nil
+}
+
+func ChangePassword(userId string, password string) error {
+	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
+	if err != nil {
+		return err
+	}
+	defer conn.Close(context.Background())
+	hashedSecret, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	_, err = conn.Exec(context.Background(), "UPDATE users SET secret=$1 WHERE uuid=$2", string(hashedSecret), userId)
+	return err
 }
 
 func AddToPendingList(mail string, appName string) error {

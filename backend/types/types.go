@@ -57,3 +57,7 @@ type SendRecoveryUser struct {
 	Mail string `json:"mail"`
 	Id   string `json:"id,omitempty"`
 }
+
+type RecoveryCheckPayload struct {
+	Password string `json:"password"`
+}
