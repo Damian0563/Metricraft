@@ -2,6 +2,7 @@ package auth
 
 import (
 	"backend/db"
+	"backend/redis"
 	"net/http"
 	"strings"
 )
@@ -21,15 +22,15 @@ func (t Token) GetAppName() (string, error) {
 
 func (t Token) Sign(rotate bool) (string, error) {
 	split := strings.Split(t.token, ":")
-	return db.SignToken(split[0], rotate)
+	return redis.SignToken(split[0], rotate)
 }
 
 func (t Token) Verify() (bool, error) {
-	return db.CheckToken(t.token)
+	return redis.CheckToken(t.token)
 }
 
 func (t Token) UpdateToken() error {
-	return db.UpdateToken(t.token)
+	return redis.UpdateToken(t.token)
 }
 
 func (t Token) ValidateRequest(w *http.ResponseWriter, rotate bool) bool {

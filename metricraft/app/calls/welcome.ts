@@ -118,7 +118,7 @@ export const checkRecovery = async (id: string, password: string): Promise<void>
 		}
 		else if (e.status === 400) {
 			throw "Bad request, try again."
-		} else if (e.status === 403) {
+		} else if (e.status === 403 || e.status === 401) {
 			throw "Recovery link is invalid or has expired."
 		}
 		throw "Something went wrong, Check your internet connection and try again."

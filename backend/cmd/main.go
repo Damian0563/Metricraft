@@ -2,6 +2,7 @@ package main
 
 import (
 	"backend/api"
+	"backend/redis"
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/httprate"
@@ -55,6 +56,7 @@ func main() {
 		os.Setenv("redis", "127.0.0.1:6379")
 		os.Setenv("grpc", "127.0.0.1:50051")
 	}
+	redis.InitClient()
 	router := chi.NewRouter()
 	router.Use(corsMiddleware)
 	router.Use(httprate.LimitByIP(20, 1*time.Second))

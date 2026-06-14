@@ -3,6 +3,7 @@ package api
 import (
 	"backend/db"
 	"backend/mail"
+	"backend/redis"
 	"backend/types"
 	"encoding/json"
 	"fmt"
@@ -21,7 +22,7 @@ func CheckRecovery(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	userId, err := db.FetchRecoveryUser(id)
+	userId, err := redis.FetchRecoveryUser(id)
 	if err != nil {
 		w.WriteHeader(http.StatusForbidden)
 		return
@@ -34,8 +35,8 @@ func CheckRecovery(w http.ResponseWriter, r *http.Request) {
 	if err = db.ChangePassword(userId, payload.Password); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	} else {
-		db.InvalidateSession(userId)
-		db.InvalidateRecovery(id)
+		redis.InvalidateSession(userId)
+		redis.InvalidateRecovery(id)
 		w.WriteHeader(http.StatusOK)
 	}
 }
@@ -59,7 +60,7 @@ func SendRecovery(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		id := uuid.New().String()
-		err = db.SetRecovery(user.Id, id)
+		err = redis.SetRecovery(user.Id, id)
 		if err != nil {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
 			return
@@ -99,8 +100,8 @@ func SendVerification(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	code := db.GenerateCode()
-	err := db.SetCodeValidity(mailAddress, code)
+	code := redis.GenerateCode()
+	err := redis.SetCodeValidity(mailAddress, code)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -127,7 +128,7 @@ func CheckVerification(w http.ResponseWriter, r *http.Request) {
 	json.NewDecoder(r.Body).Decode(&payload)
 	var routine = make(chan types.ExistsErrResponse, 2)
 	go db.CheckAllowed(routine, payload.Mail, payload.AppName)
-	go db.CheckCodeValidity(routine, payload.Mail, payload.Code)
+	go redis.CheckCodeValidity(routine, payload.Mail, payload.Code)
 	var (
 		codeValid   bool
 		permitted   bool
