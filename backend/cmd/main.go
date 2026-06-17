@@ -73,6 +73,7 @@ func main() {
 	router.Get("/invites/pending", api.PendingInvites)
 	router.Get("/invites/team", api.TeamMembers)
 	router.Post("/invites/handle", api.HandleInvite) //?user=string&action=boolean
+	router.Post("/invites/send", api.SendInvites) //?mode=string
 	router.Group(func(r chi.Router) {
 		r.Use(httprate.LimitByIP(6, time.Minute))
 		r.Post("/verify/send", api.SendVerification)

@@ -144,6 +144,34 @@ func TeamMembers(w http.ResponseWriter, r *http.Request) {
 	w.Write(response)
 }
 
+func SendInvites(w http.ResponseWriter, r *http.Request) {
+	mode := r.URL.Query().Get("mode")
+	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	} else if mode == "" {
+		http.Error(w, "Invalid payload", http.StatusBadRequest)
+		return
+	}
+	if mode == "manual" {
+		type Invite struct {
+			Invitees []string `json:"invitees"`
+		}
+		var invitees Invite
+		json.NewDecoder(r.Body).Decode(&invitees)
+		err := mailer.SendManualInvites(invitees.Invitees)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		} else {
+			w.WriteHeader(http.StatusOK)
+		}
+	} else if mode == "batch" {
+
+	} else {
+		http.Error(w, "Invalid payload", http.StatusBadRequest)
+	}
+}
+
 func HandleInvite(w http.ResponseWriter, r *http.Request) {
 	mail := r.URL.Query().Get("user")
 	decision := r.URL.Query().Get("action")

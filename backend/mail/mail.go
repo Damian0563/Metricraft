@@ -53,6 +53,15 @@ func SendRecovery(to, subject, linkURL string) error {
 	return send(to, subject, body)
 }
 
+func SendInvite(to string) error {
+	inviteURL := strings.TrimRight(os.Getenv("frontend"), "/")
+	if inviteURL == "" {
+		inviteURL = strings.TrimRight(os.Getenv("host"), "/")
+	}
+	body := strings.ReplaceAll(inviteEmailTemplate, "{{INVITE_URL}}", html.EscapeString(inviteURL))
+	return send(to, "You have been invited to Metricraft", body)
+}
+
 func send(to, subject, body string) error {
 	apiKey := os.Getenv("GOOGLE_APP_PASSWORD")
 	if apiKey == "" {
@@ -73,6 +82,16 @@ func buildMessage(to, subject, body string) []byte {
 		"\r\n"
 
 	return []byte(headers + body)
+}
+
+func SendManualInvites(invitees []string) error {
+	for _, invitee := range invitees {
+		err := SendInvite(invitee)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func sanitizeHeaderValue(value string) string {
