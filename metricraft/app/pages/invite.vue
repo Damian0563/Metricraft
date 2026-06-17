@@ -2,6 +2,7 @@
 	<div>
 		<DashboardNav :appName="appName" @settings="handleSettings" />
 		<Popup :message="errorMessage" @close="errorMessage = ''" />
+		<Spinner :loading="loading" />
 		<div class="w-full px-8 py-2">
 			<div class="relative flex items-center justify-center mb-6">
 				<button @click="goBack"
@@ -30,13 +31,16 @@
 							<label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
 							<div class="flex gap-3">
 								<input v-model="emailInput" type="email" placeholder="colleague@example.com"
-									class="flex-1 px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:border-[#00F376] transition-colors text-gray-800"
+									:class="['flex-1 px-4 py-2 rounded-lg border focus:outline-none transition-colors text-gray-800', inviteInputState.message ? 'border-red-300 focus:border-red-400' : 'border-gray-200 focus:border-[#00F376]']"
 									@keyup.enter="addEmail" />
-								<button @click="addEmail"
-									class="px-6 py-2 bg-[#00F376] text-gray-900 font-semibold rounded-lg hover:bg-[#00D96A] transition-colors shadow-md cursor-pointer">
+								<button @click="addEmail" :disabled="!inviteInputState.canAdd"
+									class="px-6 py-2 bg-[#00F376] text-gray-900 font-semibold rounded-lg hover:bg-[#00D96A] transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
 									Add
 								</button>
 							</div>
+							<p v-if="inviteInputState.message" class="mt-2 text-sm text-red-600">
+								{{ inviteInputState.message }}
+							</p>
 						</div>
 						<div v-if="emails.length > 0">
 							<h3 class="text-sm font-semibold text-gray-800 mb-3">Pending Invites ({{ emails.length }})</h3>
@@ -169,7 +173,7 @@
 <script setup lang="ts">
 import type { allowedUsersPayload, pendingUsersPayload } from "@/composables/types";
 import { getCookie, validateEmail } from "@/composables/helpers";
-import { getPendingUsers, handlePermissionDecision, getTeamUsers } from "@/calls/invite";
+import { getPendingUsers, handlePermissionDecision, getTeamUsers, sendManualInvitesToUsers } from "@/calls/invite";
 type PendingUser = pendingUsersPayload["users"][number]
 type TeamUser = allowedUsersPayload["users"][number]
 const appName = useState<string>('appName');
@@ -179,20 +183,39 @@ const emails = ref<string[]>([])
 const csvFile = ref<File | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 const errorMessage = ref('')
+const loading = ref(false)
 const { data: pendingUsers, error: pendingUsersError } = await useAsyncData<PendingUser[]>('pendingUsers', () => getPendingUsers(), { default: () => [] })
 const { data: teamUsers, error: teamUsersError } = await useAsyncData<TeamUser[]>('teamUsers', () => getTeamUsers(), { default: () => [] })
 const pendingUserList = computed(() => pendingUsers.value ?? [])
 const teamUserList = computed(() => teamUsers.value ?? [])
+const inviteInputState = computed(() => {
+	const email = emailInput.value.trim().toLowerCase()
+	let message = ''
+	if (emails.value.some(invite => invite.toLowerCase() === email)) {
+		message = 'This email address is already in your invite list.'
+	}
+	else if (teamUserList.value.some(user => user.mail.toLowerCase() === email)) {
+		message = 'This user is already a member of this organisation.'
+	}
+	else if (pendingUserList.value.some(user => user.mail.toLowerCase() === email)) {
+		message = 'This user already has a pending verification request.'
+	}
+	return {
+		email,
+		message,
+		canAdd: validateEmail(email) && message === '',
+	}
+})
 
 watch(pendingUsersError, () => errorMessage.value = pendingUsersError.value?.message ?? '')
 watch(teamUsersError, () => errorMessage.value = teamUsersError.value?.message ?? '')
 
 const addEmail = () => {
-	const email = emailInput.value.trim()
-	if (emails.value.includes(email)) {
-		errorMessage.value = 'This email address is already in the list of invites.'
+	const { email, message, canAdd } = inviteInputState.value
+	if (message) {
+		return
 	}
-	else if (email && validateEmail(email)) {
+	if (canAdd) {
 		emails.value.push(email)
 		emailInput.value = ''
 	} else {
@@ -217,9 +240,25 @@ const canSend = computed(() => {
 	return csvFile.value !== null
 })
 
-const sendInvites = () => {
-	if (mode.value === 'manual') emails.value = []
-	else csvFile.value = null
+const sendInvites = async () => {
+	loading.value = true
+	try {
+		if (mode.value === 'manual') {
+			if (emails.value.length === 0) {
+				errorMessage.value = 'Please enter at least one email address.'
+				return
+			}
+			await sendManualInvitesToUsers(emails.value)
+			emails.value.forEach(email => pendingUsers.value?.push({ mail: email }))
+			emails.value = []
+		} else {
+			csvFile.value = null
+		}
+	} catch (error) {
+		errorMessage.value = 'Failed to send invites.'
+	} finally {
+		loading.value = false
+	}
 }
 
 const removePendingUser = (mail: string) => {
