@@ -102,6 +102,34 @@ func ChangePassword(userId string, password string) error {
 	return err
 }
 
+func AllowUsers(mails []string, appName string, errChannel chan error) {
+	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
+	if err != nil {
+		errChannel <- err
+		return
+	}
+	defer conn.Close(context.Background())
+	var allowedUsers string
+	err = conn.QueryRow(context.Background(), "SELECT allowed_users FROM users WHERE app_name=$1 AND owner=true", appName).Scan(&allowedUsers)
+	if err != nil {
+		errChannel <- err
+		return
+	}
+	var allowed []string
+	unMarshalUsers(allowedUsers, &allowed)
+	for _, mail := range mails {
+		if !slices.Contains(allowed, mail) {
+			allowed = append(allowed, mail)
+		}
+	}
+	_, err = conn.Exec(context.Background(), "UPDATE users SET allowed_users=$1 WHERE app_name=$2 AND owner=true", allowed, appName)
+	if err != nil {
+		errChannel <- err
+		return
+	}
+	errChannel <- nil
+}
+
 func AddToPendingList(mail string, appName string) error {
 	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
 	if err != nil {

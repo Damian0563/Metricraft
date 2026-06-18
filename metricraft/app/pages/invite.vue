@@ -249,7 +249,7 @@ const sendInvites = async () => {
 				return
 			}
 			await sendManualInvitesToUsers(emails.value)
-			emails.value.forEach(email => pendingUsers.value?.push({ mail: email }))
+			emails.value.forEach(email => teamUsers.value?.push({ mail: email, initials: email.slice(0, 2).toUpperCase() }))
 			emails.value = []
 		} else {
 			csvFile.value = null
