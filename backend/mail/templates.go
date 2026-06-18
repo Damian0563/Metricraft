@@ -344,7 +344,7 @@ const inviteEmailTemplate = `<!DOCTYPE html>
 </head>
 <body style="margin:0;padding:0;background-color:#0A0E13;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#ffffff;">
   <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
-    You have been invited to join Metricraft.
+    You have been invited to join {{APP}} on Metricraft.
   </div>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#0A0E13;padding:32px 16px;">
     <tr>
@@ -371,7 +371,7 @@ const inviteEmailTemplate = `<!DOCTYPE html>
                 You have been invited
               </h1>
               <p style="margin:0;font-size:15px;line-height:1.6;color:#9aa5b1;">
-                Someone invited you to join their Metricraft workspace. Open Metricraft to sign in or create an account with this email address.
+                Someone invited you to join <strong style="color:#00F376;">{{APP}}</strong> on Metricraft. Open Metricraft to sign in or create an account with this email address.
               </p>
             </td>
           </tr>

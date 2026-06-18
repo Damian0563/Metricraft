@@ -153,14 +153,27 @@ func SendInvites(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid payload", http.StatusBadRequest)
 		return
 	}
+	token := auth.NewToken(r.Header.Get("Session-Token"))
+	authed := token.ValidateRequest(&w, false)
+	if !authed {
+		return
+	}
+	appName, err := token.GetAppName()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	if mode == "manual" {
 		type Invite struct {
 			Invitees []string `json:"invitees"`
 		}
 		var invitees Invite
 		json.NewDecoder(r.Body).Decode(&invitees)
-		err := mailer.SendManualInvites(invitees.Invitees)
-		if err != nil {
+		var errChannel = make(chan error, 2)
+		go mailer.SendManualInvites(invitees.Invitees, appName, errChannel)
+		go db.AllowUsers(invitees.Invitees, appName, errChannel)
+		err1, err2 := <-errChannel, <-errChannel
+		if err1 != nil || err2 != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 		} else {
 			w.WriteHeader(http.StatusOK)

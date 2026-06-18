@@ -53,12 +53,13 @@ func SendRecovery(to, subject, linkURL string) error {
 	return send(to, subject, body)
 }
 
-func SendInvite(to string) error {
+func SendInvite(to, appName string) error {
 	inviteURL := strings.TrimRight(os.Getenv("frontend"), "/")
 	if inviteURL == "" {
 		inviteURL = strings.TrimRight(os.Getenv("host"), "/")
 	}
 	body := strings.ReplaceAll(inviteEmailTemplate, "{{INVITE_URL}}", html.EscapeString(inviteURL))
+	body = strings.ReplaceAll(body, "{{APP}}", html.EscapeString(appName))
 	return send(to, "You have been invited to Metricraft", body)
 }
 
@@ -84,14 +85,15 @@ func buildMessage(to, subject, body string) []byte {
 	return []byte(headers + body)
 }
 
-func SendManualInvites(invitees []string) error {
+func SendManualInvites(invitees []string, appName string, errChannel chan error) {
 	for _, invitee := range invitees {
-		err := SendInvite(invitee)
+		err := SendInvite(invitee, appName)
 		if err != nil {
-			return err
+			errChannel <- err
+			return
 		}
 	}
-	return nil
+	errChannel <- nil
 }
 
 func sanitizeHeaderValue(value string) string {
