@@ -26,75 +26,77 @@
 							Batch Upload (CSV)
 						</button>
 					</div>
-					<div v-if="mode === 'manual'" class="space-y-6">
-						<div>
-							<label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-							<div class="flex gap-3">
-								<input v-model="emailInput" type="email" placeholder="colleague@example.com"
-									:class="['flex-1 px-4 py-2 rounded-lg border focus:outline-none transition-colors text-gray-800', inviteInputState.message ? 'border-red-300 focus:border-red-400' : 'border-gray-200 focus:border-[#00F376]']"
-									@keyup.enter="addEmail" />
-								<button @click="addEmail" :disabled="!inviteInputState.canAdd"
-									class="px-6 py-2 bg-[#00F376] text-gray-900 font-semibold rounded-lg hover:bg-[#00D96A] transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
-									Add
-								</button>
-							</div>
-							<p v-if="inviteInputState.message" class="mt-2 text-sm text-red-600">
-								{{ inviteInputState.message }}
-							</p>
-						</div>
-						<div v-if="emails.length > 0">
-							<h3 class="text-sm font-semibold text-gray-800 mb-3">Pending Invites ({{ emails.length }})</h3>
-							<div class="space-y-2 max-h-60 overflow-y-auto pr-2">
-								<div v-for="(email, index) in emails" :key="index"
-									class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
-									<span class="text-gray-700">{{ email }}</span>
-									<button @click="removeEmail(index)" class="text-red-500 hover:text-red-700 cursor-pointer">
-										<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-											<path fill-rule="evenodd"
-												d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-												clip-rule="evenodd" />
-										</svg>
+					<div class="min-h-[170px]">
+						<div v-if="mode === 'manual'" class="space-y-6">
+							<div>
+								<label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+								<div class="flex gap-3">
+									<input v-model="emailInput" type="email" placeholder="colleague@example.com"
+										:class="['flex-1 px-4 py-2 rounded-lg border focus:outline-none transition-colors text-gray-800', inviteInputState.message ? 'border-red-300 focus:border-red-400' : 'border-gray-200 focus:border-[#00F376]']"
+										@keyup.enter="addEmail" />
+									<button @click="addEmail" :disabled="!inviteInputState.canAdd"
+										class="px-6 py-2 bg-[#00F376] text-gray-900 font-semibold rounded-lg hover:bg-[#00D96A] transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+										Add
 									</button>
 								</div>
+								<p v-if="inviteInputState.message" class="mt-2 text-sm text-red-600">
+									{{ inviteInputState.message }}
+								</p>
 							</div>
-						</div>
-					</div>
-					<div v-if="mode === 'batch'" class="space-y-6">
-						<div
-							class="border-2 border-dashed border-gray-200 rounded-xl p-12 text-center hover:border-[#00F376] transition-colors cursor-pointer group"
-							@click="fileInput?.click()">
-							<input type="file" ref="fileInput" class="hidden" accept=".csv" @change="handleFileUpload" />
-							<div class="flex flex-col items-center">
-								<svg xmlns="http://www.w3.org/2000/svg"
-									class="h-12 w-12 text-gray-400 mb-4 group-hover:text-[#00F376] transition-colors" fill="none"
-									viewBox="0 0 24 24" stroke="currentColor">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-										d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-								</svg>
-								<p class="text-lg font-medium text-gray-700">Click to upload CSV</p>
-								<p class="text-sm text-gray-500 mt-1">File should contain a column with email addresses</p>
-							</div>
-						</div>
-						<div v-if="csvFile"
-							class="flex items-center justify-between p-4 bg-[#00F376]/10 rounded-lg border border-[#00F376]/20">
-							<div class="flex items-center gap-3">
-								<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[#00F376]" fill="none" viewBox="0 0 24 24"
-									stroke="currentColor">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-										d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-								</svg>
-								<div class="text-left">
-									<p class="text-sm font-medium text-gray-800">{{ csvFile.name }}</p>
-									<p class="text-xs text-gray-500">{{ (csvFile.size / 1024).toFixed(2) }} KB</p>
+							<div v-if="emails.length > 0">
+								<h3 class="text-sm font-semibold text-gray-800 mb-3">Pending Invites ({{ emails.length }})</h3>
+								<div class="space-y-2 max-h-60 overflow-y-auto pr-2">
+									<div v-for="(email, index) in emails" :key="index"
+										class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
+										<span class="text-gray-700">{{ email }}</span>
+										<button @click="removeEmail(index)" class="text-red-500 hover:text-red-700 cursor-pointer">
+											<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+												<path fill-rule="evenodd"
+													d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+													clip-rule="evenodd" />
+											</svg>
+										</button>
+									</div>
 								</div>
 							</div>
-							<button @click="csvFile = null" class="text-gray-400 hover:text-gray-600 cursor-pointer">
-								<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-									<path fill-rule="evenodd"
-										d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-										clip-rule="evenodd" />
-								</svg>
-							</button>
+						</div>
+						<div v-if="mode === 'batch'" class="space-y-6">
+							<div
+								class="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-[#00F376] transition-colors cursor-pointer group"
+								@click="fileInput?.click()">
+								<input type="file" ref="fileInput" class="hidden" accept=".csv" @change="handleFileUpload" />
+								<div class="flex flex-col items-center">
+									<svg xmlns="http://www.w3.org/2000/svg"
+										class="h-12 w-12 text-gray-400 mb-4 group-hover:text-[#00F376] transition-colors" fill="none"
+										viewBox="0 0 24 24" stroke="currentColor">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+											d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+									</svg>
+									<p class="text-lg font-medium text-gray-700">Click to upload CSV</p>
+									<p class="text-sm text-gray-500 mt-1">File should contain a column with email addresses</p>
+								</div>
+							</div>
+							<div v-if="csvFile"
+								class="flex items-center justify-between p-4 bg-[#00F376]/10 rounded-lg border border-[#00F376]/20">
+								<div class="flex items-center gap-3">
+									<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[#00F376]" fill="none" viewBox="0 0 24 24"
+										stroke="currentColor">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+											d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+									</svg>
+									<div class="text-left">
+										<p class="text-sm font-medium text-gray-800">{{ csvFile.name }}</p>
+										<p class="text-xs text-gray-500">{{ (csvFile.size / 1024).toFixed(2) }} KB</p>
+									</div>
+								</div>
+								<button @click="csvFile = null" class="text-gray-400 hover:text-gray-600 cursor-pointer">
+									<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+										<path fill-rule="evenodd"
+											d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+											clip-rule="evenodd" />
+									</svg>
+								</button>
+							</div>
 						</div>
 					</div>
 					<div class="mt-10 pt-6 border-t border-gray-100 flex justify-end">
@@ -173,7 +175,7 @@
 <script setup lang="ts">
 import type { allowedUsersPayload, pendingUsersPayload } from "@/composables/types";
 import { getCookie, validateEmail } from "@/composables/helpers";
-import { getPendingUsers, handlePermissionDecision, getTeamUsers, sendManualInvitesToUsers } from "@/calls/invite";
+import { getPendingUsers, uploadUsersFromCSV, handlePermissionDecision, getTeamUsers, sendManualInvitesToUsers } from "@/calls/invite";
 type PendingUser = pendingUsersPayload["users"][number]
 type TeamUser = allowedUsersPayload["users"][number]
 const appName = useState<string>('appName');
@@ -206,7 +208,6 @@ const inviteInputState = computed(() => {
 		canAdd: validateEmail(email) && message === '',
 	}
 })
-
 watch(pendingUsersError, () => errorMessage.value = pendingUsersError.value?.message ?? '')
 watch(teamUsersError, () => errorMessage.value = teamUsersError.value?.message ?? '')
 
@@ -228,10 +229,19 @@ const removeEmail = (index: number) => {
 	emails.value.splice(index, 1)
 }
 
-const handleFileUpload = (event: Event) => {
+const handleFileUpload = async (event: Event) => {
 	const target = event.target as HTMLInputElement
 	if (target.files && target.files[0]) {
 		csvFile.value = target.files[0]
+	}
+	loading.value = true
+	try {
+		await uploadUsersFromCSV(csvFile.value!)
+		csvFile.value = null
+	} catch (error) {
+		errorMessage.value = error instanceof Error ? error.message : 'Failed to upload CSV.'
+	} finally {
+		loading.value = false
 	}
 }
 
@@ -266,6 +276,7 @@ const removePendingUser = (mail: string) => {
 }
 
 const handlePendingUser = async (mail: string, action: boolean) => {
+	loading.value = true
 	try {
 		await handlePermissionDecision(mail, action)
 		removePendingUser(mail)
@@ -274,6 +285,8 @@ const handlePendingUser = async (mail: string, action: boolean) => {
 		}
 	} catch (error) {
 		errorMessage.value = error instanceof Error ? error.message : 'Failed to change invite status.'
+	} finally {
+		loading.value = false
 	}
 }
 

@@ -92,17 +92,16 @@ Key benefits:
 
 ## Getting Started
 
-Metricraft is designed to run from the prebuilt all-in-one Docker image. The image bundles PostgreSQL for logs/metrics, Redis, the Go backend, the Go worker proxy, and the Nuxt frontend under `supervisord`, so deployment only needs a Docker Compose file, runtime environment variables, and a volume for PostgreSQL data.
-
-Run Metricraft behind a reverse proxy. The browser should load the UI and call the API/WebSocket on the same public origin; the proxy routes API paths to the backend and everything else to the frontend. Captured application traffic enters through the worker proxy on `:8081`.
+Metricraft is designed to run from the prebuilt all-in-one Docker image. The image bundles PostgreSQL for logs/metrics, Redis, the Go backend, the Go worker proxy, and the Nuxt frontend under `supervisord`, so deployment only needs a Docker Compose file, the app-specific runtime variables, and a volume for PostgreSQL data.
 
 ### Docker Compose Deployment
 
 Create a `.env` file next to your Compose file:
 
 ```dotenv
-METRICRAFT_PUBLIC_URL=https://metrics.example.com
-METRICRAFT_WS_URL=wss://metrics.example.com
+APPNAME=my-app
+METRICRAFT_PUBLIC_URL=http://localhost:8080
+METRICRAFT_WS_URL=ws://localhost:8080
 DEST_PORT=3000
 ```
 
@@ -111,52 +110,31 @@ Then run the prebuilt image:
 ```yaml
 services:
   metricraft:
-    image: damianpiechocki/metricraft:latest
+    image: damianek952/metricraft:latest
     restart: unless-stopped
     environment:
+      APPNAME: ${APPNAME}
       DEST_PORT: ${DEST_PORT}
       NUXT_PUBLIC_HTTPHOST: ${METRICRAFT_PUBLIC_URL}
       NUXT_PUBLIC_WSSHOST: ${METRICRAFT_WS_URL}
-    expose:
-      - "8000"
-      - "8080"
-      - "8081"
-    volumes:
-      - metricraft-db:/var/lib/postgresql/data
-
-  reverse-proxy:
-    image: caddy:2-alpine
-    restart: unless-stopped
     ports:
-      - "80:80"
+      - "8000:8000"
+      - "8080:8080"
       - "8081:8081"
     volumes:
-      - ./docker/Caddyfile.standalone:/etc/caddy/Caddyfile:ro
-    depends_on:
-      - metricraft
+      - metricraft-db:/var/lib/postgresql/data
 
 volumes:
   metricraft-db:
 ```
 
-The PostgreSQL data directory is mounted at `/var/lib/postgresql/data`, so captured logs and metrics survive container recreation.
-
-### Reverse Proxy Routing
-
-The included `docker/Caddyfile.standalone` routes by path on a single public hostname:
-
-| Path pattern | Upstream | Purpose |
-|--------------|----------|---------|
-| `/sign`, `/dashboard/*`, `/settings/*`, `/verify/*`, `/ws/*` | backend `:8080` | REST API and WebSocket |
-| everything else | frontend `:8000` | Nuxt UI |
-| `:8081` | worker `:8081` | Proxy ingress for traffic you want to measure |
+The PostgreSQL data directory is mounted at `/var/lib/postgresql/data`, so captured logs and metrics survive container recreation. The UI is served on `:8000`, the API and WebSocket server on `:8080`, and the worker proxy ingress on `:8081`.
 
 ## Environment Configuration
 
-Runtime configuration stays small when using the prebuilt image, but the public URL must be supplied by each deployment.
-
 | Variable | Required | Description |
 |----------|----------|-------------|
+| `APPNAME` | yes | Application identifier used when initializing and grouping captured metrics. |
 | `DEST_PORT` | yes | Port of your upstream application that the worker proxy forwards captured traffic to. |
 | `NUXT_PUBLIC_HTTPHOST` | yes | Public HTTP(S) origin the browser uses for API calls, e.g. `https://metrics.example.com`. |
 | `NUXT_PUBLIC_WSSHOST` | yes | Public WebSocket origin the browser uses, e.g. `wss://metrics.example.com`. |
@@ -174,13 +152,6 @@ Set `MODE=local` in `backend/.env` and `worker/.env` for host-based development.
 | Worker Proxy | `worker/.env` |
 | Frontend (Nuxt) | `metricraft/.env` |
 
-### Shared variables
-
-These values must be **identical** wherever they appear, or authentication and inter-service calls will fail.
-
-| Variable | Used by | Description |
-|----------|---------|-------------|
-| `SECRET` | backend, worker, frontend | Shared bearer token for service-to-service authorization (sent as the `Authorization` header). Use a long random string. |
 ### `backend/.env`
 
 | Variable | Required | Description |
@@ -244,9 +215,8 @@ PORT=8000
 ### Notes & best practices
 
 - **Never commit `.env` files.** Rotate any secret that is accidentally pushed.
-- **`NUXT_PUBLIC_HTTPHOST` and `NUXT_PUBLIC_WSSHOST` must match the reverse proxy's public URL**, not internal Docker hostnames or backend port numbers.
-- Put the reverse proxy in front of Metricraft; use `expose` (not `ports`) on the Metricraft service and publish public ports from the proxy service.
-- Worker ingress can stay on the Docker network (`worker:8081`) when your upstream app runs in the same compose stack; publish `:8081` on the proxy only when traffic enters from outside Docker.
+- **`NUXT_PUBLIC_HTTPHOST` and `NUXT_PUBLIC_WSSHOST` must match the public API/WebSocket URL the browser can reach**, not an internal Docker hostname.
+- Worker ingress can stay on the Docker network (`metricraft:8081`) when your upstream app runs in the same compose stack; publish `:8081` only when traffic enters from outside Docker.
 - For local development, run PostgreSQL and Redis yourself (`docker-compose.yml` starts only those services) and point `DATABASE_LOGS` at your local Postgres instance.
 - For production, prefer injecting secrets through your orchestrator's secret store rather than committing them to `.env` files.
 

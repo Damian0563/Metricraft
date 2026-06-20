@@ -1,5 +1,5 @@
 <template>
-	<div class="text-white justify-start text-2xl font-bold py-8 px-16 mb-8" style="background-color: #00F376;">
+	<div class="text-white justify-start text-2xl font-bold py-4 px-16 mb-8" style="background-color: #00F376;">
 		<nav>
 			<div class="flex justify-between">
 				<div class="flex items-center">
