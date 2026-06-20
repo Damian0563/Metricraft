@@ -2,3 +2,7 @@
 metricraft/node_modules
 metricraft/.nuxt
 metricraft/.output
+Dockerfile
+Dockerfile.*
+**/Dockerfile
+**/Dockerfile.*
