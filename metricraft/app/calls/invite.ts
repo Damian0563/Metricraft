@@ -21,6 +21,19 @@ export const getPendingUsers = async (): Promise<PendingUser[]> => {
 	}
 }
 
+export const uploadUsersFromCSV = async (file: File): Promise<void> => {
+	const config: config = useBackendUrl()
+	const headers = {
+		"Authorization": config.secret,
+		"Session-Token": useCookie("session-token").value || getCookie("session-token") || "",
+	}
+	await $fetch(`${config.httphost}/invites/batch`, {
+		method: "POST",
+		headers,
+		body: file,
+	})
+}
+
 export const sendManualInvitesToUsers = async (invitees: string[]): Promise<void> => {
 	const config: config = useBackendUrl()
 	const headers = {

@@ -7,6 +7,7 @@ import (
 	"backend/types"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -144,6 +145,26 @@ func TeamMembers(w http.ResponseWriter, r *http.Request) {
 	w.Write(response)
 }
 
+func UploadUsersFromCSV(w http.ResponseWriter, r *http.Request) {
+	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	token := auth.NewToken(r.Header.Get("Session-Token"))
+	authed := token.ValidateRequest(&w, true)
+	if !authed {
+		return
+	}
+	appName, err := token.GetAppName()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	fmt.Println(r.Body)
+	fmt.Println(appName)
+	w.WriteHeader(http.StatusOK)
+}
+
 func SendInvites(w http.ResponseWriter, r *http.Request) {
 	mode := r.URL.Query().Get("mode")
 	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
@@ -154,7 +175,7 @@ func SendInvites(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	token := auth.NewToken(r.Header.Get("Session-Token"))
-	authed := token.ValidateRequest(&w, false)
+	authed := token.ValidateRequest(&w, true)
 	if !authed {
 		return
 	}
