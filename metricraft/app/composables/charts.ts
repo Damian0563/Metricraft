@@ -1,4 +1,6 @@
 import { Chart } from "chart.js";
+import { type ChartData } from "~/composables/types";
+import { createAdditionalCongestionData } from "./chartUtils";
 
 type StringInt32Map = {
 	values?: Record<string, number>;
@@ -15,7 +17,7 @@ export const createTrafficCongestionTrends = (
 	canvas: HTMLCanvasElement,
 	data: TrafficCongestionData,
 	colorPicker: ColorPicker
-): Chart => {
+): ChartData => {
 	const getUrlCounts = (pairing: StringInt32Map | undefined): Record<string, number> =>
 		pairing?.values ?? {};
 	try {
@@ -46,7 +48,7 @@ export const createTrafficCongestionTrends = (
 				barPercentage: 0.9,
 			};
 		});
-		return new Chart(canvas, {
+		let chart: Chart = new Chart(canvas, {
 			type: 'bar',
 			data: {
 				labels,
@@ -91,6 +93,7 @@ export const createTrafficCongestionTrends = (
 					tooltip: {
 						enabled: true,
 						mode: 'index',
+						filter: (items) => items.raw !== 0,
 						intersect: false,
 						itemSort: (a, b) => (b.parsed.y as number) - (a.parsed.y as number),
 						callbacks: {
@@ -103,10 +106,13 @@ export const createTrafficCongestionTrends = (
 				},
 			}
 		});
+		return { chart, additionalData: createAdditionalCongestionData(urlDataMap, colorPicker) };
 	} catch (e) {
-		return new Chart(canvas, {
-			type: 'bar',
-			data: { labels: [], datasets: [] }
-		});
+		return {
+			chart: new Chart(canvas, {
+				type: 'bar',
+				data: { labels: [], datasets: [] }
+			}), additionalData: null
+		}
 	}
 }

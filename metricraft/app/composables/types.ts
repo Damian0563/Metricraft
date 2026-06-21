@@ -1,7 +1,14 @@
+import type { Chart } from "chart.js";
+
 export type signPayload = {
 	mail: string;
 	secret: string;
 	appName?: string;
+}
+
+export type ChartData = {
+	chart: Chart;
+	additionalData: HTMLElement | null;
 }
 
 export type dashboardInitPayload = {
