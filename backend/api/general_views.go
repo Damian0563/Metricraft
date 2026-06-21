@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 )
 
 func Welcome(w http.ResponseWriter, r *http.Request) {
@@ -170,8 +171,13 @@ func UploadUsersFromCSV(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		var invitees types.Invite
-		for _, mail := range file[1:] {
-			invitees.Invitees = append(invitees.Invitees, mail[0])
+		for _, row := range file[1:] {
+			address := strings.TrimSpace(row[0])
+			if !mailer.ValidateMail(address) {
+				http.Error(w, "Invalid email address: "+address, http.StatusBadRequest)
+				return
+			}
+			invitees.Invitees = append(invitees.Invitees, address)
 		}
 		err = sendInvites(invitees.Invitees, appName)
 		if err != nil {
@@ -223,6 +229,14 @@ func SendInvites(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Invalid payload", http.StatusBadRequest)
 			return
 		}
+		for i, address := range invitees.Invitees {
+			address = strings.TrimSpace(address)
+			if !mailer.ValidateMail(address) {
+				http.Error(w, "Invalid email address: "+address, http.StatusBadRequest)
+				return
+			}
+			invitees.Invitees[i] = address
+		}
 		err = sendInvites(invitees.Invitees, appName)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -245,7 +259,11 @@ func HandleInvite(w http.ResponseWriter, r *http.Request) {
 	} else if mail == "" || decision == "" {
 		http.Error(w, "Invalid payload", http.StatusBadRequest)
 		return
+	} else if !mailer.ValidateMail(mail) {
+		http.Error(w, "Invalid email address.", http.StatusBadRequest)
+		return
 	}
+	mail = strings.TrimSpace(mail)
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, false)
 	if !authed {
@@ -359,6 +377,11 @@ func Sign(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid payload", http.StatusBadRequest)
 		return
 	}
+	if !mailer.ValidateMail(payload.Mail) {
+		http.Error(w, "Invalid email address.", http.StatusBadRequest)
+		return
+	}
+	payload.Mail = strings.TrimSpace(payload.Mail)
 	var jsonResponse = make(map[string]interface{})
 	if payload.AppName != "" {
 		if uuid, error_db := db.CreateUser(payload.Mail, payload.Secret, payload.AppName); error_db != nil {

@@ -17,8 +17,10 @@ export type pendingUsersPayload = {
 }
 
 export type allowedUsersPayload = {
-	users: Array<{ mail: string, initials: string }>;
+	users: Array<{ mail: string, initials: string, status: boolean }>;
 }
+
+export type TeamUser = allowedUsersPayload["users"][number];
 
 export type config = {
 	secret: string,

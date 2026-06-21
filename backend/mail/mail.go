@@ -5,6 +5,7 @@ import (
 	"html"
 	"net/smtp"
 	"os"
+	"regexp"
 	"strings"
 )
 
@@ -53,6 +54,15 @@ func SendRecovery(to, subject, linkURL string) error {
 	return send(to, subject, body)
 }
 
+func ValidateMail(mailInput string) bool {
+	mail := strings.TrimSpace(mailInput)
+	if mail == "" {
+		return false
+	}
+	var mailPattern = regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`)
+	return mailPattern.MatchString(mail)
+}
+
 func SendInvite(to, appName string) error {
 	inviteURL := strings.TrimRight(os.Getenv("frontend"), "/")
 	if inviteURL == "" {
@@ -67,6 +77,10 @@ func send(to, subject, body string) error {
 	apiKey := os.Getenv("GOOGLE_APP_PASSWORD")
 	if apiKey == "" {
 		return errors.New("GOOGLE_APP_PASSWORD")
+	}
+	to = strings.TrimSpace(to)
+	if !ValidateMail(to) {
+		return errors.New("invalid email address")
 	}
 	to = sanitizeHeaderValue(to)
 	auth := smtp.PlainAuth("", fromAddress, apiKey, smtpHost)
