@@ -61,3 +61,6 @@ type SendRecoveryUser struct {
 type RecoveryCheckPayload struct {
 	Password string `json:"password"`
 }
+type Invite struct {
+	Invitees []string `json:"invitees"`
+}

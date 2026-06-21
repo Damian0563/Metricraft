@@ -229,19 +229,10 @@ const removeEmail = (index: number) => {
 	emails.value.splice(index, 1)
 }
 
-const handleFileUpload = async (event: Event) => {
+const handleFileUpload = (event: Event) => {
 	const target = event.target as HTMLInputElement
 	if (target.files && target.files[0]) {
 		csvFile.value = target.files[0]
-	}
-	loading.value = true
-	try {
-		await uploadUsersFromCSV(csvFile.value!)
-		csvFile.value = null
-	} catch (error) {
-		errorMessage.value = error instanceof Error ? error.message : 'Failed to upload CSV.'
-	} finally {
-		loading.value = false
 	}
 }
 
@@ -262,6 +253,11 @@ const sendInvites = async () => {
 			emails.value.forEach(email => teamUsers.value?.push({ mail: email, initials: email.slice(0, 2).toUpperCase() }))
 			emails.value = []
 		} else {
+			if (!csvFile.value) {
+				errorMessage.value = 'Please choose a CSV file.'
+				return
+			}
+			await uploadUsersFromCSV(csvFile.value)
 			csvFile.value = null
 		}
 	} catch (error) {
