@@ -209,7 +209,12 @@ func GetTeamUsers(appName string) ([]types.AllowedUsers, error) {
 	users = slices.Insert(users, 0, owner)
 	var response []types.AllowedUsers
 	for _, user := range users {
-		response = append(response, types.AllowedUsers{Mail: user, Initials: strings.ToUpper(user[0:2])})
+		var exists bool
+		err = conn.QueryRow(context.Background(), "SELECT EXISTS(SELECT 1 FROM users WHERE mail = $1)", user).Scan(&exists)
+		if err != nil {
+			return nil, err
+		}
+		response = append(response, types.AllowedUsers{Mail: user, Initials: strings.ToUpper(user[0:2]), Status: exists})
 	}
 	return response, nil
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"net/http"
 	"os"
+	"strings"
 )
 
 func CheckRecovery(w http.ResponseWriter, r *http.Request) {
@@ -52,6 +53,11 @@ func SendRecovery(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid payload", http.StatusInternalServerError)
 		return
 	}
+	if !mail.ValidateMail(payload.Mail) {
+		http.Error(w, "Invalid email address.", http.StatusBadRequest)
+		return
+	}
+	payload.Mail = strings.TrimSpace(payload.Mail)
 	if user, err := db.GetRecoveryUser(payload.Mail); err != nil {
 		if err.Error() == "User to be recovered not found." {
 			http.Error(w, "User to be recovered not found.", http.StatusBadRequest)
@@ -89,8 +95,12 @@ func SendVerification(w http.ResponseWriter, r *http.Request) {
 	}
 	var payload sendVerificationPayload
 	json.NewDecoder(r.Body).Decode(&payload)
+	if !mail.ValidateMail(payload.Mail) {
+		http.Error(w, "Invalid email address.", http.StatusBadRequest)
+		return
+	}
 	var routine = make(chan types.ExistsErrResponse, 1)
-	mailAddress := payload.Mail
+	mailAddress := strings.TrimSpace(payload.Mail)
 	go db.CheckUserExists(routine, mailAddress)
 	response := <-routine
 	if response.Err != nil {
@@ -126,6 +136,11 @@ func CheckVerification(w http.ResponseWriter, r *http.Request) {
 	}
 	var payload checkVerificationPayload
 	json.NewDecoder(r.Body).Decode(&payload)
+	if !mail.ValidateMail(payload.Mail) {
+		http.Error(w, "Invalid email address.", http.StatusBadRequest)
+		return
+	}
+	payload.Mail = strings.TrimSpace(payload.Mail)
 	var routine = make(chan types.ExistsErrResponse, 2)
 	go db.CheckAllowed(routine, payload.Mail, payload.AppName)
 	go redis.CheckCodeValidity(routine, payload.Mail, payload.Code)

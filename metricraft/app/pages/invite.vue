@@ -117,8 +117,7 @@
 						<div v-for="(user, index) in teamUserList" :key="user.mail"
 							class="flex flex-col gap-3 p-4 bg-gray-50 rounded-lg border border-gray-100 xl:flex-row xl:items-center xl:justify-between">
 							<div class="flex min-w-0 items-center gap-3">
-								<div
-									class="h-10 w-10 shrink-0 rounded-full bg-[#00F376]/10 flex items-center justify-center text-[#00F376] font-semibold">
+								<div :class="getTeamMemberStatusInfo(user.status).avatarClass">
 									{{ user.initials }}
 								</div>
 								<div class="min-w-0">
@@ -126,9 +125,8 @@
 									<p class="text-xs text-gray-500" v-if="index === 0"> Owner </p>
 								</div>
 							</div>
-							<span
-								class="w-fit shrink-0 px-3 py-1 rounded-full bg-[#00F376]/10 text-[#00A652] text-xs font-semibold uppercase tracking-wide">
-								Active
+							<span :class="getTeamMemberStatusInfo(user.status).badgeClass">
+								{{ getTeamMemberStatusInfo(user.status).label }}
 							</span>
 						</div>
 					</div>
@@ -173,11 +171,10 @@
 </template>
 
 <script setup lang="ts">
-import type { allowedUsersPayload, pendingUsersPayload } from "@/composables/types";
+import type { pendingUsersPayload, TeamUser } from "@/composables/types";
 import { getCookie, validateEmail } from "@/composables/helpers";
-import { getPendingUsers, uploadUsersFromCSV, handlePermissionDecision, getTeamUsers, sendManualInvitesToUsers } from "@/calls/invite";
+import { getPendingUsers, uploadUsersFromCSV, handlePermissionDecision, getTeamUsers, sendManualInvitesToUsers, getTeamMemberStatusInfo } from "@/calls/invite";
 type PendingUser = pendingUsersPayload["users"][number]
-type TeamUser = allowedUsersPayload["users"][number]
 const appName = useState<string>('appName');
 const mode = ref<'manual' | 'batch'>('manual')
 const emailInput = ref('')
@@ -250,7 +247,7 @@ const sendInvites = async () => {
 				return
 			}
 			await sendManualInvitesToUsers(emails.value)
-			emails.value.forEach(email => teamUsers.value?.push({ mail: email, initials: email.slice(0, 2).toUpperCase() }))
+			teamUsers.value = await getTeamUsers()
 			emails.value = []
 		} else {
 			if (!csvFile.value) {
@@ -258,7 +255,11 @@ const sendInvites = async () => {
 				return
 			}
 			await uploadUsersFromCSV(csvFile.value)
+			teamUsers.value = await getTeamUsers()
 			csvFile.value = null
+			if (fileInput.value) {
+				fileInput.value.value = ''
+			}
 		}
 	} catch (error) {
 		errorMessage.value = 'Failed to send invites.'
@@ -277,7 +278,7 @@ const handlePendingUser = async (mail: string, action: boolean) => {
 		await handlePermissionDecision(mail, action)
 		removePendingUser(mail)
 		if (action) {
-			teamUsers.value?.push({ mail, initials: mail.slice(0, 2).toUpperCase() })
+			teamUsers.value = await getTeamUsers()
 		}
 	} catch (error) {
 		errorMessage.value = error instanceof Error ? error.message : 'Failed to change invite status.'

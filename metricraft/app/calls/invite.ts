@@ -1,6 +1,21 @@
-import type { config, pendingUsersPayload, allowedUsersPayload } from "@/composables/types";
+import type { config, pendingUsersPayload, allowedUsersPayload, TeamUser } from "@/composables/types";
 import { getCookie } from "@/composables/helpers";
 type PendingUser = { mail: string };
+
+export const getTeamMemberStatusInfo = (status: boolean) => {
+	if (status) {
+		return {
+			label: "Active",
+			badgeClass: "w-fit shrink-0 px-3 py-1 rounded-full bg-[#00F376]/10 text-[#00A652] text-xs font-semibold uppercase tracking-wide",
+			avatarClass: "h-10 w-10 shrink-0 rounded-full bg-[#00F376]/10 flex items-center justify-center text-[#00F376] font-semibold",
+		};
+	}
+	return {
+		label: "Inactive",
+		badgeClass: "w-fit shrink-0 px-3 py-1 rounded-full bg-red-50 text-red-600 text-xs font-semibold uppercase tracking-wide",
+		avatarClass: "h-10 w-10 shrink-0 rounded-full bg-red-50 flex items-center justify-center text-red-600 font-semibold",
+	};
+};
 
 export const getPendingUsers = async (): Promise<PendingUser[]> => {
 	try {
@@ -59,7 +74,7 @@ export const handlePermissionDecision = async (mail: string, action: boolean): P
 	})
 }
 
-export const getTeamUsers = async (): Promise<{ mail: string, initials: string }[]> => {
+export const getTeamUsers = async (): Promise<TeamUser[]> => {
 	try {
 		const config: config = useBackendUrl()
 		const headers = {

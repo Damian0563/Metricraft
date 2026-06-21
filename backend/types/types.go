@@ -52,6 +52,7 @@ type PendingUsers struct {
 type AllowedUsers struct {
 	Mail     string `json:"mail"`
 	Initials string `json:"initials"`
+	Status   bool   `json:"status"`
 }
 type SendRecoveryUser struct {
 	Mail string `json:"mail"`
