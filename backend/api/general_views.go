@@ -5,9 +5,9 @@ import (
 	"backend/db"
 	mailer "backend/mail"
 	"backend/types"
+	"encoding/csv"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -153,6 +153,7 @@ func UploadUsersFromCSV(w http.ResponseWriter, r *http.Request) {
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, true)
 	if !authed {
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	appName, err := token.GetAppName()
@@ -160,9 +161,40 @@ func UploadUsersFromCSV(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	fmt.Println(r.Body)
-	fmt.Println(appName)
-	w.WriteHeader(http.StatusOK)
+	if file, err := csv.NewReader(r.Body).ReadAll(); err == nil {
+		if len(file) <= 1 {
+			http.Error(w, "No mails found, expected structure is one column 'emails' with emails enlisted below in csv format.", http.StatusBadRequest)
+			return
+		} else if len(file) > 51 {
+			http.Error(w, "Too many mails, maximum is 50.", http.StatusBadRequest)
+			return
+		}
+		var invitees types.Invite
+		for _, mail := range file[1:] {
+			invitees.Invitees = append(invitees.Invitees, mail[0])
+		}
+		err = sendInvites(invitees.Invitees, appName)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	} else {
+		w.WriteHeader(http.StatusBadRequest)
+	}
+}
+
+func sendInvites(invitees []string, appName string) error {
+	errChannel := make(chan error, 2)
+	go mailer.SendManualInvites(invitees, appName, errChannel)
+	go db.AllowUsers(invitees, appName, errChannel)
+	var inviteErr error
+	for range 2 {
+		if err := <-errChannel; err != nil && inviteErr == nil {
+			inviteErr = err
+		}
+	}
+	return inviteErr
 }
 
 func SendInvites(w http.ResponseWriter, r *http.Request) {
@@ -185,16 +217,14 @@ func SendInvites(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if mode == "manual" {
-		type Invite struct {
-			Invitees []string `json:"invitees"`
+		var invitees types.Invite
+		err = json.NewDecoder(r.Body).Decode(&invitees)
+		if err != nil {
+			http.Error(w, "Invalid payload", http.StatusBadRequest)
+			return
 		}
-		var invitees Invite
-		json.NewDecoder(r.Body).Decode(&invitees)
-		var errChannel = make(chan error, 2)
-		go mailer.SendManualInvites(invitees.Invitees, appName, errChannel)
-		go db.AllowUsers(invitees.Invitees, appName, errChannel)
-		err1, err2 := <-errChannel, <-errChannel
-		if err1 != nil || err2 != nil {
+		err = sendInvites(invitees.Invitees, appName)
+		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 		} else {
 			w.WriteHeader(http.StatusOK)
