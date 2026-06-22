@@ -1,5 +1,4 @@
-import type { config, pendingUsersPayload, allowedUsersPayload, TeamUser } from "@/composables/types";
-import { getCookie } from "@/composables/helpers";
+import type { pendingUsersPayload, allowedUsersPayload, TeamUser } from "@/composables/types";
 type PendingUser = { mail: string };
 
 export const getTeamMemberStatusInfo = (status: boolean) => {
@@ -19,14 +18,8 @@ export const getTeamMemberStatusInfo = (status: boolean) => {
 
 export const getPendingUsers = async (): Promise<PendingUser[]> => {
 	try {
-		const config: config = useBackendUrl()
-		const headers = {
-			"Authorization": config.secret,
-			"Session-Token": useCookie("session-token").value || getCookie("session-token") || "",
-		}
-		const data = await $fetch<pendingUsersPayload>(`${config.httphost}/invites/pending`, {
+		const data = await useApi()<pendingUsersPayload>(`/invites/pending`, {
 			method: "GET",
-			headers,
 			responseType: "json",
 		})
 		return data.users;
@@ -37,53 +30,31 @@ export const getPendingUsers = async (): Promise<PendingUser[]> => {
 }
 
 export const uploadUsersFromCSV = async (file: File): Promise<void> => {
-	const config: config = useBackendUrl()
-	const headers = {
-		"Authorization": config.secret,
-		"Session-Token": useCookie("session-token").value || getCookie("session-token") || "",
-	}
-	await $fetch(`${config.httphost}/invites/batch`, {
+	await useApi()(`/invites/batch`, {
 		method: "POST",
-		headers,
 		body: file,
 	})
 }
 
 export const sendManualInvitesToUsers = async (invitees: string[]): Promise<void> => {
-	const config: config = useBackendUrl()
-	const headers = {
-		"Authorization": config.secret,
-		"Session-Token": useCookie("session-token").value || getCookie("session-token") || "",
-	}
-	await $fetch(`${config.httphost}/invites/send?mode=manual`, {
+	await useApi()(`/invites/send`, {
 		method: "POST",
-		headers,
-		body: JSON.stringify({ invitees }),
+		query: { mode: "manual" },
+		body: { invitees },
 	})
 }
 
 export const handlePermissionDecision = async (mail: string, action: boolean): Promise<void> => {
-	const config: config = useBackendUrl()
-	const headers = {
-		"Authorization": config.secret,
-		"Session-Token": useCookie("session-token").value || getCookie("session-token") || "",
-	}
-	await $fetch(`${config.httphost}/invites/handle?user=${encodeURIComponent(mail)}&action=${action}`, {
+	await useApi()(`/invites/handle`, {
 		method: "POST",
-		headers,
+		query: { user: mail, action },
 	})
 }
 
 export const getTeamUsers = async (): Promise<TeamUser[]> => {
 	try {
-		const config: config = useBackendUrl()
-		const headers = {
-			"Authorization": config.secret,
-			"Session-Token": useCookie("session-token").value || getCookie("session-token") || "",
-		}
-		const data = await $fetch<allowedUsersPayload>(`${config.httphost}/invites/team`, {
+		const data = await useApi()<allowedUsersPayload>(`/invites/team`, {
 			method: "GET",
-			headers,
 			responseType: "json",
 		})
 		return data.users;

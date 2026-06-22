@@ -1,5 +1,6 @@
 import { Chart } from "chart.js";
 import { type ChartData } from "~/composables/types";
+import { ColorPicker } from "~/composables/colorpicker";
 import { createAdditionalCongestionData } from "./chartUtils";
 
 type StringInt32Map = {
@@ -57,6 +58,7 @@ export const createTrafficCongestionTrends = (
 			options: {
 				responsive: true,
 				maintainAspectRatio: false,
+				devicePixelRatio: Math.ceil(window.devicePixelRatio || 1),
 				animation: { duration: 250 },
 				interaction: { mode: 'index', intersect: false },
 				layout: { padding: { right: 8, left: 2, bottom: 2 } },
@@ -65,8 +67,8 @@ export const createTrafficCongestionTrends = (
 						stacked: true,
 						grid: { display: false },
 						border: { display: false },
-						ticks: { autoSkip: false, maxRotation: 90, padding: 6, font: { weight: 'bold' } },
-						title: { display: true, text: 'Time', font: { weight: 'bold', size: 18 }, padding: { top: 2 } },
+						ticks: { autoSkip: false, color: 'black', maxRotation: 90, padding: 6, font: { weight: 'bold' } },
+						title: { display: true, text: 'Time', color: 'black', font: { weight: 'bold', size: 18 }, padding: { top: 2 } },
 					},
 					y: {
 						stacked: true,
@@ -74,7 +76,7 @@ export const createTrafficCongestionTrends = (
 						border: { display: false },
 						grid: { color: 'rgba(0,0,0,0.06)', drawTicks: false },
 						ticks: { padding: 8, precision: 0, font: { weight: 'bold' } },
-						title: { display: true, text: 'Requests', font: { weight: 'bold', size: 18 } },
+						title: { display: true, text: 'Requests', color: 'black', font: { weight: 'bold', size: 18 } },
 					}
 				},
 				plugins: {

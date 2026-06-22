@@ -1,14 +1,9 @@
-import type { signPayload, config, welcomeResponse, signResponse, verifyResponse } from '@/composables/types';
-import { getCookie } from "@/composables/helpers";
+import type { signPayload, welcomeResponse, signResponse, verifyResponse } from '@/composables/types';
+
 export const welcome = async (): Promise<boolean> => {
 	try {
-		const config: config = useBackendUrl()
-		const headers = {
-			"Authorization": config.secret,
-			"Session-Token": useCookie("session-token").value || getCookie("session-token") || "",
-		}
-		const response = await $fetch<welcomeResponse>(`${config.httphost}/welcome`, {
-			method: "GET", headers
+		const response = await useApi()<welcomeResponse>(`/welcome`, {
+			method: "GET",
 		})
 		if (response.err) throw (response.err)
 		return Boolean(response.exists)
@@ -18,15 +13,9 @@ export const welcome = async (): Promise<boolean> => {
 }
 
 export const sign = async (payload: signPayload): Promise<string | null> => {
-	const config: config = useBackendUrl()
-	const headers = {
-		"Authorization": config.secret,
-		"Content-Type": "application/json",
-	}
 	try {
-		let data: string = await $fetch(`${config.httphost}/sign`, {
+		let data: string = await useApi()(`/sign`, {
 			method: 'POST',
-			headers,
 			body: payload,
 		})
 		const object: signResponse = JSON.parse(data)
@@ -43,16 +32,10 @@ export const sign = async (payload: signPayload): Promise<string | null> => {
 }
 
 export const verify = async (mail: string, code: string, appName: string): Promise<verifyResponse> => {
-	const config: config = useBackendUrl()
-	const headers = {
-		"Authorization": config.secret,
-		"Content-Type": "application/json",
-	}
 	try {
-		await $fetch(`${config.httphost}/verify/check`, {
+		await useApi()(`/verify/check`, {
 			method: 'POST',
-			headers,
-			body: JSON.stringify({ mail: mail, code: code, appName: appName }),
+			body: { mail, code, appName },
 		})
 		const res: verifyResponse = {
 			success: true,
@@ -81,16 +64,10 @@ export const verify = async (mail: string, code: string, appName: string): Promi
 }
 
 export const sendRecovery = async (mail: string): Promise<void> => {
-	const config: config = useBackendUrl()
-	const headers = {
-		"Authorization": config.secret,
-		"Content-Type": "application/json",
-	}
 	try {
-		await $fetch(`${config.httphost}/recovery/send`, {
+		await useApi()(`/recovery/send`, {
 			method: 'POST',
-			headers,
-			body: JSON.stringify({ "mail": mail }),
+			body: { mail },
 		})
 	} catch (e: any) {
 		if (e.status === 429) {
@@ -101,16 +78,11 @@ export const sendRecovery = async (mail: string): Promise<void> => {
 }
 
 export const checkRecovery = async (id: string, password: string): Promise<void> => {
-	const config: config = useBackendUrl()
-	const headers = {
-		"Authorization": config.secret,
-		"Content-Type": "application/json",
-	}
 	try {
-		await $fetch(`${config.httphost}/recovery/check?id=${encodeURIComponent(id)}`, {
+		await useApi()(`/recovery/check`, {
 			method: 'POST',
-			headers,
-			body: JSON.stringify({ password }),
+			query: { id },
+			body: { password },
 		})
 	} catch (e: any) {
 		if (e.status === 429) {
@@ -126,16 +98,10 @@ export const checkRecovery = async (id: string, password: string): Promise<void>
 }
 
 export const sendVerification = async (mail: string): Promise<verifyResponse> => {
-	const config: config = useBackendUrl()
-	const headers = {
-		"Authorization": config.secret,
-		"Content-Type": "application/json",
-	}
 	try {
-		await $fetch(`${config.httphost}/verify/send`, {
+		await useApi()(`/verify/send`, {
 			method: 'POST',
-			headers,
-			body: JSON.stringify({ "mail": mail }),
+			body: { mail },
 		})
 		const res: verifyResponse = {
 			success: true,
@@ -157,12 +123,3 @@ export const sendVerification = async (mail: string): Promise<verifyResponse> =>
 		return res
 	}
 }
-
-
-
-
-
-
-
-
-

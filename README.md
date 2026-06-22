@@ -25,31 +25,29 @@ Key benefits:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        Metricraft Stack                          │
+│                         Metricraft Stack                        │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
+│                                                                 │
+│                            ┌───────────┐                        │
+│                            │  Supabase │                        │
+│                            │  (Users)  │                        │
+│                            └───────────┘                        │
+│                                 ◄──►                            │
 │   ┌──────────────┐        ┌──────────────┐        ┌───────────┐ │
 │   │              │        │              │        │           │ │
-│   │    Nuxt 4    │◄──────►│   Go API     │◄───gRPC│  Redis    │ │
-│   │  (Frontend)  │  HTTP  │   Server     │  Auth  │  (Cache)  │ │
-│   │              │        │   :8080      │        │  :6379    │ │
-│   └──────────────┘        └──────┬───────┘        └───────────┘ │
-│                                  │                              │
-│                            WebSocket                            │
-│                                  │                              │
-│   ┌──────────────┐        ┌──────▼───────┐                     │
-│   │              │        │              │                     │
-│   │   PostgreSQL │◄───────│  Go Worker   │◄─── User Traffic    │
-│   │  (Metrics)   │        │   Proxy      │                     │
-│   │              │        │   (gRPC)     │                     │
-│   └──────────────┘        └──────────────┘                     │
-│                                                                  │
-│   ┌──────────────┐                                               │
-│   │              │                                               │
-│   │  Serverless  │◄── Email Reports & Alerts                      │
-│   │  Mail Func   │                                               │
-│   └──────────────┘                                               │
-│                                                                  │
+│   │    Nuxt 4    │◄──────►│    Go API    │◄──────►│   Redis   │ │
+│   │  (Frontend)  │ HTTP   │    Server    │        │   :6379   │ │
+│   │              │        │    :8080     │        │           │ │
+│   └──────────────┘        └───────┬──────┘        └───────────┘ │
+│                                 ◄──►                            │
+│                          gRPC / WebSocket                       │
+│   ┌──────────────┐        ┌──────────────┐                      │
+│   │              │        │              │                      │
+│   │  PostgreSQL  │◄───────│  Go Worker   │◄─── User Traffic     │
+│   │  (Metrics)   │        │    Proxy     │                      │
+│   │              │        │              │                      │
+│   └──────────────┘        └──────────────┘                      │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -111,7 +109,6 @@ Then run the prebuilt image:
 services:
   metricraft:
     image: damianek952/metricraft:latest
-    restart: unless-stopped
     environment:
       APPNAME: ${APPNAME}
       DEST_PORT: ${DEST_PORT}
