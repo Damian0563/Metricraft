@@ -1,16 +1,7 @@
-import type { config } from '@/composables/types';
-
 export const toggleRealtime = async (enabled: boolean) => {
 	try {
-		const config: config = useBackendUrl()
-		const headers = {
-			"Authorization": config.secret,
-			"Session-Token": getCookie("session-token"),
-			"Content-Type": "application/json",
-		}
-		await $fetch(`${config.httphost}/settings/realtime`, {
+		await useApi()(`/settings/realtime`, {
 			method: "POST",
-			headers,
 			body: { enabled },
 		});
 	} catch (error) {
@@ -20,15 +11,8 @@ export const toggleRealtime = async (enabled: boolean) => {
 
 export const changeRetention = async (retention: number) => {
 	try {
-		const config: config = useBackendUrl()
-		const headers = {
-			"Authorization": config.secret,
-			"Session-Token": getCookie("session-token"),
-			"Content-Type": "application/json",
-		}
-		await $fetch(`${config.httphost}/settings/retention`, {
+		await useApi()(`/settings/retention`, {
 			method: "POST",
-			headers,
 			body: { retention },
 		});
 	} catch (error) {
@@ -38,15 +22,8 @@ export const changeRetention = async (retention: number) => {
 
 export const changeDerivedMetrics = async (metrics: { name: string; enabled: boolean }[]) => {
 	try {
-		const config: config = useBackendUrl()
-		const headers = {
-			"Authorization": config.secret,
-			"Session-Token": getCookie("session-token"),
-			"Content-Type": "application/json",
-		}
-		await $fetch<Response>(`${config.httphost}/settings/metrics`, {
+		await useApi()<Response>(`/settings/metrics`, {
 			method: "POST",
-			headers,
 			body: metrics,
 		});
 	} catch (error) {

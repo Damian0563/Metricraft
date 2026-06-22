@@ -1,19 +1,11 @@
-import type { dashboardInitPayload, config } from '@/composables/types';
-import { getCookie } from "@/composables/helpers";
+import type { dashboardInitPayload } from '@/composables/types';
 
 export const getDashboard = async (): Promise<dashboardInitPayload> => {
 	try {
-		const config: config = useBackendUrl()
-		const headers = {
-			"Authorization": config.secret,
-			"Session-Token": useCookie("session-token").value || getCookie("session-token") || "",
-		}
-		const data = await $fetch<dashboardInitPayload>(`${config.httphost}/dashboard/init`, {
+		return await useApi()<dashboardInitPayload>("/dashboard/init", {
 			method: "GET",
-			headers,
 			responseType: "json",
 		})
-		return data
 	} catch (e) {
 		return {
 			appName: "",
@@ -30,14 +22,8 @@ export const getDashboard = async (): Promise<dashboardInitPayload> => {
 
 
 export const fetchMetric = async (metric: string, timeframe: string = "30d"): Promise<Map<string, number>> => {
-	const config: config = useBackendUrl()
-	const headers = {
-		"Authorization": config.secret,
-		"Session-Token": useCookie("session-token").value || getCookie("session-token") || "",
-	}
-	const data: Map<string, number> = await $fetch(`${config.httphost}/dashboard/fetch?metric=${metric}&timeframe=${timeframe}`, {
+	return await useApi()<Map<string, number>>("/dashboard/fetch", {
 		method: "GET",
-		headers,
+		query: { metric, timeframe },
 	})
-	return data
 }

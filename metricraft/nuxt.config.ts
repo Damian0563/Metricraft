@@ -35,11 +35,12 @@ export default defineNuxtConfig({
 	css: ["@/assets/css/main.css"],
 	runtimeConfig: {
 		public: {
-			secret: getConfig().secret,
 			backendPort: 8080,
+			secret: getConfig().secret,
 			wsshost: getConfig().wsshost,
 			httphost: getConfig().httphost,
 		},
+		secret: getConfig().secret,
 	},
 	devServer: {
 		port: 8000,
