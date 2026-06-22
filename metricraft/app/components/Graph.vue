@@ -1,6 +1,6 @@
 <template>
-	<div class="flex flex-col rounded-xl shadow-lg bg-white w-full text-black ring-1 ring-slate-100"
-		:class="hasAdditionalData ? 'h-96 md:h-[26rem] lg:h-[30rem]' : 'h-80 md:h-96 lg:h-108'">
+	<div
+		class="flex flex-col rounded-xl shadow-lg bg-white w-full text-black ring-1 ring-slate-100 h-96 md:h-[26rem] lg:h-[30rem]">
 		<h1 class="text-2xl font-bold text-center mt-6 mb-2 shrink-0 text-slate-800">{{ props.name }}</h1>
 		<div class="flex flex-col flex-1 min-h-0 px-5 pb-5 gap-3">
 			<div class="relative flex-1 min-h-0 rounded-lg">
@@ -29,14 +29,16 @@ const props = defineProps<{
 }>();
 const chartRef = ref<HTMLCanvasElement | null>(null);
 const additionalDataRef = ref<HTMLDivElement | null>(null);
-const hasAdditionalData = computed(() => props.name === "Traffic congestion trends");
+const hasAdditionalData = computed(() => ["Traffic congestion trends"].includes(props.name));
 const additionalDataLabels = new Map<string, string>([["Traffic congestion trends", "Total requests by endpoint"]]);
 const urls = useState<string[]>('urls');
 let chartInstance: Chart | null = null;
 let colorPicker: ColorPicker | null = null;
 Chart.register(CategoryScale, LinearScale, BarController, BarElement, Tooltip);
 onMounted((): void => {
-	colorPicker = new ColorPicker(urls.value)
+	if (props.name === "Traffic congestion trends") {
+		colorPicker = new ColorPicker(urls.value)
+	}
 	populateChart(props.data);
 });
 watch(() => props.data, (newData: any): void => {
@@ -58,6 +60,8 @@ const populateChart = (data: any): void => {
 				additionalDataRef.value.appendChild(additionalData);
 			}
 		}
+	} else if (props.name === "Geographical traffic" && chartRef.value) {
+		chartInstance = createGeographicalTraffic(chartRef.value, toRaw(data))
 	}
 }
 </script>

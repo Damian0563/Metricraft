@@ -88,6 +88,7 @@ func main() {
 	go api.StartWebSocketServer(router)
 	conn, err = grpc.NewClient(fmt.Sprintf("dns:///%v", os.Getenv("grpc")), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
+		fmt.Println(err)
 		return
 	}
 	api.SetGRPCConn(conn)

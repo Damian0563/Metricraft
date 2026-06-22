@@ -10,8 +10,8 @@ export const useBackendUrl = (): config => {
 	}
 }
 
-export const getCookie = (cname: string) => {
-	//if (process.server) return ""
+export const getCookie = (cname: string): string => {
+	if (import.meta.server) return ""
 	try {
 		let name = cname + "=";
 		let decodedCookie = decodeURIComponent(document.cookie);
@@ -35,7 +35,7 @@ export const getCookie = (cname: string) => {
 	}
 }
 
-export const updateCookie = (cvalue: string) => {
+export const updateCookie = (cvalue: string): void => {
 	document.cookie = `session-token=${cvalue};path=/;expires=${new Date(Date.now() + 3600000 * 24).toUTCString()};SameSite=None;Secure`;
 }
 
@@ -48,6 +48,6 @@ export const evaluatePasswordStrength = (password: string): number => {
 	return passwordScore.score;
 };
 
-export const invalidateCookie = () => {
+export const invalidateCookie = (): void => {
 	document.cookie = "session-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 }

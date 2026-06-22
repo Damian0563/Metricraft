@@ -135,3 +135,27 @@ func GetTrafficCongestion(ctx context.Context, startDate time.Time, resolution i
 	}
 	return &pb.Congestion{Values: congestion}, nil
 }
+
+func GetGeographicalTraffic(ctx context.Context, startDate time.Time) (*pb.CountryDistribution, error) {
+	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close(ctx)
+	endDate := time.Now()
+	distribution := make(map[string]int32)
+	res, err := conn.Query(ctx, "SELECT country,COUNT(*) FROM logs WHERE date BETWEEN $1 AND $2 GROUP BY country,date ORDER BY COUNT(*) DESC", startDate, endDate)
+	if err != nil {
+		return nil, err
+	}
+	for res.Next() {
+		var country string
+		var count int
+		err = res.Scan(&country, &count)
+		if err != nil {
+			return nil, err
+		}
+		distribution[country] = int32(count)
+	}
+	return &pb.CountryDistribution{Distribution: &pb.StringInt32Map{Values: distribution}}, nil
+}

@@ -14,6 +14,16 @@ export type TrafficCongestionData = {
 	values: CongestionEntry[];
 };
 
+export const createGeographicalTraffic = (
+	canvas: HTMLCanvasElement,
+	data: Map<string, number>
+): Chart => {
+	return new Chart(canvas, {
+		type: 'bar',
+		data: { labels: [], datasets: [] }
+	})
+}
+
 export const createTrafficCongestionTrends = (
 	canvas: HTMLCanvasElement,
 	data: TrafficCongestionData,
