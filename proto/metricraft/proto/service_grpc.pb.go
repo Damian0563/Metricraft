@@ -19,13 +19,15 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Metricraft_GetTrafficCongestion_FullMethodName = "/metricraft.Metricraft/getTrafficCongestion"
+	Metricraft_GetGeographicalTraffic_FullMethodName = "/metricraft.Metricraft/getGeographicalTraffic"
+	Metricraft_GetTrafficCongestion_FullMethodName   = "/metricraft.Metricraft/getTrafficCongestion"
 )
 
 // MetricraftClient is the client API for Metricraft service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MetricraftClient interface {
+	GetGeographicalTraffic(ctx context.Context, in *Timeframe, opts ...grpc.CallOption) (*CountryDistribution, error)
 	GetTrafficCongestion(ctx context.Context, in *Timeframe, opts ...grpc.CallOption) (*Congestion, error)
 }
 
@@ -35,6 +37,16 @@ type metricraftClient struct {
 
 func NewMetricraftClient(cc grpc.ClientConnInterface) MetricraftClient {
 	return &metricraftClient{cc}
+}
+
+func (c *metricraftClient) GetGeographicalTraffic(ctx context.Context, in *Timeframe, opts ...grpc.CallOption) (*CountryDistribution, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CountryDistribution)
+	err := c.cc.Invoke(ctx, Metricraft_GetGeographicalTraffic_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *metricraftClient) GetTrafficCongestion(ctx context.Context, in *Timeframe, opts ...grpc.CallOption) (*Congestion, error) {
@@ -51,6 +63,7 @@ func (c *metricraftClient) GetTrafficCongestion(ctx context.Context, in *Timefra
 // All implementations must embed UnimplementedMetricraftServer
 // for forward compatibility.
 type MetricraftServer interface {
+	GetGeographicalTraffic(context.Context, *Timeframe) (*CountryDistribution, error)
 	GetTrafficCongestion(context.Context, *Timeframe) (*Congestion, error)
 	mustEmbedUnimplementedMetricraftServer()
 }
@@ -62,6 +75,9 @@ type MetricraftServer interface {
 // pointer dereference when methods are called.
 type UnimplementedMetricraftServer struct{}
 
+func (UnimplementedMetricraftServer) GetGeographicalTraffic(context.Context, *Timeframe) (*CountryDistribution, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetGeographicalTraffic not implemented")
+}
 func (UnimplementedMetricraftServer) GetTrafficCongestion(context.Context, *Timeframe) (*Congestion, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetTrafficCongestion not implemented")
 }
@@ -84,6 +100,24 @@ func RegisterMetricraftServer(s grpc.ServiceRegistrar, srv MetricraftServer) {
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&Metricraft_ServiceDesc, srv)
+}
+
+func _Metricraft_GetGeographicalTraffic_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Timeframe)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetricraftServer).GetGeographicalTraffic(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Metricraft_GetGeographicalTraffic_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetricraftServer).GetGeographicalTraffic(ctx, req.(*Timeframe))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Metricraft_GetTrafficCongestion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -111,6 +145,10 @@ var Metricraft_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "metricraft.Metricraft",
 	HandlerType: (*MetricraftServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "getGeographicalTraffic",
+			Handler:    _Metricraft_GetGeographicalTraffic_Handler,
+		},
 		{
 			MethodName: "getTrafficCongestion",
 			Handler:    _Metricraft_GetTrafficCongestion_Handler,

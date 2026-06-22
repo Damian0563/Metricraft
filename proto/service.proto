@@ -5,7 +5,7 @@ import "google/protobuf/timestamp.proto";
 
 
 service Metricraft {
-
+  rpc getGeographicalTraffic(timeframe) returns (countryDistribution);
   rpc getTrafficCongestion(timeframe) returns (congestion);
 }
 
@@ -21,6 +21,10 @@ message StringInt32Map {
 message CongestionEntry {
   string timerange = 1;
   StringInt32Map pairing = 2;
+}
+
+message countryDistribution{
+  StringInt32Map distribution = 1;
 }
 
 message congestion {
