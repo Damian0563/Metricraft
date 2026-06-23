@@ -1,6 +1,7 @@
 import { Chart } from "chart.js";
 import { type ChartData } from "~/composables/types";
 import { ColorPicker } from "~/composables/colorpicker";
+import { ChoroplethChart, topojson } from 'chartjs-chart-geo';
 import { createAdditionalCongestionData } from "./chartUtils";
 
 type StringInt32Map = {
@@ -14,14 +15,45 @@ export type TrafficCongestionData = {
 	values: CongestionEntry[];
 };
 
-export const createGeographicalTraffic = (
+export const createGeographicalTraffic = async (
 	canvas: HTMLCanvasElement,
-	data: Map<string, number>
-): Chart => {
-	return new Chart(canvas, {
-		type: 'bar',
-		data: { labels: [], datasets: [] }
-	})
+	data: any
+): Promise<ChoroplethChart> => {
+	try {
+		const world = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then((r) => r.json());
+		const countries = (topojson.feature(world, world.objects.countries) as any).features;
+		const mapped = new Map<string, number>(Object.entries(data.distribution.values));
+		const points = countries.map((feature: any) => ({
+			feature,
+			value: mapped.get(feature.properties.name) ?? 0,
+		}));
+		return new ChoroplethChart(canvas, {
+			data: {
+				labels: countries.map((feature: any) => feature.properties.name),
+				datasets: [{
+					label: 'Traffic',
+					outline: countries,
+					data: points,
+				}]
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				showOutline: true,
+				showGraticule: false,
+				scales: {
+					projection: { axis: 'x', projection: 'equalEarth' },
+					color: { axis: 'x', quantize: 5, legend: { position: 'bottom-right', align: 'right' } },
+				},
+			},
+		})
+	} catch (e) {
+		console.error(e)
+		return new ChoroplethChart(canvas, {
+			data: { labels: [], datasets: [] }
+		})
+	}
+
 }
 
 export const createTrafficCongestionTrends = (

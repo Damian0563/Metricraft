@@ -144,7 +144,7 @@ func GetGeographicalTraffic(ctx context.Context, startDate time.Time) (*pb.Count
 	defer conn.Close(ctx)
 	endDate := time.Now()
 	distribution := make(map[string]int32)
-	res, err := conn.Query(ctx, "SELECT country,COUNT(*) FROM logs WHERE date BETWEEN $1 AND $2 GROUP BY country,date ORDER BY COUNT(*) DESC", startDate, endDate)
+	res, err := conn.Query(ctx, "SELECT country,COUNT(*) FROM logs WHERE date BETWEEN $1 AND $2 GROUP BY country ORDER BY COUNT(*) DESC", startDate, endDate)
 	if err != nil {
 		return nil, err
 	}
