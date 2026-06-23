@@ -19,8 +19,10 @@
 
 <script setup lang="ts">
 import { Chart, CategoryScale, LinearScale, BarController, BarElement, Tooltip } from "chart.js";
+import { ChoroplethController, GeoFeature, ColorScale, ProjectionScale } from 'chartjs-chart-geo';
+import { ChoroplethChart } from 'chartjs-chart-geo';
 import { onMounted, toRaw } from "vue";
-import { createTrafficCongestionTrends } from "~/composables/charts";
+import { createTrafficCongestionTrends, createGeographicalTraffic } from "~/composables/charts";
 import { ColorPicker } from "~/composables/colorpicker";
 import type { ChartData } from "~/composables/types";
 const props = defineProps<{
@@ -32,9 +34,9 @@ const additionalDataRef = ref<HTMLDivElement | null>(null);
 const hasAdditionalData = computed(() => ["Traffic congestion trends"].includes(props.name));
 const additionalDataLabels = new Map<string, string>([["Traffic congestion trends", "Total requests by endpoint"]]);
 const urls = useState<string[]>('urls');
-let chartInstance: Chart | null = null;
+let chartInstance: Chart | ChoroplethChart | null = null;
 let colorPicker: ColorPicker | null = null;
-Chart.register(CategoryScale, LinearScale, BarController, BarElement, Tooltip);
+Chart.register(CategoryScale, LinearScale, BarController, BarElement, Tooltip, ChoroplethController, GeoFeature, ColorScale, ProjectionScale);
 onMounted((): void => {
 	if (props.name === "Traffic congestion trends") {
 		colorPicker = new ColorPicker(urls.value)
@@ -46,7 +48,7 @@ watch(() => props.data, (newData: any): void => {
 	populateChart(newData);
 });
 
-const populateChart = (data: any): void => {
+const populateChart = async (data: any): Promise<void> => {
 	if (props.name === "Traffic congestion trends" && chartRef.value && colorPicker) {
 		const { chart, additionalData }: ChartData = createTrafficCongestionTrends(
 			chartRef.value,
@@ -61,7 +63,7 @@ const populateChart = (data: any): void => {
 			}
 		}
 	} else if (props.name === "Geographical traffic" && chartRef.value) {
-		chartInstance = createGeographicalTraffic(chartRef.value, toRaw(data))
+		chartInstance = await createGeographicalTraffic(chartRef.value, toRaw(data))
 	}
 }
 </script>
