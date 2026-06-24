@@ -21,12 +21,16 @@ export const createGeographicalTraffic = async (
 ): Promise<ChoroplethChart> => {
 	try {
 		const world = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then((r) => r.json());
-		const countries = (topojson.feature(world, world.objects.countries) as any).features;
+		const countries = (topojson.feature(world, world.objects.countries) as any).features
+			.filter((feature: any) => feature.properties.name !== 'Antarctica');
 		const mapped = new Map<string, number>(Object.entries(data.distribution.values));
-		const points = countries.map((feature: any) => ({
-			feature,
-			value: mapped.get(feature.properties.name) ?? 0,
-		}));
+		const points: any[] = countries.map((feature: any) => {
+			const value = mapped.get(feature.properties.name) ?? 0;
+			return { feature, value: value > 0 ? value : null };
+		});
+		const all: number = points.reduce((acc: number, p: any) => acc + (p.value ?? 0), 0);
+		canvas.style.backgroundColor = '#0b0f17';
+		canvas.style.borderRadius = '3%';
 		return new ChoroplethChart(canvas, {
 			data: {
 				labels: countries.map((feature: any) => feature.properties.name),
@@ -34,16 +38,70 @@ export const createGeographicalTraffic = async (
 					label: 'Traffic',
 					outline: countries,
 					data: points,
+					borderColor: 'rgba(11,15,23,0.9)',
+					borderWidth: 0.5,
+					borderJoinStyle: 'round',
+					hoverBorderColor: '#00F376',
+					hoverBorderWidth: 1.5,
 				}]
 			},
 			options: {
 				responsive: true,
 				maintainAspectRatio: false,
+				devicePixelRatio: Math.ceil(window.devicePixelRatio || 1),
+				animation: { duration: 250 },
+				layout: { padding: { top: 8, right: 8, bottom: 8, left: 8 } },
 				showOutline: true,
 				showGraticule: false,
+				elements: {
+					geoFeature: {
+						outlineBorderColor: 'rgba(255,255,255,0.08)',
+						outlineBorderWidth: 0.75,
+					},
+				},
 				scales: {
-					projection: { axis: 'x', projection: 'equalEarth' },
-					color: { axis: 'x', quantize: 5, legend: { position: 'bottom-right', align: 'right' } },
+					projection: { axis: 'x', projection: 'mercator' },
+					color: {
+						axis: 'x',
+						quantize: 6,
+						missing: '#2a2f3a',
+						interpolate: (v: number) => {
+							const t = Math.max(0, Math.min(1, v));
+							const g = Math.round(70 + 173 * t);
+							const b = Math.round(34 + 84 * t);
+							return `rgb(0, ${g}, ${b})`;
+						},
+						legend: {
+							position: 'bottom-right',
+							align: 'right',
+							length: 180,
+							width: 12,
+							margin: 12,
+							indicatorWidth: 12,
+						},
+						ticks: {
+							color: '#e5e7eb',
+							font: { weight: 'bold', size: 11 },
+						},
+					},
+				},
+				plugins: {
+					legend: { display: false },
+					tooltip: {
+						enabled: true,
+						displayColors: false,
+						padding: 10,
+						titleFont: { weight: 'bold', size: 13 },
+						bodyFont: { size: 12 },
+						callbacks: {
+							title: (items) => (items[0]?.raw as any)?.feature?.properties?.name ?? '',
+							label: (item) => {
+								const value = (item.raw as any)?.value ?? 0;
+								const share = all > 0 ? ((value / all) * 100).toFixed(1) : '0.0';
+								return [`Traffic: ${value.toLocaleString()}`, `Share of peak: ${share}%`];
+							},
+						},
+					},
 				},
 			},
 		})
