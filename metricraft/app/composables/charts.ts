@@ -98,7 +98,7 @@ export const createGeographicalTraffic = async (
 							label: (item) => {
 								const value = (item.raw as any)?.value ?? 0;
 								const share = all > 0 ? ((value / all) * 100).toFixed(1) : '0.0';
-								return [`Traffic: ${value.toLocaleString()}`, `Share of peak: ${share}%`];
+								return [`Traffic: ${value.toLocaleString()}`, `Share of total: ${share}%`];
 							},
 						},
 					},

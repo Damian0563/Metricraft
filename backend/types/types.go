@@ -33,16 +33,21 @@ type DashboardInitPayload struct {
 	Urls         []string `json:"urls"`
 }
 
-// This can be expanded later to include more settings
 type Settings struct {
-	Realtime  bool            `json:"realtime"`
-	Enabled   map[string]bool `json:"enabled"`
-	Retention int             `json:"retention"`
+	Realtime  bool                     `json:"realtime"`
+	Enabled   map[string]EnabledMetric `json:"enabled"`
+	Retention int                      `json:"retention"`
+}
+
+type EnabledMetric struct {
+	Enabled   bool   `json:"enabled"`
+	Timeframe string `json:"timeframe"`
 }
 
 type Metric struct {
-	Name    string `json:"name"`
-	Enabled bool   `json:"enabled"`
+	Name      string `json:"name"`
+	Enabled   bool   `json:"enabled"`
+	Timeframe string `json:"timeframe"`
 }
 
 type PendingUsers struct {

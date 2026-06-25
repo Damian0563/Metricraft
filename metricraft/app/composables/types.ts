@@ -16,7 +16,7 @@ export type dashboardInitPayload = {
 	urls: string[];
 	signedSecret: string;
 	error: string;
-	settings: { realtime: boolean, retention: number, enabled: Record<string, boolean> };
+	settings: { realtime: boolean, retention: number, enabled: Record<string, { enabled: boolean, timeframe: string }> };
 }
 
 export type pendingUsersPayload = {
