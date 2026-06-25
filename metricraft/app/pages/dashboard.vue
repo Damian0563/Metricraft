@@ -15,7 +15,7 @@ const localLoading = ref(false);
 const errorMessage = ref("");
 const appName = useState<string>('appName', () => "");
 const urls = useState<string[]>('urls', () => []);
-const derivedMetrics = ref<Record<string, boolean>>({})
+const derivedMetrics = ref<Record<string, { enabled: boolean, timeframe: string }>>({})
 const realtimeEnabled = ref(false);
 const logRetention = ref(30);
 const timeout = ref(0)
@@ -28,7 +28,7 @@ const initialize = ((newVal: dashboardInitPayload | undefined) => {
 		appName.value = newVal.appName
 		realtimeEnabled.value = newVal.settings.realtime
 		logRetention.value = newVal.settings.retention
-		const raw = newVal.settings.enabled as Record<string, boolean>
+		const raw = newVal.settings.enabled as Record<string, { enabled: boolean, timeframe: string }>
 		derivedMetrics.value = raw
 		urls.value = newVal.urls
 	} else {
@@ -44,8 +44,8 @@ const initialize = ((newVal: dashboardInitPayload | undefined) => {
 const handleLoad = () => {
 	localLoading.value = !localLoading.value
 };
-const handleUpdateMetrics = (changes: { name: string; enabled: boolean }[]) => {
-	derivedMetrics.value = Object.fromEntries(changes.map(c => [c.name, c.enabled]))
+const handleUpdateMetrics = (changes: { name: string; enabled: boolean, timeframe: string }[]) => {
+	derivedMetrics.value = Object.fromEntries(changes.map(c => [c.name, c.enabled, c.timeframe]))
 };
 const handleRealtimeChange = (val: boolean) => {
 	realtimeEnabled.value = val

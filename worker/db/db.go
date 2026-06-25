@@ -36,7 +36,7 @@ func InitDB(ctx context.Context, errChannel chan error) {
 		return
 	}
 	if count == 0 {
-		_, err = conn.Exec(context.Background(), "INSERT INTO settings (realtime, enabled, retention, appname) VALUES (true, '{\"Geographical traffic\":true,\"P95 Latency\":true,\"Traffic congestion trends\":false,\"Uptime Score\":true,\"Geographic performance\":false,\"Status code distribution\":false,\"Median response time\":true,\"Throughput\":true}', 30, $1)", appName)
+		_, err = conn.Exec(context.Background(), "INSERT INTO settings (realtime, enabled, retention, appname) VALUES (true, '{\"Geographical traffic\":{\"enabled\":true,\"timeframe\":\"7d\"},\"P95 Latency\":{\"enabled\":true,\"timeframe\":\"7d\"},\"Traffic congestion trends\":{\"enabled\":false,\"timeframe\":\"7d\"},\"Uptime Score\":{\"enabled\":true,\"timeframe\":\"7d\"},\"Geographic performance\":{\"enabled\":false,\"timeframe\":\"7d\"},\"Status code distribution\":{\"enabled\":false,\"timeframe\":\"7d\"},\"Median response time\":{\"enabled\":true,\"timeframe\":\"7d\"},\"Throughput\":{\"enabled\":true,\"timeframe\":\"7d\"}}', 30, $1)", appName)
 		if err != nil {
 			errChannel <- err
 			return

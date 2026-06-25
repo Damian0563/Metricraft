@@ -16,7 +16,7 @@ import type { config } from "@/composables/types"
 const props = defineProps<{
 	realtimeEnabled: boolean;
 	logRetention: number;
-	derivedMetrics: Record<string, boolean>;
+	derivedMetrics: Record<string, { enabled: boolean, timeframe: string }>;
 }>();
 const emit = defineEmits<{
 	load: [value: void];

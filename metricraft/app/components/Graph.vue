@@ -13,6 +13,22 @@
 				<div ref="additionalDataRef"
 					class="max-h-24 overflow-y-auto rounded-lg bg-slate-50 px-3 py-2 ring-1 ring-slate-100"></div>
 			</div>
+			<div class="flex justify-end shrink-0">
+				<div class="relative">
+					<select :value="props.timeframe"
+						class="appearance-none cursor-pointer rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-9 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 focus:border-[#00F376] focus:outline-none focus:ring-2 focus:ring-[#00F376]/30">
+						<option value="7d">Last 7 days</option>
+						<option value="30d">Last 30 days</option>
+						<option value="90d">Last 90 days</option>
+						<option value="180d">Last 180 days</option>
+						<option value="365d">Last 365 days</option>
+					</select>
+					<svg class="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+						fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+					</svg>
+				</div>
+			</div>
 		</div>
 	</div>
 </template>
@@ -27,6 +43,7 @@ import { ColorPicker } from "~/composables/colorpicker";
 import type { ChartData } from "~/composables/types";
 const props = defineProps<{
 	name: string;
+	timeframe: string;
 	data: any;
 }>();
 const chartRef = ref<HTMLCanvasElement | null>(null);

@@ -98,7 +98,7 @@ type CompactMetric = { name: string; enabled: boolean }
 const props = defineProps<{
 	realtimeEnabled: boolean;
 	logRetention: number;
-	derivedMetrics: Record<string, boolean>;
+	derivedMetrics: Record<string, { enabled: boolean, timeframe: string }>;
 }>();
 const emit = defineEmits<{
 	realtimeToggle: [value: boolean];

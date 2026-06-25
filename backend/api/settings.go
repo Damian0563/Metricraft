@@ -43,10 +43,16 @@ func GetSettings() (types.Settings, error) {
 	if err != nil {
 		return types.Settings{}, err
 	}
-	settings.Enabled = make(map[string]bool)
-	err = json.Unmarshal([]byte(enabled), &settings.Enabled)
+	allSettings := make(map[string]types.EnabledMetric)
+	err = json.Unmarshal([]byte(enabled), &allSettings)
 	if err != nil {
 		return types.Settings{}, err
+	}
+	settings.Enabled = make(map[string]types.EnabledMetric)
+	for name, metric := range allSettings {
+		if metric.Enabled {
+			settings.Enabled[name] = metric
+		}
 	}
 	return settings, nil
 }
@@ -81,9 +87,22 @@ func ChangeMetrics(metrics []types.Metric) error {
 		return err
 	}
 	defer conn.Close(ctx)
-	mapMetrics := make(map[string]bool)
+	var existing string
+	err = conn.QueryRow(ctx, "SELECT enabled FROM settings WHERE TRUE").Scan(&existing)
+	if err != nil {
+		return err
+	}
+	mapMetrics := make(map[string]types.EnabledMetric)
+	if err = json.Unmarshal([]byte(existing), &mapMetrics); err != nil {
+		return err
+	}
 	for _, metric := range metrics {
-		mapMetrics[metric.Name] = metric.Enabled
+		current := mapMetrics[metric.Name]
+		current.Enabled = metric.Enabled
+		if metric.Timeframe != "" {
+			current.Timeframe = metric.Timeframe
+		}
+		mapMetrics[metric.Name] = current
 	}
 	var stringifiedMetrics []byte
 	stringifiedMetrics, err = json.Marshal(mapMetrics)
