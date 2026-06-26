@@ -69,7 +69,7 @@ func main() {
 	router.Post("/settings/realtime", api.ToggleRealtime)
 	router.Post("/settings/retention", api.ChangeRetention)
 	router.Post("/settings/metrics", api.ChangeMetricsHandler)
-	router.Get("/dashboard/fetch", api.Navigator)
+	router.Get("/dashboard/fetch", api.Navigator) //?persist=boolean
 	router.Get("/invites/pending", api.PendingInvites)
 	router.Get("/invites/team", api.TeamMembers)
 	router.Post("/invites/handle", api.HandleInvite) //?user=string&action=boolean

@@ -16,6 +16,7 @@
 			<div class="flex justify-end shrink-0">
 				<div class="relative">
 					<select :value="props.timeframe"
+						@change="emit('timeframeChange', { metric: props.name, timeframe: $event.target.value as string })"
 						class="appearance-none cursor-pointer rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-9 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 focus:border-[#00F376] focus:outline-none focus:ring-2 focus:ring-[#00F376]/30">
 						<option value="7d">Last 7 days</option>
 						<option value="30d">Last 30 days</option>
@@ -45,6 +46,9 @@ const props = defineProps<{
 	name: string;
 	timeframe: string;
 	data: any;
+}>();
+const emit = defineEmits<{
+	timeframeChange: [{ metric: string, timeframe: string }];
 }>();
 const chartRef = ref<HTMLCanvasElement | null>(null);
 const additionalDataRef = ref<HTMLDivElement | null>(null);
