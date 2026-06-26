@@ -22,8 +22,8 @@ export const getDashboard = async (): Promise<dashboardInitPayload> => {
 }
 
 
-export const fetchMetric = async (metric: string, timeframe: string = "30d"): Promise<Map<string, number>> => {
-	return await useApi()<Map<string, number>>("/dashboard/fetch", {
+export const fetchMetric = async (metric: string, timeframe: string, persist: boolean = false): Promise<Map<string, number>> => {
+	return await useApi()<Map<string, number>>(`/dashboard/fetch?persist=${persist}`, {
 		method: "GET",
 		query: { metric, timeframe },
 	})

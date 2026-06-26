@@ -57,6 +57,38 @@ func GetSettings() (types.Settings, error) {
 	return settings, nil
 }
 
+func persistTimeframeSelection(persistChan chan error, metric string, timeframe string) {
+	ctx := context.Background()
+	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
+	if err != nil {
+		persistChan <- err
+		return
+	}
+	defer conn.Close(ctx)
+	var existing string
+	err = conn.QueryRow(ctx, "SELECT enabled FROM settings").Scan(&existing)
+	if err != nil {
+		persistChan <- err
+		return
+	}
+	mapMetrics := make(map[string]types.EnabledMetric)
+	if err = json.Unmarshal([]byte(existing), &mapMetrics); err != nil {
+		persistChan <- err
+		return
+	}
+	current := mapMetrics[metric]
+	current.Timeframe = timeframe
+	mapMetrics[metric] = current
+	var stringifiedMetrics []byte
+	stringifiedMetrics, err = json.Marshal(mapMetrics)
+	if err != nil {
+		persistChan <- err
+		return
+	}
+	_, err = conn.Exec(ctx, "UPDATE settings SET enabled = $1", string(stringifiedMetrics))
+	persistChan <- err
+}
+
 func GetUrls() ([]string, error) {
 	ctx := context.Background()
 	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
@@ -64,7 +96,7 @@ func GetUrls() ([]string, error) {
 		return nil, err
 	}
 	defer conn.Close(ctx)
-	res, err := conn.Query(ctx, "SELECT DISTINCT url FROM logs WHERE TRUE ORDER BY url")
+	res, err := conn.Query(ctx, "SELECT DISTINCT url FROM logs ORDER BY url")
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +120,7 @@ func ChangeMetrics(metrics []types.Metric) error {
 	}
 	defer conn.Close(ctx)
 	var existing string
-	err = conn.QueryRow(ctx, "SELECT enabled FROM settings WHERE TRUE").Scan(&existing)
+	err = conn.QueryRow(ctx, "SELECT enabled FROM settings").Scan(&existing)
 	if err != nil {
 		return err
 	}

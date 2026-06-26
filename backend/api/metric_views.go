@@ -68,6 +68,13 @@ func Navigator(w http.ResponseWriter, r *http.Request) {
 	client := pb.NewMetricraftClient(grpcConn)
 	metric := r.URL.Query().Get("metric")
 	timeframe := r.URL.Query().Get("timeframe")
+	persist := r.URL.Query().Get("persist")
+	persistChan := make(chan error, 1)
+	if persist == "true" {
+		go persistTimeframeSelection(persistChan, metric, timeframe)
+	} else {
+		persistChan <- nil
+	}
 	convertedTimeframe, resolution := convertTimeframe(timeframe)
 	var response any
 	switch metric {
@@ -87,7 +94,13 @@ func Navigator(w http.ResponseWriter, r *http.Request) {
 	default:
 		break
 	}
+	err = <-persistChan //this can be swallowed internally, even if error occured
 	w.Header().Set("Content-Type", "application/json")
 	httpresponse, err := json.Marshal(response)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	w.Write(httpresponse)
 }
+
