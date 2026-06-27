@@ -112,9 +112,7 @@ func persistTimeframeSelection(persistChan chan error, metric string, timeframe 
 		persistChan <- err
 		return
 	}
-	if err := tx.Commit(ctx); err != nil {
-		persistChan <- err
-	}
+	persistChan <- tx.Commit(ctx)
 }
 
 func GetUrls() ([]string, error) {

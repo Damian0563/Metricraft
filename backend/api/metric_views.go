@@ -93,7 +93,6 @@ func Navigator(w http.ResponseWriter, r *http.Request) {
 		}
 	case "P95 Latency":
 		response, err = client.GetP95Latency(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days})
-		fmt.Println(response)
 		if err != nil {
 			fmt.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)

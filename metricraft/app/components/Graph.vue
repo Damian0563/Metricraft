@@ -59,7 +59,7 @@ let chartInstance: Chart | ChoroplethChart | null = null;
 let colorPicker: ColorPicker | null = null;
 Chart.register(CategoryScale, LinearScale, BarController, BarElement, Tooltip, ChoroplethController, GeoFeature, ColorScale, ProjectionScale);
 onMounted((): void => {
-	if (props.name === "Traffic congestion trends") {
+	if (props.name === "Traffic congestion trends" || props.name === "P95 Latency") {
 		colorPicker = new ColorPicker(urls.value)
 	}
 	populateChart(props.data);
@@ -71,11 +71,7 @@ watch(() => props.data, (newData: any): void => {
 
 const populateChart = async (data: any): Promise<void> => {
 	if (props.name === "Traffic congestion trends" && chartRef.value && colorPicker) {
-		const { chart, additionalData }: ChartData = createTrafficCongestionTrends(
-			chartRef.value,
-			toRaw(data),
-			colorPicker
-		);
+		const { chart, additionalData }: ChartData = createTrafficCongestionTrends(chartRef.value, toRaw(data), colorPicker);
 		chartInstance = chart;
 		if (additionalDataRef.value) {
 			additionalDataRef.value.replaceChildren();
@@ -85,8 +81,8 @@ const populateChart = async (data: any): Promise<void> => {
 		}
 	} else if (props.name === "Geographical traffic" && chartRef.value) {
 		chartInstance = await createGeographicalTraffic(chartRef.value, toRaw(data))
-	} else if (props.name === "P95 Latency" && chartRef.value) {
-		chartInstance = createP95Latency(chartRef.value, toRaw(data))
+	} else if (props.name === "P95 Latency" && chartRef.value && colorPicker) {
+		chartInstance = createP95Latency(chartRef.value, toRaw(data), colorPicker)
 	}
 }
 </script>
