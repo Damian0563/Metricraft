@@ -15,22 +15,126 @@ export type TrafficCongestionData = {
 	values: CongestionEntry[];
 };
 
+export type P95LatencyData = {
+	distribution: {
+		values: Record<string, number>;
+	};
+};
+
+const truncateUrl = (url: string, max = 20): string => {
+	if (url.length <= max) return url;
+	return `${url.slice(0, max - 1)}…`;
+};
+
 export const createP95Latency = (
 	canvas: HTMLCanvasElement,
-	data: any
+	data: P95LatencyData,
+	colorPicker: ColorPicker,
 ): Chart => {
+	const emptyChart = () =>
+		new Chart(canvas, {
+			type: 'bar',
+			data: { labels: [], datasets: [] },
+			options: { responsive: true, maintainAspectRatio: false },
+		});
+
 	try {
+		const values = data?.distribution?.values;
+		if (!values || !Object.keys(values).length) throw new Error('Data is empty');
+		const entries: Array<[string, number]> = Object.entries(values).sort(([, a], [, b]) => a - b);
+		const labels: string[] = entries.map(([url]) => url);
+		const latencies: number[] = entries.map(([, value]) => value);
+		const colors: string[] = labels.map((url) => colorPicker.getColorForUrl(url));
+		type P95Chart = Chart & { $hoveredIndex?: number | null };
 		return new Chart(canvas, {
 			type: 'bar',
-			data: { labels: [], datasets: [] }
-		})
+			plugins: [
+				{
+					id: 'yLabelHover',
+					afterInit(chart) {
+						const p95Chart = chart as P95Chart;
+						p95Chart.$hoveredIndex = null;
+						const ctx = chart.ctx;
+						ctx.save();
+					},
+					afterEvent(chart) {
+						const p95Chart = chart as P95Chart;
+						const active = chart.getActiveElements();
+						const nextIndex = active[0]?.index ?? null;
+						if (nextIndex === p95Chart.$hoveredIndex) return;
+						p95Chart.$hoveredIndex = nextIndex;
+						chart.update('none');
+					},
+				},
+			],
+			data: {
+				labels,
+				datasets: [{
+					label: 'P95 Latency',
+					data: latencies,
+					backgroundColor: colors,
+					hoverBackgroundColor: colors,
+					borderWidth: 0,
+					borderRadius: 4,
+					borderSkipped: false,
+					maxBarThickness: 36,
+				}],
+			},
+			options: {
+				indexAxis: 'y',
+				responsive: true,
+				maintainAspectRatio: false,
+				devicePixelRatio: Math.ceil(window.devicePixelRatio || 1),
+				animation: { duration: 250 },
+				interaction: { mode: 'index', axis: 'y', intersect: false },
+				layout: { padding: { right: 12, left: 4, top: 4, bottom: 4 } },
+				scales: {
+					x: {
+						beginAtZero: true,
+						border: { display: false },
+						grid: { color: 'rgba(0,0,0,0.06)', drawTicks: false },
+						ticks: {
+							padding: 8,
+							font: { weight: 'bold' },
+							callback: (value: string | number): string => `${value} ms`,
+						},
+					},
+					y: {
+						grid: { display: false },
+						border: { display: false },
+						ticks: {
+							color: (ctx) => {
+								const hovered = (ctx.chart as P95Chart).$hoveredIndex;
+								return ctx.index === hovered ? '#0D6EFD' : '#475569';
+							},
+							padding: 6,
+							font: { weight: 'bold', size: 11 },
+							autoSkip: labels.length > 30,
+							maxTicksLimit: labels.length > 20 ? 20 : undefined,
+							callback: (_value: string | number, index: number): string => truncateUrl(labels[index] ?? ''),
+						},
+					},
+				},
+				plugins: {
+					legend: { display: false },
+					tooltip: {
+						enabled: true,
+						displayColors: true,
+						padding: 10,
+						titleFont: { weight: 'bold', size: 13 },
+						bodyFont: { size: 12 },
+						callbacks: {
+							title: (items) => labels[items[0]?.dataIndex ?? 0] ?? '',
+							label: (item) => `P95: ${Number(item.parsed.x).toLocaleString()} ms`,
+						},
+					},
+				},
+			},
+		});
 	} catch (e) {
-		return new Chart(canvas, {
-			type: 'bar',
-			data: { labels: [], datasets: [] }
-		})
+		return emptyChart();
 	}
-}
+};
 
 export const createGeographicalTraffic = async (
 	canvas: HTMLCanvasElement,
