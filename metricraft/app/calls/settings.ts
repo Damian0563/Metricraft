@@ -20,7 +20,7 @@ export const changeRetention = async (retention: number) => {
 	}
 }
 
-export const changeDerivedMetrics = async (metrics: { name: string; enabled: boolean }[]) => {
+export const changeDerivedMetrics = async (metrics: { name: string; enabled: boolean; timeframe?: string }[]) => {
 	try {
 		await useApi()<Response>(`/settings/metrics`, {
 			method: "POST",

@@ -44,8 +44,15 @@ const initialize = ((newVal: dashboardInitPayload | undefined) => {
 const handleLoad = () => {
 	localLoading.value = !localLoading.value
 };
-const handleUpdateMetrics = (changes: { name: string; enabled: boolean, timeframe: string }[]) => {
-	derivedMetrics.value = Object.fromEntries(changes.map(c => [c.name, c.enabled, c.timeframe]))
+const handleUpdateMetrics = (changes: { name: string; enabled: boolean; timeframe?: string }[]) => {
+	const next = { ...derivedMetrics.value }
+	for (const change of changes) {
+		next[change.name] = {
+			enabled: change.enabled,
+			timeframe: change.timeframe ?? next[change.name]?.timeframe ?? '7d',
+		}
+	}
+	derivedMetrics.value = next
 };
 const handleRealtimeChange = (val: boolean) => {
 	realtimeEnabled.value = val

@@ -108,7 +108,10 @@ func persistTimeframeSelection(persistChan chan error, metric string, timeframe 
 		return
 	}
 	_, err = tx.Exec(ctx, "UPDATE settings SET enabled = $1", string(stringifiedMetrics))
-	persistChan <- err
+	if err != nil {
+		persistChan <- err
+		return
+	}
 	if err := tx.Commit(ctx); err != nil {
 		persistChan <- err
 	}

@@ -93,8 +93,8 @@
 
 <script setup lang="ts">
 import { changeDerivedMetrics, changeRetention } from "@/calls/settings"
-type Metric = { id: number; name: string; description: string; enabled: boolean }
-type CompactMetric = { name: string; enabled: boolean }
+type Metric = { id: number; name: string; description: string; enabled: boolean, timeframe: string }
+type CompactMetric = { name: string; enabled: boolean; timeframe: string }
 const props = defineProps<{
 	realtimeEnabled: boolean;
 	logRetention: number;
@@ -112,19 +112,19 @@ const logRetention = ref(props.logRetention)
 watch(() => props.logRetention, (val) => logRetention.value = val)
 const pendingMetrics = ref<Metric[]>([])
 const originalMetrics = ref<Metric[]>([
-	{ id: 1, name: 'Geographical traffic', description: 'Map of origins of http requests in a specified time interval.', enabled: true },
-	{ id: 2, name: 'P95 Latency', description: '95th percentile response time per endpoint', enabled: true },
-	{ id: 3, name: 'Traffic congestion trends', description: 'Request volume measured in one hour time intervals over specified time frame.', enabled: false },
-	{ id: 4, name: 'Uptime Score', description: 'Availability percentage over specified time frame.', enabled: true },
-	{ id: 5, name: 'Geographic performance', description: 'Average response times and error rates broken down by client country or region.', enabled: false },
-	{ id: 6, name: 'Status code distribution', description: 'Breakdown of HTTP response codes grouped by category (2xx, 3xx, 4xx, 5xx) over time.', enabled: false },
-	{ id: 7, name: 'Median response time', description: 'P50 latency across all requests, providing a representative measure of typical endpoint performance.', enabled: true },
-	{ id: 8, name: 'Throughput', description: 'Requests per second measured over configurable time intervals to track traffic capacity and trends.', enabled: true },
+	{ id: 1, name: 'Geographical traffic', description: 'Map of origins of http requests in a specified time interval.', enabled: true, timeframe: "7d" },
+	{ id: 2, name: 'P95 Latency', description: '95th percentile response time per endpoint', enabled: true, timeframe: "7d" },
+	{ id: 3, name: 'Traffic congestion trends', description: 'Request volume measured in one hour time intervals over specified time frame.', enabled: false, timeframe: "7d" },
+	{ id: 4, name: 'Uptime Score', description: 'Availability percentage over specified time frame.', enabled: true, timeframe: "7d" },
+	{ id: 5, name: 'Geographic performance', description: 'Average response times and error rates broken down by client country or region.', enabled: false, timeframe: "7d" },
+	{ id: 6, name: 'Status code distribution', description: 'Breakdown of HTTP response codes grouped by category (2xx, 3xx, 4xx, 5xx) over time.', enabled: false, timeframe: "7d" },
+	{ id: 7, name: 'Median response time', description: 'P50 latency across all requests, providing a representative measure of typical endpoint performance.', enabled: true, timeframe: "7d" },
+	{ id: 8, name: 'Throughput', description: 'Requests per second measured over configurable time intervals to track traffic capacity and trends.', enabled: true, timeframe: "7d" },
 ])
 watch(() => props.derivedMetrics, (metrics) => {
 	const updated = originalMetrics.value.map(metric => {
 		const enabled = metrics[metric.name]
-		return typeof enabled === "object" ? { ...metric, enabled: enabled.enabled } : { ...metric, enabled: false }
+		return typeof enabled === "object" ? { ...metric, enabled: enabled.enabled, timeframe: enabled.timeframe } : { ...metric, enabled: false, timeframe: "7d" }
 	})
 	originalMetrics.value = updated
 	pendingMetrics.value = updated.map(m => ({ ...m }))
@@ -136,7 +136,7 @@ const hasChanges = computed(() =>
 const applyMetricChanges = async () => {
 	emit('load')
 	if (!hasChanges.value) return
-	const changes = pendingMetrics.value.map(m => ({ name: m.name, enabled: m.enabled }))
+	const changes = pendingMetrics.value.map(m => ({ name: m.name, enabled: m.enabled, timeframe: m.timeframe }))
 	await changeDerivedMetrics(changes)
 	originalMetrics.value = pendingMetrics.value.map(m => ({ ...m }))
 	emit('updateMetrics', changes)

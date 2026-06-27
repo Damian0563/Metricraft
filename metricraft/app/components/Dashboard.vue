@@ -20,7 +20,7 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{
 	load: [value: void];
-	updateMetrics: [value: { name: string; enabled: boolean }[]];
+	updateMetrics: [value: { name: string; enabled: boolean; timeframe?: string }[]];
 	changeRetention: [value: Number];
 	changeRealtime: [value: boolean];
 }>();
