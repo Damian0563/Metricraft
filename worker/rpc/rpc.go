@@ -16,7 +16,12 @@ func (s *Server) GetTrafficCongestion(ctx context.Context, req *pb.Timeframe) (*
 	return db.GetTrafficCongestion(ctx, start, resolution)
 }
 
-func (s *Server) GetGeographicalTraffic(ctx context.Context, req *pb.Timeframe) (*pb.CountryDistribution, error) {
+func (s *Server) GetGeographicalTraffic(ctx context.Context, req *pb.Timeframe) (*pb.Distribution, error) {
 	start := req.Start.AsTime()
 	return db.GetGeographicalTraffic(ctx, start)
+}
+
+func (s *Server) GetP95Latency(ctx context.Context, req *pb.Timeframe) (*pb.Distribution, error) {
+	start := req.Start.AsTime()
+	return db.GetP95Latency(ctx, start)
 }

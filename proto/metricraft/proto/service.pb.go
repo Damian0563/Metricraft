@@ -170,27 +170,27 @@ func (x *CongestionEntry) GetPairing() *StringInt32Map {
 	return nil
 }
 
-type CountryDistribution struct {
+type Distribution struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Distribution  *StringInt32Map        `protobuf:"bytes,1,opt,name=distribution,proto3" json:"distribution,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *CountryDistribution) Reset() {
-	*x = CountryDistribution{}
+func (x *Distribution) Reset() {
+	*x = Distribution{}
 	mi := &file_service_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *CountryDistribution) String() string {
+func (x *Distribution) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*CountryDistribution) ProtoMessage() {}
+func (*Distribution) ProtoMessage() {}
 
-func (x *CountryDistribution) ProtoReflect() protoreflect.Message {
+func (x *Distribution) ProtoReflect() protoreflect.Message {
 	mi := &file_service_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -202,12 +202,12 @@ func (x *CountryDistribution) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use CountryDistribution.ProtoReflect.Descriptor instead.
-func (*CountryDistribution) Descriptor() ([]byte, []int) {
+// Deprecated: Use Distribution.ProtoReflect.Descriptor instead.
+func (*Distribution) Descriptor() ([]byte, []int) {
 	return file_service_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *CountryDistribution) GetDistribution() *StringInt32Map {
+func (x *Distribution) GetDistribution() *StringInt32Map {
 	if x != nil {
 		return x.Distribution
 	}
@@ -276,16 +276,17 @@ const file_service_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\x05R\x05value:\x028\x01\"e\n" +
 	"\x0fCongestionEntry\x12\x1c\n" +
 	"\ttimerange\x18\x01 \x01(\tR\ttimerange\x124\n" +
-	"\apairing\x18\x02 \x01(\v2\x1a.metricraft.StringInt32MapR\apairing\"U\n" +
-	"\x13countryDistribution\x12>\n" +
+	"\apairing\x18\x02 \x01(\v2\x1a.metricraft.StringInt32MapR\apairing\"N\n" +
+	"\fdistribution\x12>\n" +
 	"\fdistribution\x18\x01 \x01(\v2\x1a.metricraft.StringInt32MapR\fdistribution\"A\n" +
 	"\n" +
 	"congestion\x123\n" +
-	"\x06values\x18\x01 \x03(\v2\x1b.metricraft.CongestionEntryR\x06values2\xa5\x01\n" +
+	"\x06values\x18\x01 \x03(\v2\x1b.metricraft.CongestionEntryR\x06values2\xe0\x01\n" +
 	"\n" +
-	"Metricraft\x12P\n" +
-	"\x16getGeographicalTraffic\x12\x15.metricraft.timeframe\x1a\x1f.metricraft.countryDistribution\x12E\n" +
-	"\x14getTrafficCongestion\x12\x15.metricraft.timeframe\x1a\x16.metricraft.congestionB\x12Z\x10metricraft/protob\x06proto3"
+	"Metricraft\x12I\n" +
+	"\x16getGeographicalTraffic\x12\x15.metricraft.timeframe\x1a\x18.metricraft.distribution\x12E\n" +
+	"\x14getTrafficCongestion\x12\x15.metricraft.timeframe\x1a\x16.metricraft.congestion\x12@\n" +
+	"\rgetP95Latency\x12\x15.metricraft.timeframe\x1a\x18.metricraft.distributionB\x12Z\x10metricraft/protob\x06proto3"
 
 var (
 	file_service_proto_rawDescOnce sync.Once
@@ -304,7 +305,7 @@ var file_service_proto_goTypes = []any{
 	(*Timeframe)(nil),             // 0: metricraft.timeframe
 	(*StringInt32Map)(nil),        // 1: metricraft.StringInt32Map
 	(*CongestionEntry)(nil),       // 2: metricraft.CongestionEntry
-	(*CountryDistribution)(nil),   // 3: metricraft.countryDistribution
+	(*Distribution)(nil),          // 3: metricraft.distribution
 	(*Congestion)(nil),            // 4: metricraft.congestion
 	nil,                           // 5: metricraft.StringInt32Map.ValuesEntry
 	(*timestamppb.Timestamp)(nil), // 6: google.protobuf.Timestamp
@@ -313,14 +314,16 @@ var file_service_proto_depIdxs = []int32{
 	6, // 0: metricraft.timeframe.start:type_name -> google.protobuf.Timestamp
 	5, // 1: metricraft.StringInt32Map.values:type_name -> metricraft.StringInt32Map.ValuesEntry
 	1, // 2: metricraft.CongestionEntry.pairing:type_name -> metricraft.StringInt32Map
-	1, // 3: metricraft.countryDistribution.distribution:type_name -> metricraft.StringInt32Map
+	1, // 3: metricraft.distribution.distribution:type_name -> metricraft.StringInt32Map
 	2, // 4: metricraft.congestion.values:type_name -> metricraft.CongestionEntry
 	0, // 5: metricraft.Metricraft.getGeographicalTraffic:input_type -> metricraft.timeframe
 	0, // 6: metricraft.Metricraft.getTrafficCongestion:input_type -> metricraft.timeframe
-	3, // 7: metricraft.Metricraft.getGeographicalTraffic:output_type -> metricraft.countryDistribution
-	4, // 8: metricraft.Metricraft.getTrafficCongestion:output_type -> metricraft.congestion
-	7, // [7:9] is the sub-list for method output_type
-	5, // [5:7] is the sub-list for method input_type
+	0, // 7: metricraft.Metricraft.getP95Latency:input_type -> metricraft.timeframe
+	3, // 8: metricraft.Metricraft.getGeographicalTraffic:output_type -> metricraft.distribution
+	4, // 9: metricraft.Metricraft.getTrafficCongestion:output_type -> metricraft.congestion
+	3, // 10: metricraft.Metricraft.getP95Latency:output_type -> metricraft.distribution
+	8, // [8:11] is the sub-list for method output_type
+	5, // [5:8] is the sub-list for method input_type
 	5, // [5:5] is the sub-list for extension type_name
 	5, // [5:5] is the sub-list for extension extendee
 	0, // [0:5] is the sub-list for field type_name

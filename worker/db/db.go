@@ -136,7 +136,7 @@ func GetTrafficCongestion(ctx context.Context, startDate time.Time, resolution i
 	return &pb.Congestion{Values: congestion}, nil
 }
 
-func GetGeographicalTraffic(ctx context.Context, startDate time.Time) (*pb.CountryDistribution, error) {
+func GetGeographicalTraffic(ctx context.Context, startDate time.Time) (*pb.Distribution, error) {
 	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
 	if err != nil {
 		return nil, err
@@ -157,5 +157,29 @@ func GetGeographicalTraffic(ctx context.Context, startDate time.Time) (*pb.Count
 		}
 		distribution[country] = int32(count)
 	}
-	return &pb.CountryDistribution{Distribution: &pb.StringInt32Map{Values: distribution}}, nil
+	return &pb.Distribution{Distribution: &pb.StringInt32Map{Values: distribution}}, nil
+}
+
+func GetP95Latency(ctx context.Context, startDate time.Time) (*pb.Distribution, error) {
+	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close(ctx)
+	endDate := time.Now()
+	distribution := make(map[string]int32)
+	res, err := conn.Query(ctx, "SELECT url,percentile_cont(0.95) WITHIN GROUP (ORDER BY responsetime) AS percentile FROM logs WHERE date BETWEEN $1 AND $2 GROUP BY url ORDER BY percentile DESC", startDate, endDate)
+	if err != nil {
+		return nil, err
+	}
+	for res.Next() {
+		var url string
+		var percentile float64
+		err = res.Scan(&url, &percentile)
+		if err != nil {
+			return nil, err
+		}
+		distribution[url] = int32(percentile)
+	}
+	return &pb.Distribution{Distribution: &pb.StringInt32Map{Values: distribution}}, nil
 }
