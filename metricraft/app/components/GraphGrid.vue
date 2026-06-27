@@ -1,5 +1,6 @@
 <template>
 	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mx-4 md:mx-8 p-2 mb-16">
+		<Popup :message="errorMessage" @close="errorMessage = ''" />
 		<div v-for="entry in enabledMetrics" :key="entry.name">
 			<Graph :name="entry.name" :data="entry.metrics" :timeframe="entry.timeframe"
 				@timeframe-change="handleTimeframeChange($event)" />
@@ -9,6 +10,7 @@
 
 <script setup lang="ts">
 import { fetchMetric } from "~/calls/dashboard";
+import Popup from "~/components/Popup.vue";
 const props = defineProps<{
 	metrics: Record<string, { enabled: boolean, timeframe: string }>
 }>();
@@ -22,6 +24,7 @@ type MetricData = {
 	timeframe: string;
 };
 const enabledMetrics = ref<MetricData[] | undefined>([]);
+const errorMessage = ref<string>('');
 const fetchAllMetrics = async (enabled: Record<string, { enabled: boolean, timeframe: string }>) => {
 	emit('load')
 	try {
@@ -37,6 +40,7 @@ const fetchAllMetrics = async (enabled: Record<string, { enabled: boolean, timef
 		}))
 	} catch (_) {
 		emit('load')
+		errorMessage.value = 'Something went wrong, Check your internet connection and try again.'
 	}
 };
 
@@ -50,6 +54,7 @@ const handleTimeframeChange = async (obj: { metric: string, timeframe: string })
 			entry.name === metric ? { ...entry, metrics, timeframe } : entry
 		);
 	} catch (_) {
+		errorMessage.value = 'Something went wrong, Check your internet connection and try again.';
 	} finally {
 		emit('load');
 	}
