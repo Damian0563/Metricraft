@@ -124,7 +124,7 @@ const originalMetrics = ref<Metric[]>([
 watch(() => props.derivedMetrics, (metrics) => {
 	const updated = originalMetrics.value.map(metric => {
 		const enabled = metrics[metric.name]
-		return typeof enabled === "boolean" ? { ...metric, enabled } : metric
+		return typeof enabled === "object" ? { ...metric, enabled: enabled.enabled } : { ...metric, enabled: false }
 	})
 	originalMetrics.value = updated
 	pendingMetrics.value = updated.map(m => ({ ...m }))

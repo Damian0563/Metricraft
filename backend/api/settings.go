@@ -15,8 +15,16 @@ func ChangeRealtime(enabled bool) error {
 		return err
 	}
 	defer conn.Close(ctx)
-	_, err = conn.Exec(ctx, "UPDATE settings SET realtime = $1 WHERE TRUE", enabled)
-	return err
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+	_, err = tx.Exec(ctx, "UPDATE settings SET realtime = $1 WHERE TRUE", enabled)
+	if err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
 }
 
 func ChangeLogsRetention(retention int) error {
@@ -26,8 +34,16 @@ func ChangeLogsRetention(retention int) error {
 		return err
 	}
 	defer conn.Close(ctx)
-	_, err = conn.Exec(ctx, "UPDATE settings SET retention = $1 WHERE TRUE", retention)
-	return err
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+	_, err = tx.Exec(ctx, "UPDATE settings SET retention = $1 WHERE TRUE", retention)
+	if err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
 }
 
 func GetSettings() (types.Settings, error) {
@@ -65,8 +81,14 @@ func persistTimeframeSelection(persistChan chan error, metric string, timeframe 
 		return
 	}
 	defer conn.Close(ctx)
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		persistChan <- err
+		return
+	}
+	defer tx.Rollback(ctx)
 	var existing string
-	err = conn.QueryRow(ctx, "SELECT enabled FROM settings").Scan(&existing)
+	err = tx.QueryRow(ctx, "SELECT enabled FROM settings").Scan(&existing)
 	if err != nil {
 		persistChan <- err
 		return
@@ -85,8 +107,11 @@ func persistTimeframeSelection(persistChan chan error, metric string, timeframe 
 		persistChan <- err
 		return
 	}
-	_, err = conn.Exec(ctx, "UPDATE settings SET enabled = $1", string(stringifiedMetrics))
+	_, err = tx.Exec(ctx, "UPDATE settings SET enabled = $1", string(stringifiedMetrics))
 	persistChan <- err
+	if err := tx.Commit(ctx); err != nil {
+		persistChan <- err
+	}
 }
 
 func GetUrls() ([]string, error) {
@@ -119,8 +144,13 @@ func ChangeMetrics(metrics []types.Metric) error {
 		return err
 	}
 	defer conn.Close(ctx)
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
 	var existing string
-	err = conn.QueryRow(ctx, "SELECT enabled FROM settings").Scan(&existing)
+	err = tx.QueryRow(ctx, "SELECT enabled FROM settings").Scan(&existing)
 	if err != nil {
 		return err
 	}
@@ -141,6 +171,9 @@ func ChangeMetrics(metrics []types.Metric) error {
 	if err != nil {
 		return err
 	}
-	_, err = conn.Exec(ctx, "UPDATE settings SET enabled = $1 WHERE TRUE", string(stringifiedMetrics))
-	return err
+	_, err = tx.Exec(ctx, "UPDATE settings SET enabled = $1 WHERE TRUE", string(stringifiedMetrics))
+	if err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
 }
