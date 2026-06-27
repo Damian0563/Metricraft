@@ -25,14 +25,16 @@ const enabledMetrics = ref<MetricData[] | undefined>([]);
 const fetchAllMetrics = async (enabled: Record<string, { enabled: boolean, timeframe: string }>) => {
 	emit('load')
 	try {
-		const enabledNames = Object.keys(enabled)
-		const results = await Promise.all(enabledNames.map((name) => fetchMetric(name, enabled[name].timeframe)));
+		const enabledEntries = Object.entries(enabled).filter(
+			(entry): entry is [string, { enabled: boolean, timeframe: string }] => entry[1]?.enabled === true
+		)
+		const results = await Promise.all(enabledEntries.map(([name, config]) => fetchMetric(name, config.timeframe)))
 		emit('load')
-		return enabledNames.map((name, index) => ({
+		return enabledEntries.map(([name, config], index) => ({
 			name,
 			metrics: results[index],
-			timeframe: enabled[name].timeframe,
-		}));
+			timeframe: config.timeframe,
+		}))
 	} catch (_) {
 		emit('load')
 	}

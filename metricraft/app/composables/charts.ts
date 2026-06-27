@@ -15,6 +15,23 @@ export type TrafficCongestionData = {
 	values: CongestionEntry[];
 };
 
+export const createP95Latency = (
+	canvas: HTMLCanvasElement,
+	data: any
+): Chart => {
+	try {
+		return new Chart(canvas, {
+			type: 'bar',
+			data: { labels: [], datasets: [] }
+		})
+	} catch (e) {
+		return new Chart(canvas, {
+			type: 'bar',
+			data: { labels: [], datasets: [] }
+		})
+	}
+}
+
 export const createGeographicalTraffic = async (
 	canvas: HTMLCanvasElement,
 	data: any

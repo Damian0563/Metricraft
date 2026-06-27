@@ -16,7 +16,7 @@
 			<div class="flex justify-end shrink-0">
 				<div class="relative">
 					<select :value="props.timeframe"
-						@change="emit('timeframeChange', { metric: props.name, timeframe: $event.target.value as string })"
+						@change="emit('timeframeChange', { metric: props.name, timeframe: ($event.target as HTMLSelectElement).value as string })"
 						class="appearance-none cursor-pointer rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-9 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 focus:border-[#00F376] focus:outline-none focus:ring-2 focus:ring-[#00F376]/30">
 						<option value="7d">Last 7 days</option>
 						<option value="30d">Last 30 days</option>
@@ -39,7 +39,7 @@ import { Chart, CategoryScale, LinearScale, BarController, BarElement, Tooltip }
 import { ChoroplethController, GeoFeature, ColorScale, ProjectionScale } from 'chartjs-chart-geo';
 import { ChoroplethChart } from 'chartjs-chart-geo';
 import { onMounted, toRaw } from "vue";
-import { createTrafficCongestionTrends, createGeographicalTraffic } from "~/composables/charts";
+import { createTrafficCongestionTrends, createGeographicalTraffic, createP95Latency } from "~/composables/charts";
 import { ColorPicker } from "~/composables/colorpicker";
 import type { ChartData } from "~/composables/types";
 const props = defineProps<{
@@ -85,6 +85,8 @@ const populateChart = async (data: any): Promise<void> => {
 		}
 	} else if (props.name === "Geographical traffic" && chartRef.value) {
 		chartInstance = await createGeographicalTraffic(chartRef.value, toRaw(data))
+	} else if (props.name === "P95 Latency" && chartRef.value) {
+		chartInstance = createP95Latency(chartRef.value, toRaw(data))
 	}
 }
 </script>
