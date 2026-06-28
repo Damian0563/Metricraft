@@ -1,4 +1,5 @@
 import type { Chart } from "chart.js";
+import type { ChoroplethChart } from 'chartjs-chart-geo';
 
 export type signPayload = {
 	mail: string;
@@ -7,9 +8,33 @@ export type signPayload = {
 }
 
 export type ChartData = {
-	chart: Chart;
+	chart: Chart | ChoroplethChart | null;
 	additionalData: HTMLElement | null;
 }
+
+export type additionalDataHeaders = {
+	h1: string;
+	h2: string;
+}
+
+export type TrafficCongestionData = {
+	values: CongestionEntry[];
+};
+
+export type DistributionData = {
+	distribution: {
+		values: Record<string, number>;
+	};
+};
+
+export type CongestionEntry = {
+	timerange: string;
+	pairing?: StringInt32Map;
+};
+
+export type StringInt32Map = {
+	values?: Record<string, number>;
+};
 
 export type dashboardInitPayload = {
 	appName: string;
