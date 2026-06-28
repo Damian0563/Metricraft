@@ -22,6 +22,7 @@ const (
 	Metricraft_GetGeographicalTraffic_FullMethodName = "/metricraft.Metricraft/getGeographicalTraffic"
 	Metricraft_GetTrafficCongestion_FullMethodName   = "/metricraft.Metricraft/getTrafficCongestion"
 	Metricraft_GetP95Latency_FullMethodName          = "/metricraft.Metricraft/getP95Latency"
+	Metricraft_GetUptimeScore_FullMethodName         = "/metricraft.Metricraft/getUptimeScore"
 )
 
 // MetricraftClient is the client API for Metricraft service.
@@ -31,6 +32,7 @@ type MetricraftClient interface {
 	GetGeographicalTraffic(ctx context.Context, in *Timeframe, opts ...grpc.CallOption) (*Distribution, error)
 	GetTrafficCongestion(ctx context.Context, in *Timeframe, opts ...grpc.CallOption) (*Congestion, error)
 	GetP95Latency(ctx context.Context, in *Timeframe, opts ...grpc.CallOption) (*Distribution, error)
+	GetUptimeScore(ctx context.Context, in *Timeframe, opts ...grpc.CallOption) (*FloatDistribution, error)
 }
 
 type metricraftClient struct {
@@ -71,6 +73,16 @@ func (c *metricraftClient) GetP95Latency(ctx context.Context, in *Timeframe, opt
 	return out, nil
 }
 
+func (c *metricraftClient) GetUptimeScore(ctx context.Context, in *Timeframe, opts ...grpc.CallOption) (*FloatDistribution, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(FloatDistribution)
+	err := c.cc.Invoke(ctx, Metricraft_GetUptimeScore_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MetricraftServer is the server API for Metricraft service.
 // All implementations must embed UnimplementedMetricraftServer
 // for forward compatibility.
@@ -78,6 +90,7 @@ type MetricraftServer interface {
 	GetGeographicalTraffic(context.Context, *Timeframe) (*Distribution, error)
 	GetTrafficCongestion(context.Context, *Timeframe) (*Congestion, error)
 	GetP95Latency(context.Context, *Timeframe) (*Distribution, error)
+	GetUptimeScore(context.Context, *Timeframe) (*FloatDistribution, error)
 	mustEmbedUnimplementedMetricraftServer()
 }
 
@@ -96,6 +109,9 @@ func (UnimplementedMetricraftServer) GetTrafficCongestion(context.Context, *Time
 }
 func (UnimplementedMetricraftServer) GetP95Latency(context.Context, *Timeframe) (*Distribution, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetP95Latency not implemented")
+}
+func (UnimplementedMetricraftServer) GetUptimeScore(context.Context, *Timeframe) (*FloatDistribution, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUptimeScore not implemented")
 }
 func (UnimplementedMetricraftServer) mustEmbedUnimplementedMetricraftServer() {}
 func (UnimplementedMetricraftServer) testEmbeddedByValue()                    {}
@@ -172,6 +188,24 @@ func _Metricraft_GetP95Latency_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Metricraft_GetUptimeScore_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Timeframe)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetricraftServer).GetUptimeScore(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Metricraft_GetUptimeScore_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetricraftServer).GetUptimeScore(ctx, req.(*Timeframe))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Metricraft_ServiceDesc is the grpc.ServiceDesc for Metricraft service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -190,6 +224,10 @@ var Metricraft_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "getP95Latency",
 			Handler:    _Metricraft_GetP95Latency_Handler,
+		},
+		{
+			MethodName: "getUptimeScore",
+			Handler:    _Metricraft_GetUptimeScore_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

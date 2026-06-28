@@ -25,3 +25,8 @@ func (s *Server) GetP95Latency(ctx context.Context, req *pb.Timeframe) (*pb.Dist
 	start := req.Start.AsTime()
 	return db.GetP95Latency(ctx, start)
 }
+
+func (s *Server) GetUptimeScore(ctx context.Context, req *pb.Timeframe) (*pb.FloatDistribution, error) {
+	start := req.Start.AsTime()
+	return db.GetUptimeScore(ctx, start)
+}
