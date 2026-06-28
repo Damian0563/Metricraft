@@ -1,25 +1,9 @@
 import { Chart } from "chart.js";
-import { type ChartData } from "~/composables/types";
+import type { ChartData, TrafficCongestionData, DistributionData, additionalDataHeaders, CongestionEntry, StringInt32Map } from "~/composables/types";
 import { ColorPicker } from "~/composables/colorpicker";
 import { ChoroplethChart, topojson } from 'chartjs-chart-geo';
-import { createAdditionalCongestionData } from "./chartUtils";
+import { createAdditionalData } from "./chartUtils";
 
-type StringInt32Map = {
-	values?: Record<string, number>;
-};
-type CongestionEntry = {
-	timerange: string;
-	pairing?: StringInt32Map;
-};
-export type TrafficCongestionData = {
-	values: CongestionEntry[];
-};
-
-export type DistributionData = {
-	distribution: {
-		values: Record<string, number>;
-	};
-};
 const emptyChart = (canvas: HTMLCanvasElement): Chart => {
 	return new Chart(canvas, {
 		type: 'bar',
@@ -27,6 +11,10 @@ const emptyChart = (canvas: HTMLCanvasElement): Chart => {
 		options: { responsive: true, maintainAspectRatio: false },
 	});
 }
+const emptyChoroplethChart = (canvas: HTMLCanvasElement): ChoroplethChart =>
+	new ChoroplethChart(canvas, {
+		data: { labels: [], datasets: [] },
+	}) as ChoroplethChart;
 const truncateUrl = (url: string, max = 20): string => {
 	if (url.length <= max) return url;
 	return `${url.slice(0, max - 1)}…`;
@@ -35,8 +23,8 @@ const truncateUrl = (url: string, max = 20): string => {
 export const createUptimeScore = (
 	canvas: HTMLCanvasElement,
 	data: DistributionData,
-	_colorPicker: ColorPicker,
-): Chart => {
+	colorPicker: ColorPicker,
+): ChartData => {
 	const uptimeBarColor = (score: number): string => {
 		if (score === 0) return '#DC2626';
 		if (score >= 99.5) return '#00F376';
@@ -49,11 +37,12 @@ export const createUptimeScore = (
 		const values = data?.distribution?.values;
 		if (!values || !Object.keys(values).length) throw new Error('Data is empty');
 		const entries: Array<[string, number]> = Object.entries(values).sort(([, a], [, b]) => a - b);
-		const labels: string[] = entries.map(([url]) => url);
-		const scores: number[] = entries.map(([, value]) => value);
+		const mapped: Map<string, number> = new Map(entries);
+		const labels: string[] = Array.from(mapped.keys());
+		const scores: number[] = Array.from(mapped.values());
 		const isDown = scores.map((score) => score === 0);
 		type UptimeChart = Chart & { $hoveredIndex?: number | null };
-		return new Chart(canvas, {
+		const chart: Chart = new Chart(canvas, {
 			type: 'bar',
 			plugins: [
 				{
@@ -184,8 +173,10 @@ export const createUptimeScore = (
 				},
 			},
 		});
+		const headers: additionalDataHeaders = { h1: 'Endpoint', h2: 'Uptime Score (%)' };
+		return { chart, additionalData: createAdditionalData(mapped, headers, colorPicker) };
 	} catch (_) {
-		return emptyChart(canvas);
+		return { chart: emptyChart(canvas), additionalData: null };
 	}
 };
 
@@ -193,16 +184,17 @@ export const createP95Latency = (
 	canvas: HTMLCanvasElement,
 	data: DistributionData,
 	colorPicker: ColorPicker,
-): Chart => {
+): ChartData => {
 	try {
 		const values = data?.distribution?.values;
 		if (!values || !Object.keys(values).length) throw new Error('Data is empty');
 		const entries: Array<[string, number]> = Object.entries(values).sort(([, a], [, b]) => a - b);
+		const mapped: Map<string, number> = new Map(entries);
 		const labels: string[] = entries.map(([url]) => url);
 		const latencies: number[] = entries.map(([, value]) => value);
 		const colors: string[] = labels.map((url) => colorPicker.getColorForUrl(url));
 		type P95Chart = Chart & { $hoveredIndex?: number | null };
-		return new Chart(canvas, {
+		const chart = new Chart(canvas, {
 			type: 'bar',
 			plugins: [
 				{
@@ -287,15 +279,17 @@ export const createP95Latency = (
 				},
 			},
 		});
+		const headers: additionalDataHeaders = { h1: 'Endpoint', h2: 'P95 Latency (ms)' };
+		return { chart, additionalData: createAdditionalData(mapped, headers, colorPicker) };
 	} catch (e) {
-		return emptyChart(canvas);
+		return { chart: emptyChart(canvas), additionalData: null };
 	}
 };
 
 export const createGeographicalTraffic = async (
 	canvas: HTMLCanvasElement,
 	data: any
-): Promise<ChoroplethChart> => {
+): Promise<ChartData> => {
 	try {
 		const world = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then((r) => r.json());
 		const countries = (topojson.feature(world, world.objects.countries) as any).features
@@ -308,7 +302,7 @@ export const createGeographicalTraffic = async (
 		const all: number = points.reduce((acc: number, p: any) => acc + (p.value ?? 0), 0);
 		canvas.style.backgroundColor = '#0b0f17';
 		canvas.style.borderRadius = '3%';
-		return new ChoroplethChart(canvas, {
+		const chart = new ChoroplethChart(canvas, {
 			data: {
 				labels: countries.map((feature: any) => feature.properties.name),
 				datasets: [{
@@ -382,12 +376,11 @@ export const createGeographicalTraffic = async (
 				},
 			},
 		})
+		const headers: additionalDataHeaders = { h1: 'Country', h2: 'Total Traffic' };
+		return { chart, additionalData: createAdditionalData(mapped, headers) };
 	} catch (e) {
-		return new ChoroplethChart(canvas, {
-			data: { labels: [], datasets: [] }
-		})
+		return { chart: emptyChoroplethChart(canvas), additionalData: null };
 	}
-
 }
 
 export const createTrafficCongestionTrends = (
@@ -401,14 +394,17 @@ export const createTrafficCongestionTrends = (
 		if (!data?.values?.length) throw new Error('Data is empty');
 		const labels: string[] = [];
 		const urlDataMap = new Map<string, number[]>();
+		const cumulativeMap = new Map<string, number>();
 		const totalPoints = data.values.length;
 		data.values.forEach((entry: CongestionEntry, pointIndex: number) => {
 			labels.push(entry.timerange);
 			for (const [url, count] of Object.entries(getUrlCounts(entry.pairing))) {
 				if (!urlDataMap.has(url)) {
 					urlDataMap.set(url, new Array<number>(totalPoints).fill(0));
+					cumulativeMap.set(url, 0);
 				}
 				urlDataMap.get(url)![pointIndex] = count;
+				cumulativeMap.set(url, cumulativeMap.get(url)! + count);
 			}
 		});
 		const datasets = Array.from(urlDataMap.entries()).map(([url, dataArray]) => {
@@ -484,13 +480,9 @@ export const createTrafficCongestionTrends = (
 				},
 			}
 		});
-		return { chart, additionalData: createAdditionalCongestionData(urlDataMap, colorPicker) };
+		const headers: additionalDataHeaders = { h1: 'Endpoint', h2: 'Total' };
+		return { chart, additionalData: createAdditionalData(cumulativeMap, headers, colorPicker) };
 	} catch (_) {
-		return {
-			chart: new Chart(canvas, {
-				type: 'bar',
-				data: { labels: [], datasets: [] }
-			}), additionalData: null
-		}
+		return { chart: emptyChart(canvas), additionalData: null };
 	}
 }

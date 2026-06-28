@@ -1,16 +1,16 @@
 <template>
 	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mx-4 md:mx-8 p-2 mb-16">
 		<Popup :message="errorMessage" @close="errorMessage = ''" />
+		<AdditionalData :data="additionalData" v-if="viewingDetails" @close="viewingDetails = false" />
 		<div v-for="entry in enabledMetrics" :key="entry.name">
 			<Graph :name="entry.name" :data="entry.metrics" :timeframe="entry.timeframe"
-				@timeframe-change="handleTimeframeChange($event)" />
+				@timeframe-change="handleTimeframeChange($event)" @see-details="handleDetails($event)" />
 		</div>
 	</div>
 </template>
 
 <script setup lang="ts">
 import { fetchMetric } from "~/calls/dashboard";
-import Popup from "~/components/Popup.vue";
 const props = defineProps<{
 	metrics: Record<string, { enabled: boolean, timeframe: string }>
 }>();
@@ -25,6 +25,8 @@ type MetricData = {
 };
 const enabledMetrics = ref<MetricData[] | undefined>([]);
 const errorMessage = ref<string>('');
+const viewingDetails = ref<boolean>(false);
+const additionalData = ref<HTMLDivElement | null>(null);
 const fetchAllMetrics = async (enabled: Record<string, { enabled: boolean, timeframe: string }>) => {
 	emit('load')
 	try {
@@ -43,6 +45,13 @@ const fetchAllMetrics = async (enabled: Record<string, { enabled: boolean, timef
 		errorMessage.value = 'Something went wrong, Check your internet connection and try again.'
 	}
 };
+
+const handleDetails = (div: HTMLDivElement | null) => {
+	if (div) {
+		additionalData.value = div;
+		viewingDetails.value = true;
+	}
+}
 
 const handleTimeframeChange = async (obj: { metric: string, timeframe: string }) => {
 	const { metric, timeframe } = obj;

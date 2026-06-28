@@ -6,28 +6,29 @@
 			<div class="relative flex-1 min-h-0 rounded-lg">
 				<canvas ref="chartRef"></canvas>
 			</div>
-			<div v-if="hasAdditionalData" class="shrink-0 space-y-1.5">
-				<p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 px-0.5">
-					{{ additionalDataLabels.get(props.name) }}
-				</p>
-				<div ref="additionalDataRef"
-					class="max-h-24 overflow-y-auto rounded-lg bg-slate-50 px-3 py-2 ring-1 ring-slate-100"></div>
-			</div>
-			<div class="flex justify-end shrink-0">
-				<div class="relative">
-					<select :value="props.timeframe"
-						@change="emit('timeframeChange', { metric: props.name, timeframe: ($event.target as HTMLSelectElement).value as string })"
-						class="appearance-none cursor-pointer rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-9 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 focus:border-[#00F376] focus:outline-none focus:ring-2 focus:ring-[#00F376]/30">
-						<option value="7d">Last 7 days</option>
-						<option value="30d">Last 30 days</option>
-						<option value="90d">Last 90 days</option>
-						<option value="180d">Last 180 days</option>
-						<option value="365d">Last 365 days</option>
-					</select>
-					<svg class="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-						fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-					</svg>
+			<div ref="additionalDataRef" class="hidden" aria-hidden="true"></div>
+			<div class="flex justify-between shrink-0">
+				<div class="justify-start">
+					<button class="" @click="seeDetails = !seeDetails; emit('seeDetails', additionalDataRef)">
+						View details
+					</button>
+				</div>
+				<div class="justify-end">
+					<div class="relative">
+						<select :value="props.timeframe"
+							@change="emit('timeframeChange', { metric: props.name, timeframe: ($event.target as HTMLSelectElement).value as string })"
+							class="appearance-none cursor-pointer rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-9 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 focus:border-[#00F376] focus:outline-none focus:ring-2 focus:ring-[#00F376]/30">
+							<option value="7d">Last 7 days</option>
+							<option value="30d">Last 30 days</option>
+							<option value="90d">Last 90 days</option>
+							<option value="180d">Last 180 days</option>
+							<option value="365d">Last 365 days</option>
+						</select>
+						<svg class="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+							fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+						</svg>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -49,11 +50,11 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{
 	timeframeChange: [{ metric: string, timeframe: string }];
+	seeDetails: [HTMLDivElement | null];
 }>();
 const chartRef = ref<HTMLCanvasElement | null>(null);
 const additionalDataRef = ref<HTMLDivElement | null>(null);
-const hasAdditionalData = computed(() => ["Traffic congestion trends"].includes(props.name));
-const additionalDataLabels = new Map<string, string>([["Traffic congestion trends", "Total requests by endpoint"]]);
+const seeDetails = ref<boolean>(false);
 const urls = useState<string[]>('urls');
 let chartInstance: Chart | ChoroplethChart | null = null;
 let colorPicker: ColorPicker | null = null;
@@ -69,22 +70,32 @@ watch(() => props.data, (newData: any): void => {
 	populateChart(newData);
 });
 
+const mutateAdditionalData = (additionalData: HTMLElement | null): void => {
+	if (additionalDataRef.value) {
+		additionalDataRef.value.replaceChildren();
+		if (additionalData) {
+			additionalDataRef.value.appendChild(additionalData);
+		}
+	}
+}
+
 const populateChart = async (data: any): Promise<void> => {
 	if (props.name === "Traffic congestion trends" && chartRef.value && colorPicker) {
 		const { chart, additionalData }: ChartData = createTrafficCongestionTrends(chartRef.value, toRaw(data), colorPicker);
 		chartInstance = chart;
-		if (additionalDataRef.value) {
-			additionalDataRef.value.replaceChildren();
-			if (additionalData) {
-				additionalDataRef.value.appendChild(additionalData);
-			}
-		}
+		mutateAdditionalData(additionalData);
 	} else if (props.name === "Geographical traffic" && chartRef.value) {
-		chartInstance = await createGeographicalTraffic(chartRef.value, toRaw(data))
+		const { chart, additionalData }: ChartData = await createGeographicalTraffic(chartRef.value, toRaw(data));
+		chartInstance = chart;
+		mutateAdditionalData(additionalData);
 	} else if (props.name === "P95 Latency" && chartRef.value && colorPicker) {
-		chartInstance = createP95Latency(chartRef.value, toRaw(data), colorPicker)
+		const { chart, additionalData }: ChartData = createP95Latency(chartRef.value, toRaw(data), colorPicker)
+		chartInstance = chart;
+		mutateAdditionalData(additionalData);
 	} else if (props.name === "Uptime Score" && chartRef.value && colorPicker) {
-		chartInstance = createUptimeScore(chartRef.value, toRaw(data), colorPicker)
+		const { chart, additionalData }: ChartData = createUptimeScore(chartRef.value, toRaw(data), colorPicker)
+		chartInstance = chart;
+		mutateAdditionalData(additionalData);
 	}
 }
 </script>
