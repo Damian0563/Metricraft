@@ -168,7 +168,7 @@ func GetP95Latency(ctx context.Context, startDate time.Time) (*pb.Distribution, 
 	defer conn.Close(ctx)
 	endDate := time.Now()
 	distribution := make(map[string]int32)
-	res, err := conn.Query(ctx, "SELECT url,percentile_cont(0.95) WITHIN GROUP (ORDER BY responsetime) AS percentile FROM logs WHERE date BETWEEN $1 AND $2 GROUP BY url ORDER BY percentile DESC", startDate, endDate)
+	res, err := conn.Query(ctx, "SELECT url,percentile_cont(0.95) WITHIN GROUP (ORDER BY responsetime) AS percentile FROM logs WHERE date BETWEEN $1 AND $2 AND status BETWEEN 200 AND 299 GROUP BY url ORDER BY percentile DESC", startDate, endDate)
 	if err != nil {
 		return nil, err
 	}
@@ -182,4 +182,28 @@ func GetP95Latency(ctx context.Context, startDate time.Time) (*pb.Distribution, 
 		distribution[url] = int32(percentile)
 	}
 	return &pb.Distribution{Distribution: &pb.StringInt32Map{Values: distribution}}, nil
+}
+
+func GetUptimeScore(ctx context.Context, startDate time.Time) (*pb.FloatDistribution, error) {
+	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close(ctx)
+	endDate := time.Now()
+	distribution := make(map[string]float32)
+	res, err := conn.Query(ctx, "SELECT url, 100.0 * COUNT(*) FILTER (WHERE status BETWEEN 200 AND 299) / NULLIF(COUNT(*), 0) AS availability FROM logs WHERE date BETWEEN $1 AND $2 GROUP BY url ORDER BY availability DESC", startDate, endDate)
+	if err != nil {
+		return nil, err
+	}
+	for res.Next() {
+		var url string
+		var availability float64
+		err = res.Scan(&url, &availability)
+		if err != nil {
+			return nil, err
+		}
+		distribution[url] = float32(availability)
+	}
+	return &pb.FloatDistribution{Distribution: &pb.StringFloat32Map{Values: distribution}}, nil
 }

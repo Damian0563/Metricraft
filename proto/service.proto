@@ -8,6 +8,7 @@ service Metricraft {
   rpc getGeographicalTraffic(timeframe) returns (distribution);
   rpc getTrafficCongestion(timeframe) returns (congestion);
   rpc getP95Latency(timeframe) returns (distribution);
+  rpc getUptimeScore(timeframe) returns (floatDistribution);
 }
 
 message timeframe{
@@ -17,6 +18,14 @@ message timeframe{
 
 message StringInt32Map {
   map<string, int32> values = 1;
+}
+
+message StringFloat32Map {
+  map<string, float> values = 1;
+}
+
+message floatDistribution {
+  StringFloat32Map distribution = 1;
 }
 
 message CongestionEntry {
