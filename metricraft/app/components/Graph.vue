@@ -39,7 +39,7 @@ import { Chart, CategoryScale, LinearScale, BarController, BarElement, Tooltip }
 import { ChoroplethController, GeoFeature, ColorScale, ProjectionScale } from 'chartjs-chart-geo';
 import { ChoroplethChart } from 'chartjs-chart-geo';
 import { onMounted, toRaw } from "vue";
-import { createTrafficCongestionTrends, createGeographicalTraffic, createP95Latency } from "~/composables/charts";
+import { createTrafficCongestionTrends, createGeographicalTraffic, createP95Latency, createUptimeScore } from "~/composables/charts";
 import { ColorPicker } from "~/composables/colorpicker";
 import type { ChartData } from "~/composables/types";
 const props = defineProps<{
@@ -84,7 +84,7 @@ const populateChart = async (data: any): Promise<void> => {
 	} else if (props.name === "P95 Latency" && chartRef.value && colorPicker) {
 		chartInstance = createP95Latency(chartRef.value, toRaw(data), colorPicker)
 	} else if (props.name === "Uptime Score" && chartRef.value && colorPicker) {
-		console.log(data)
+		chartInstance = createUptimeScore(chartRef.value, toRaw(data), colorPicker)
 	}
 }
 </script>
