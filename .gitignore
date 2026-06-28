@@ -6,3 +6,4 @@ Dockerfile
 Dockerfile.*
 **/Dockerfile
 **/Dockerfile.*
+/tmp/

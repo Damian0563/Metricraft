@@ -15,29 +15,185 @@ export type TrafficCongestionData = {
 	values: CongestionEntry[];
 };
 
-export type P95LatencyData = {
+export type DistributionData = {
 	distribution: {
 		values: Record<string, number>;
 	};
 };
-
+const emptyChart = (canvas: HTMLCanvasElement): Chart => {
+	return new Chart(canvas, {
+		type: 'bar',
+		data: { labels: [], datasets: [] },
+		options: { responsive: true, maintainAspectRatio: false },
+	});
+}
 const truncateUrl = (url: string, max = 20): string => {
 	if (url.length <= max) return url;
 	return `${url.slice(0, max - 1)}…`;
 };
 
+export const createUptimeScore = (
+	canvas: HTMLCanvasElement,
+	data: DistributionData,
+	_colorPicker: ColorPicker,
+): Chart => {
+	const uptimeBarColor = (score: number): string => {
+		if (score === 0) return '#DC2626';
+		if (score >= 99.5) return '#00F376';
+		if (score >= 95) return '#34D399';
+		if (score >= 80) return '#FBBF24';
+		if (score >= 50) return '#FB923C';
+		return '#F87171';
+	};
+	try {
+		const values = data?.distribution?.values;
+		if (!values || !Object.keys(values).length) throw new Error('Data is empty');
+		const entries: Array<[string, number]> = Object.entries(values).sort(([, a], [, b]) => a - b);
+		const labels: string[] = entries.map(([url]) => url);
+		const scores: number[] = entries.map(([, value]) => value);
+		const isDown = scores.map((score) => score === 0);
+		type UptimeChart = Chart & { $hoveredIndex?: number | null };
+		return new Chart(canvas, {
+			type: 'bar',
+			plugins: [
+				{
+					id: 'uptimeLabelHover',
+					afterInit(chart) {
+						const uptimeChart = chart as UptimeChart;
+						uptimeChart.$hoveredIndex = null;
+					},
+					afterEvent(chart) {
+						const uptimeChart = chart as UptimeChart;
+						const active = chart.getActiveElements();
+						const nextIndex = active[0]?.index ?? null;
+						if (nextIndex === uptimeChart.$hoveredIndex) return;
+						uptimeChart.$hoveredIndex = nextIndex;
+						chart.update('none');
+					},
+				},
+				{
+					id: 'uptimeZeroMarker',
+					afterDatasetsDraw(chart) {
+						const { ctx, chartArea, scales } = chart;
+						const yScale = scales.y;
+						if (!yScale) return;
+						isDown.forEach((down, index) => {
+							if (!down) return;
+							const y = yScale.getPixelForValue(index);
+							ctx.save();
+							ctx.fillStyle = '#DC2626';
+							ctx.beginPath();
+							ctx.roundRect(chartArea.left, y - 10, 6, 15, 2);
+							ctx.fill();
+							ctx.fillStyle = '#FFFFFF';
+							ctx.font = 'bold 8px system-ui, sans-serif';
+							ctx.textAlign = 'center';
+							ctx.textBaseline = 'middle';
+							ctx.restore();
+						});
+					},
+				},
+			],
+			data: {
+				labels,
+				datasets: [{
+					label: 'Uptime Score',
+					data: scores,
+					backgroundColor: (ctx) => {
+						const score = scores[ctx.dataIndex ?? 0] ?? 0;
+						return uptimeBarColor(score);
+					},
+					hoverBackgroundColor: scores.map((score) => uptimeBarColor(score)),
+					borderColor: isDown.map((down) => (down ? '#991B1B' : 'transparent')),
+					borderWidth: isDown.map((down) => (down ? 2 : 0)),
+					borderRadius: 4,
+					borderSkipped: false,
+					maxBarThickness: 36,
+				}],
+			},
+			options: {
+				indexAxis: 'y',
+				responsive: true,
+				maintainAspectRatio: false,
+				devicePixelRatio: Math.ceil(window.devicePixelRatio || 1),
+				animation: { duration: 250 },
+				interaction: { mode: 'index', axis: 'y', intersect: false },
+				layout: { padding: { right: 12, left: 14, top: 4, bottom: 4 } },
+				scales: {
+					x: {
+						beginAtZero: true,
+						max: 100,
+						border: { display: false },
+						grid: { color: 'rgba(0,0,0,0.06)', drawTicks: false },
+						ticks: {
+							padding: 8,
+							stepSize: 20,
+							font: { weight: 'bold' },
+							callback: (value: string | number): string => `${value}%`,
+						},
+					},
+					y: {
+						grid: { display: false },
+						border: { display: false },
+						ticks: {
+							color: (ctx) => {
+								const index = ctx.index;
+								if (isDown[index]) return '#DC2626';
+								const hovered = (ctx.chart as UptimeChart).$hoveredIndex;
+								return ctx.index === hovered ? '#0D6EFD' : '#475569';
+							},
+							padding: 6,
+							font: (ctx) => ({
+								weight: isDown[ctx.index] ? 'bold' : 'bold',
+								size: 11,
+							}),
+							autoSkip: labels.length > 30,
+							maxTicksLimit: labels.length > 20 ? 20 : undefined,
+							callback: (_value: string | number, index: number): string => {
+								const label = truncateUrl(labels[index] ?? '');
+								return isDown[index] ? `${label} · down` : label;
+							},
+						},
+					},
+				},
+				plugins: {
+					legend: { display: false },
+					tooltip: {
+						enabled: true,
+						displayColors: true,
+						padding: 10,
+						titleFont: { weight: 'bold', size: 13 },
+						bodyFont: { size: 12 },
+						callbacks: {
+							title: (items) => labels[items[0]?.dataIndex ?? 0] ?? '',
+							label: (item) => {
+								const score = Number(item.parsed.x);
+								if (score === 0) return 'Status: Down — 0% uptime';
+								return `Uptime: ${score.toFixed(1)}%`;
+							},
+							labelColor: (item) => {
+								const score = Number(item.parsed.x);
+								const color = uptimeBarColor(score);
+								return {
+									borderColor: color,
+									backgroundColor: color,
+								};
+							},
+						},
+					},
+				},
+			},
+		});
+	} catch (_) {
+		return emptyChart(canvas);
+	}
+};
+
 export const createP95Latency = (
 	canvas: HTMLCanvasElement,
-	data: P95LatencyData,
+	data: DistributionData,
 	colorPicker: ColorPicker,
 ): Chart => {
-	const emptyChart = () =>
-		new Chart(canvas, {
-			type: 'bar',
-			data: { labels: [], datasets: [] },
-			options: { responsive: true, maintainAspectRatio: false },
-		});
-
 	try {
 		const values = data?.distribution?.values;
 		if (!values || !Object.keys(values).length) throw new Error('Data is empty');
@@ -132,7 +288,7 @@ export const createP95Latency = (
 			},
 		});
 	} catch (e) {
-		return emptyChart();
+		return emptyChart(canvas);
 	}
 };
 
@@ -144,7 +300,7 @@ export const createGeographicalTraffic = async (
 		const world = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then((r) => r.json());
 		const countries = (topojson.feature(world, world.objects.countries) as any).features
 			.filter((feature: any) => feature.properties.name !== 'Antarctica');
-		const mapped = new Map<string, number>(Object.entries(data.distribution.values));
+		const mapped = data.distribution.values ? new Map<string, number>(Object.entries(data.distribution.values)) : new Map<string, number>();
 		const points: any[] = countries.map((feature: any) => {
 			const value = mapped.get(feature.properties.name) ?? 0;
 			return { feature, value: value > 0 ? value : null };
@@ -227,7 +383,6 @@ export const createGeographicalTraffic = async (
 			},
 		})
 	} catch (e) {
-		console.error(e)
 		return new ChoroplethChart(canvas, {
 			data: { labels: [], datasets: [] }
 		})
@@ -330,7 +485,7 @@ export const createTrafficCongestionTrends = (
 			}
 		});
 		return { chart, additionalData: createAdditionalCongestionData(urlDataMap, colorPicker) };
-	} catch (e) {
+	} catch (_) {
 		return {
 			chart: new Chart(canvas, {
 				type: 'bar',
