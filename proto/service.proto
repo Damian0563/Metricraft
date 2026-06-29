@@ -9,6 +9,7 @@ service Metricraft {
   rpc getTrafficCongestion(timeframe) returns (congestion);
   rpc getP95Latency(timeframe) returns (distribution);
   rpc getUptimeScore(timeframe) returns (floatDistribution);
+  rpc getThroughput(timeframe) returns (throughput);
 }
 
 message timeframe{
@@ -26,6 +27,16 @@ message StringFloat32Map {
 
 message floatDistribution {
   StringFloat32Map distribution = 1;
+}
+
+message throughput {
+  repeated ThroughputEntry values = 1;
+  float computedThroughput = 2;
+}
+
+message ThroughputEntry{
+  string timerange = 1;
+  int32 value = 2;
 }
 
 message CongestionEntry {

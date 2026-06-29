@@ -62,7 +62,7 @@ let chartInstance: Chart | ChoroplethChart | null = null;
 let colorPicker: ColorPicker | null = null;
 Chart.register(CategoryScale, LinearScale, BarController, BarElement, Tooltip, ChoroplethController, GeoFeature, ColorScale, ProjectionScale);
 onMounted((): void => {
-	if (props.name !== "Geographical traffic") {
+	if (props.name !== "Geographical traffic" && props.name !== "Throughput") {
 		colorPicker = new ColorPicker(urls.value)
 	}
 	populateChart(props.data);
@@ -98,6 +98,8 @@ const populateChart = async (data: any): Promise<void> => {
 		const { chart, additionalData }: ChartData = createUptimeScore(chartRef.value, toRaw(data), colorPicker)
 		chartInstance = chart;
 		mutateAdditionalData(additionalData);
+	} else if (props.name === "Throughput" && chartRef.value) {
+		console.log(toRaw(data))
 	}
 }
 </script>
