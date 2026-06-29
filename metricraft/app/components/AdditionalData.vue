@@ -1,15 +1,17 @@
 <template>
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm md:p-8"
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm md:p-8 w-full h-full"
 		@click.self="close">
 		<div
-			class="relative flex w-full max-w-2xl max-h-[85vh] flex-col overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-slate-100"
+			class="relative flex w-full max-w-xl max-h-[90vh] flex-col overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-slate-100"
 			role="dialog" aria-modal="true">
-			<button
-				class="absolute top-3 left-3 z-10 flex h-8 w-32 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-[#00F376]">
-				Export to CSV
-			</button>
+			<button @click="createCSV"
+				class="absolute top-3 left-3 z-10 flex h-8 w-32 items-center justify-center rounded-lg text-dark-gray transition-colors hover:bg-slate-100 hover:text-[#00F376]">
+				Export to CSV </button>
+			<span class="absolute top-3 left-38 z-10 flex h-8 w-72 items-center justify-center rounded-lg text-dark-gray">
+				{{ props.metric }}
+			</span>
 			<button type="button" @click="close"
-				class="absolute top-3 right-3 z-10 flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-[#00F376]"
+				class="absolute top-3 right-3 z-10 flex h-8 w-8 items-center justify-center rounded-lg text-dark-gray transition-colors hover:bg-slate-100 hover:text-[#00F376]"
 				aria-label="Close">
 				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
 					stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
@@ -27,6 +29,7 @@
 <script setup lang="ts">
 const props = defineProps<{
 	data: HTMLElement | null;
+	metric: string;
 }>();
 const emit = defineEmits<{
 	close: [];
@@ -37,13 +40,39 @@ const renderContent = () => {
 	if (!contentRef.value) return;
 	contentRef.value.replaceChildren();
 	if (!props.data) return;
-	if (props.data instanceof HTMLTableElement) {
-		contentRef.value.appendChild(props.data.cloneNode(true));
-		return;
-	}
 	for (const child of Array.from(props.data.childNodes)) {
 		contentRef.value.appendChild(child.cloneNode(true));
 	}
+};
+
+const escapeCsvField = (value: string): string => {
+	const normalized = value.replace(/\r?\n/g, ' ').trim();
+	if (/[",\n\r]/.test(normalized)) {
+		return `"${normalized.replace(/"/g, '""')}"`;
+	}
+	return normalized;
+};
+
+const createCSV = () => {
+	if (!contentRef.value) return;
+	const table = contentRef.value.querySelector('table');
+	if (!table) return;
+	const rows = Array.from(table.querySelectorAll('tr')).map((row) =>
+		Array.from(row.querySelectorAll('th, td')).map((cell) =>
+			escapeCsvField(cell.textContent ?? '')
+		)
+	);
+	if (!rows.length) return;
+	const csv = rows.map((row) => row.join(',')).join('\n');
+	const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+	const url = URL.createObjectURL(blob);
+	const link = document.createElement('a');
+	link.href = url;
+	link.download = `${props.metric}.csv`;
+	document.body.appendChild(link);
+	link.click();
+	document.body.removeChild(link);
+	URL.revokeObjectURL(url);
 };
 
 onMounted(() => {
