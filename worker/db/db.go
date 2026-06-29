@@ -94,12 +94,7 @@ func GetTrafficCongestion(ctx context.Context, startDate time.Time, resolution i
 	for startDate.Before(endDate) {
 		rangeStart := startDate
 		rangeEnd := startDate.Add(increment)
-		var timerange string
-		if resolution != 1 {
-			timerange = fmt.Sprintf("%v-%v", rangeStart.Format("02/01"), rangeEnd.Add(-time.Hour*24).Format("02/01"))
-		} else {
-			timerange = rangeStart.Format("02/01")
-		}
+		timerange := timerangeLabel(rangeStart, increment, resolution)
 		index[timerange] = len(congestion)
 		congestion = append(congestion, &pb.CongestionEntry{
 			Timerange: timerange,
@@ -107,7 +102,7 @@ func GetTrafficCongestion(ctx context.Context, startDate time.Time, resolution i
 		})
 		startDate = rangeEnd
 	}
-	res, err := conn.Query(ctx, "SELECT url,COUNT(*),date FROM logs WHERE date BETWEEN $1 AND $2 GROUP BY url,date ORDER BY COUNT(*) DESC", originalStartDate, endDate)
+	res, err := conn.Query(ctx, "SELECT url,COUNT(*),date FROM logs WHERE date >= $1 AND date < $2 GROUP BY url,date ORDER BY COUNT(*) DESC", originalStartDate, endDate)
 	if err != nil {
 		return nil, err
 	}
@@ -206,4 +201,66 @@ func GetUptimeScore(ctx context.Context, startDate time.Time) (*pb.FloatDistribu
 		distribution[url] = float32(availability)
 	}
 	return &pb.FloatDistribution{Distribution: &pb.StringFloat32Map{Values: distribution}}, nil
+}
+
+func timerangeLabel(rangeStart time.Time, increment time.Duration, resolution int32) string {
+	if resolution != 1 {
+		rangeEnd := rangeStart.Add(increment)
+		return fmt.Sprintf("%v-%v", rangeStart.Format("02/01"), rangeEnd.Add(-time.Hour*24).Format("02/01"))
+	}
+	return rangeStart.Format("02/01")
+}
+
+func GetThroughput(ctx context.Context, start time.Time, resolution int32) (*pb.Throughput, error) {
+	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close(ctx)
+	endDate := time.Now()
+	increment := time.Hour * 24 * time.Duration(resolution)
+	congestion := make([]*pb.ThroughputEntry, 0)
+	index := make(map[string]int)
+	for cursor := start; cursor.Before(endDate); cursor = cursor.Add(increment) {
+		timerange := timerangeLabel(cursor, increment, resolution)
+		congestion = append(congestion, &pb.ThroughputEntry{
+			Timerange: timerange,
+			Value:     0,
+		})
+		index[timerange] = len(congestion) - 1
+	}
+	res, err := conn.Query(ctx, `
+		SELECT FLOOR(EXTRACT(EPOCH FROM (date - $1)) / $3)::int, COUNT(*)
+		FROM logs
+		WHERE date >= $1 AND date < $2
+		GROUP BY 1
+	`, start, endDate, increment.Seconds())
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+	var total int32
+	for res.Next() {
+		var bucket int
+		var count int
+		if err := res.Scan(&bucket, &count); err != nil {
+			return nil, err
+		}
+		rangeStart := start.Add(time.Duration(bucket) * increment)
+		key := timerangeLabel(rangeStart, increment, resolution)
+		if idx, ok := index[key]; ok {
+			congestion[idx] = &pb.ThroughputEntry{Timerange: key, Value: int32(count)}
+		} else {
+			congestion[idx] = &pb.ThroughputEntry{Timerange: key, Value: 0}
+		}
+		total += int32(count)
+	}
+	if err := res.Err(); err != nil {
+		return nil, err
+	}
+	var computedThroughput float32
+	if seconds := endDate.Sub(start).Seconds(); seconds > 0 {
+		computedThroughput = float32(total) / float32(seconds)
+	}
+	return &pb.Throughput{Values: congestion, ComputedThroughput: computedThroughput}, nil
 }

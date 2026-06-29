@@ -30,3 +30,9 @@ func (s *Server) GetUptimeScore(ctx context.Context, req *pb.Timeframe) (*pb.Flo
 	start := req.Start.AsTime()
 	return db.GetUptimeScore(ctx, start)
 }
+
+func (s *Server) GetThroughput(ctx context.Context, req *pb.Timeframe) (*pb.Throughput, error) {
+	start := req.Start.AsTime()
+	resolution := req.Resolution
+	return db.GetThroughput(ctx, start, resolution)
+}
