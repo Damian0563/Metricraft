@@ -1,4 +1,5 @@
 import type { additionalDataHeaders } from "~/composables/types";
+import type { ColorPicker } from "~/composables/colorpicker";
 
 export const createAdditionalData = (
 	data: Map<string, number>,

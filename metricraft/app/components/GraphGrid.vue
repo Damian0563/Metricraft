@@ -1,7 +1,8 @@
 <template>
 	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mx-4 md:mx-8 p-2 mb-16">
 		<Popup :message="errorMessage" @close="errorMessage = ''" />
-		<AdditionalData :data="additionalData" v-if="viewingDetails" @close="viewingDetails = false" />
+		<AdditionalData :data="additionalData" :metric="additionalDataName" v-if="viewingDetails"
+			@close="viewingDetails = false" />
 		<div v-for="entry in enabledMetrics" :key="entry.name">
 			<Graph :name="entry.name" :data="entry.metrics" :timeframe="entry.timeframe"
 				@timeframe-change="handleTimeframeChange($event)" @see-details="handleDetails($event)" />
@@ -27,6 +28,7 @@ const enabledMetrics = ref<MetricData[] | undefined>([]);
 const errorMessage = ref<string>('');
 const viewingDetails = ref<boolean>(false);
 const additionalData = ref<HTMLDivElement | null>(null);
+const additionalDataName = ref<string>('');
 const fetchAllMetrics = async (enabled: Record<string, { enabled: boolean, timeframe: string }>) => {
 	emit('load')
 	try {
@@ -46,9 +48,11 @@ const fetchAllMetrics = async (enabled: Record<string, { enabled: boolean, timef
 	}
 };
 
-const handleDetails = (div: HTMLDivElement | null) => {
-	if (div) {
-		additionalData.value = div;
+const handleDetails = (event: { metric: string, additionalData: HTMLDivElement | null }) => {
+	const { metric, additionalData: detailsEl } = event;
+	if (detailsEl) {
+		additionalData.value = detailsEl;
+		additionalDataName.value = metric;
 		viewingDetails.value = true;
 	}
 }

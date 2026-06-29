@@ -9,7 +9,9 @@
 			<div ref="additionalDataRef" class="hidden" aria-hidden="true"></div>
 			<div class="flex justify-between shrink-0">
 				<div class="justify-start">
-					<button class="" @click="seeDetails = !seeDetails; emit('seeDetails', additionalDataRef)">
+					<button
+						class="cursor-pointer shadow-sm rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-9 text-xs font-medium text-slate-700 transition-colors hover:border-slate-300 focus:border-[#00F376] focus:outline-none focus:ring-2 focus:ring-[#00F376]/30"
+						@click="seeDetails = !seeDetails; emit('seeDetails', { metric: props.name, additionalData: additionalDataRef })">
 						View details
 					</button>
 				</div>
@@ -50,7 +52,7 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{
 	timeframeChange: [{ metric: string, timeframe: string }];
-	seeDetails: [HTMLDivElement | null];
+	seeDetails: [{ metric: string, additionalData: HTMLDivElement | null }];
 }>();
 const chartRef = ref<HTMLCanvasElement | null>(null);
 const additionalDataRef = ref<HTMLDivElement | null>(null);
