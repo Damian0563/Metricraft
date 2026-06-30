@@ -29,3 +29,18 @@ export class ColorPicker {
 	destroy() {
 	}
 }
+
+export function useColorPicker() {
+	const urls = useState<string[]>('urls');
+	const instance = useState<ColorPicker | null>('colorPicker', () => null);
+	watch(
+		urls,
+		(newUrls) => {
+			if (newUrls.length > 0) {
+				instance.value = new ColorPicker(newUrls);
+			}
+		},
+		{ immediate: true },
+	);
+	return instance;
+}

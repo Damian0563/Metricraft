@@ -1,5 +1,5 @@
 import { Chart } from "chart.js";
-import type { ChartData, TrafficCongestionData, DistributionData, additionalDataHeaders, CongestionEntry, StringInt32Map } from "~/composables/types";
+import type { ChartData, TrafficCongestionData, ThroughputData, ThroughputEntry, DistributionData, additionalDataHeaders, CongestionEntry, StringInt32Map } from "~/composables/types";
 import { ColorPicker } from "~/composables/colorpicker";
 import { ChoroplethChart, topojson } from 'chartjs-chart-geo';
 import { createAdditionalData } from "./chartUtils";
@@ -19,6 +19,18 @@ const truncateUrl = (url: string, max = 20): string => {
 	if (url.length <= max) return url;
 	return `${url.slice(0, max - 1)}…`;
 };
+
+export const createThroughput = (
+	canvas: HTMLCanvasElement,
+	data: ThroughputData,
+): ChartData => {
+	try {
+		console.log(data)
+		return { chart: emptyChart(canvas), additionalData: null };
+	} catch (_) {
+		return { chart: emptyChart(canvas), additionalData: null };
+	}
+}
 
 export const createUptimeScore = (
 	canvas: HTMLCanvasElement,

@@ -27,6 +27,16 @@ export type DistributionData = {
 	};
 };
 
+export type ThroughputData = {
+	values: ThroughputEntry[];
+	computedThroughput: number;
+};
+
+export type ThroughputEntry = {
+	timerange: string;
+	value: number;
+};
+
 export type CongestionEntry = {
 	timerange: string;
 	pairing?: StringInt32Map;
