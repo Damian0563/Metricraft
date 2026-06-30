@@ -25,8 +25,125 @@ export const createThroughput = (
 	data: ThroughputData,
 ): ChartData => {
 	try {
-		console.log(data)
-		return { chart: emptyChart(canvas), additionalData: null };
+		if (!data?.values?.length) throw new Error('Data is empty');
+		const mapped = new Map<string, number>();
+		const labels: string[] = [];
+		const points: Array<{ x: number; y: number }> = [];
+		data.values.forEach((entry: ThroughputEntry, index: number) => {
+			const { timerange, value } = entry;
+			const cleanedVal = value !== undefined ? value : 0;
+			labels.push(timerange);
+			points.push({ x: index, y: cleanedVal });
+			mapped.set(timerange, cleanedVal);
+		});
+		type ThroughputChart = Chart & { $hoveredIndex?: number | null };
+		const chart: Chart = new Chart(canvas, {
+			type: 'line',
+			plugins: [
+				{
+					id: 'throughputLabelHover',
+					afterInit(chart) {
+						const throughputChart = chart as ThroughputChart;
+						throughputChart.$hoveredIndex = null;
+					},
+					afterEvent(chart) {
+						const throughputChart = chart as ThroughputChart;
+						const active = chart.getActiveElements();
+						const nextIndex = active[0]?.index ?? null;
+						if (nextIndex === throughputChart.$hoveredIndex) return;
+						throughputChart.$hoveredIndex = nextIndex;
+						chart.update('none');
+					},
+				},
+			],
+			data: {
+				datasets: [{
+					label: 'Throughput',
+					data: points,
+					showLine: true,
+					tension: 0.3,
+					borderColor: '#00C962',
+					borderWidth: 2,
+					backgroundColor: '#00F376',
+					pointBackgroundColor: '#00F376',
+					pointBorderColor: '#FFFFFF',
+					pointBorderWidth: 2,
+					pointRadius: 4,
+					pointHoverRadius: 6,
+					pointHoverBackgroundColor: '#00F376',
+					pointHoverBorderColor: '#FFFFFF',
+					pointHoverBorderWidth: 2,
+				}],
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				devicePixelRatio: Math.ceil(window.devicePixelRatio || 1),
+				animation: { duration: 250 },
+				interaction: { mode: 'index', intersect: false },
+				layout: { padding: { right: 8, left: 2, bottom: 2, top: 4 } },
+				scales: {
+					x: {
+						type: 'linear',
+						min: 0,
+						max: Math.max(labels.length - 1, 0),
+						grid: { display: false },
+						border: { display: false },
+						ticks: {
+							stepSize: 1,
+							autoSkip: labels.length > 12,
+							maxRotation: labels.length > 8 ? 90 : 0,
+							padding: 6,
+							color: (ctx) => {
+								const hovered = (ctx.chart as ThroughputChart).$hoveredIndex;
+								return ctx.index === hovered ? '#0D6EFD' : '#475569';
+							},
+							font: { weight: 'bold', size: 11 },
+							callback: (value: string | number): string => labels[Number(value)] ?? '',
+						},
+						title: {
+							display: true,
+							text: 'Time',
+							color: '#475569',
+							font: { weight: 'bold', size: 13 },
+							padding: { top: 2 },
+						},
+					},
+					y: {
+						beginAtZero: true,
+						border: { display: false },
+						grid: { color: 'rgba(0,0,0,0.06)', drawTicks: false },
+						ticks: { padding: 8, precision: 0, font: { weight: 'bold' } },
+						title: {
+							display: true,
+							text: 'Requests',
+							color: '#475569',
+							font: { weight: 'bold', size: 13 },
+						},
+					},
+				},
+				plugins: {
+					legend: { display: false },
+					tooltip: {
+						enabled: true,
+						displayColors: true,
+						padding: 10,
+						titleFont: { weight: 'bold', size: 13 },
+						bodyFont: { size: 12 },
+						callbacks: {
+							title: (items) => labels[items[0]?.dataIndex ?? 0] ?? '',
+							label: (item) => `Requests: ${Number(item.parsed.y).toLocaleString()}`,
+							labelColor: () => ({
+								borderColor: '#00F376',
+								backgroundColor: '#00F376',
+							}),
+						},
+					},
+				},
+			},
+		});
+		const headers: additionalDataHeaders = { h1: 'Timerange', h2: 'Number of requests' };
+		return { chart, additionalData: createAdditionalData(mapped, headers) };
 	} catch (_) {
 		return { chart: emptyChart(canvas), additionalData: null };
 	}

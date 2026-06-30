@@ -39,7 +39,7 @@
 </template>
 
 <script setup lang="ts">
-import { Chart, CategoryScale, LinearScale, BarController, BarElement, Tooltip } from "chart.js";
+import { Chart, CategoryScale, LinearScale, BarController, BarElement, Tooltip, PointElement, LineElement, LineController } from "chart.js";
 import { ChoroplethController, GeoFeature, ColorScale, ProjectionScale } from 'chartjs-chart-geo';
 import { ChoroplethChart } from 'chartjs-chart-geo';
 import { onMounted, toRaw } from "vue";
@@ -60,7 +60,7 @@ const additionalDataRef = ref<HTMLDivElement | null>(null);
 const seeDetails = ref<boolean>(false);
 const colorPicker = useColorPicker();
 let chartInstance: Chart | ChoroplethChart | null = null;
-Chart.register(CategoryScale, LinearScale, BarController, BarElement, Tooltip, ChoroplethController, GeoFeature, ColorScale, ProjectionScale);
+Chart.register(PointElement, LineController, LineElement, CategoryScale, LinearScale, BarController, BarElement, Tooltip, ChoroplethController, GeoFeature, ColorScale, ProjectionScale);
 onMounted((): void => {
 	populateChart(props.data);
 });
