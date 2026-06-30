@@ -3,6 +3,7 @@
 		class="flex flex-col rounded-xl shadow-lg bg-white w-full text-black ring-1 ring-slate-100 h-96 md:h-[26rem] lg:h-[30rem]">
 		<h1 class="text-2xl font-bold text-center mt-6 mb-2 shrink-0 text-slate-800">{{ props.name }}</h1>
 		<div class="flex flex-col flex-1 min-h-0 px-5 pb-5 gap-3">
+			<CustomGraphHeader :data="{ metric: props.name, data: props.data }" />
 			<div class="relative flex-1 min-h-0 rounded-lg">
 				<canvas ref="chartRef"></canvas>
 			</div>
@@ -42,8 +43,8 @@ import { Chart, CategoryScale, LinearScale, BarController, BarElement, Tooltip }
 import { ChoroplethController, GeoFeature, ColorScale, ProjectionScale } from 'chartjs-chart-geo';
 import { ChoroplethChart } from 'chartjs-chart-geo';
 import { onMounted, toRaw } from "vue";
-import { createTrafficCongestionTrends, createGeographicalTraffic, createP95Latency, createUptimeScore } from "~/composables/charts";
-import { ColorPicker } from "~/composables/colorpicker";
+import { useColorPicker } from "~/composables/colorpicker";
+import { createTrafficCongestionTrends, createThroughput, createGeographicalTraffic, createP95Latency, createUptimeScore } from "~/composables/charts";
 import type { ChartData } from "~/composables/types";
 const props = defineProps<{
 	name: string;
@@ -57,14 +58,10 @@ const emit = defineEmits<{
 const chartRef = ref<HTMLCanvasElement | null>(null);
 const additionalDataRef = ref<HTMLDivElement | null>(null);
 const seeDetails = ref<boolean>(false);
-const urls = useState<string[]>('urls');
+const colorPicker = useColorPicker();
 let chartInstance: Chart | ChoroplethChart | null = null;
-let colorPicker: ColorPicker | null = null;
 Chart.register(CategoryScale, LinearScale, BarController, BarElement, Tooltip, ChoroplethController, GeoFeature, ColorScale, ProjectionScale);
 onMounted((): void => {
-	if (props.name !== "Geographical traffic" && props.name !== "Throughput") {
-		colorPicker = new ColorPicker(urls.value)
-	}
 	populateChart(props.data);
 });
 watch(() => props.data, (newData: any): void => {
@@ -82,24 +79,27 @@ const mutateAdditionalData = (additionalData: HTMLElement | null): void => {
 }
 
 const populateChart = async (data: any): Promise<void> => {
-	if (props.name === "Traffic congestion trends" && chartRef.value && colorPicker) {
-		const { chart, additionalData }: ChartData = createTrafficCongestionTrends(chartRef.value, toRaw(data), colorPicker);
+	const picker = colorPicker.value;
+	if (props.name === "Traffic congestion trends" && chartRef.value && picker) {
+		const { chart, additionalData }: ChartData = createTrafficCongestionTrends(chartRef.value, toRaw(data), picker);
 		chartInstance = chart;
 		mutateAdditionalData(additionalData);
 	} else if (props.name === "Geographical traffic" && chartRef.value) {
 		const { chart, additionalData }: ChartData = await createGeographicalTraffic(chartRef.value, toRaw(data));
 		chartInstance = chart;
 		mutateAdditionalData(additionalData);
-	} else if (props.name === "P95 Latency" && chartRef.value && colorPicker) {
-		const { chart, additionalData }: ChartData = createP95Latency(chartRef.value, toRaw(data), colorPicker)
+	} else if (props.name === "P95 Latency" && chartRef.value && picker) {
+		const { chart, additionalData }: ChartData = createP95Latency(chartRef.value, toRaw(data), picker)
 		chartInstance = chart;
 		mutateAdditionalData(additionalData);
-	} else if (props.name === "Uptime Score" && chartRef.value && colorPicker) {
-		const { chart, additionalData }: ChartData = createUptimeScore(chartRef.value, toRaw(data), colorPicker)
+	} else if (props.name === "Uptime Score" && chartRef.value && picker) {
+		const { chart, additionalData }: ChartData = createUptimeScore(chartRef.value, toRaw(data), picker)
 		chartInstance = chart;
 		mutateAdditionalData(additionalData);
 	} else if (props.name === "Throughput" && chartRef.value) {
-		console.log(toRaw(data))
+		const { chart, additionalData }: ChartData = createThroughput(chartRef.value, toRaw(data))
+		chartInstance = chart;
+		mutateAdditionalData(additionalData);
 	}
 }
 </script>
