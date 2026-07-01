@@ -48,8 +48,7 @@ func SendRecovery(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var payload types.SendRecoveryUser
-	err := json.NewDecoder(r.Body).Decode(&payload)
-	if err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		http.Error(w, "Invalid payload", http.StatusInternalServerError)
 		return
 	}
@@ -94,7 +93,10 @@ func SendVerification(w http.ResponseWriter, r *http.Request) {
 		Mail string `json:"mail"`
 	}
 	var payload sendVerificationPayload
-	json.NewDecoder(r.Body).Decode(&payload)
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		http.Error(w, "Invalid payload", http.StatusBadRequest)
+		return
+	}
 	if !mail.ValidateMail(payload.Mail) {
 		http.Error(w, "Invalid email address.", http.StatusBadRequest)
 		return
@@ -111,13 +113,11 @@ func SendVerification(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	code := redis.GenerateCode()
-	err := redis.SetCodeValidity(mailAddress, code)
-	if err != nil {
+	if err := redis.SetCodeValidity(mailAddress, code); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	err = mail.SendVerification(mailAddress, code)
-	if err != nil {
+	if err := mail.SendVerification(mailAddress, code); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -135,7 +135,10 @@ func CheckVerification(w http.ResponseWriter, r *http.Request) {
 		Code    string `json:"code"`
 	}
 	var payload checkVerificationPayload
-	json.NewDecoder(r.Body).Decode(&payload)
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		http.Error(w, "Invalid payload", http.StatusBadRequest)
+		return
+	}
 	if !mail.ValidateMail(payload.Mail) {
 		http.Error(w, "Invalid email address.", http.StatusBadRequest)
 		return
@@ -172,8 +175,7 @@ func CheckVerification(w http.ResponseWriter, r *http.Request) {
 					if err := db.AddToPendingList(payload.Mail, payload.AppName); err != nil {
 						internalErr = true
 					} else {
-						err := mail.SendPermissionRequest(response.Owner, payload.Mail, payload.AppName)
-						if err != nil {
+						if err := mail.SendPermissionRequest(response.Owner, payload.Mail, payload.AppName); err != nil {
 							internalErr = true
 						} else {
 							permitted = false

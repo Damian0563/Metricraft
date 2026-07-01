@@ -37,6 +37,7 @@ func convertTimeframe(timeframe string) (time.Time, resolutionDays) {
 	}
 	now := time.Now()
 	var timeResolution map[int]resolutionDays = map[int]resolutionDays{
+		1:   {Days: 0},
 		7:   {Days: 1},
 		14:  {Days: 2},
 		30:  {Days: 3},
@@ -68,9 +69,8 @@ func Navigator(w http.ResponseWriter, r *http.Request) {
 	client := pb.NewMetricraftClient(grpcConn)
 	metric := r.URL.Query().Get("metric")
 	timeframe := r.URL.Query().Get("timeframe")
-	persist := r.URL.Query().Get("persist")
 	persistChan := make(chan error, 1)
-	if persist == "true" {
+	if persist := r.URL.Query().Get("persist"); persist == "true" {
 		go persistTimeframeSelection(persistChan, metric, timeframe)
 	} else {
 		persistChan <- nil
@@ -96,7 +96,6 @@ func Navigator(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	err = <-persistChan //this can be swallowed internally, even if error occured
-	w.Header().Set("Content-Type", "application/json")
 	httpresponse, err := json.Marshal(response)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

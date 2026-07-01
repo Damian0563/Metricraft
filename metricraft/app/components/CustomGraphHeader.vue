@@ -13,6 +13,7 @@ const props = defineProps<{
 const header = ref<string | null>(null);
 watch(() => props.data, (newData: any) => {
 	if (newData.metric === "Throughput") {
+		if (newData.data.computedThroughput === undefined) return;
 		header.value = `${newData.data.computedThroughput.toFixed(4)} requests/s`
 	}
 }, { immediate: true })

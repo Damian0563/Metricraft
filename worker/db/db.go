@@ -12,6 +12,16 @@ import (
 	"worker/types"
 )
 
+func timerangeLabel(rangeStart time.Time, increment time.Duration, resolution int32) string {
+	if resolution == 0 {
+		return fmt.Sprintf("%v:00", rangeStart.Hour())
+	} else if resolution != 1 {
+		rangeEnd := rangeStart.Add(increment)
+		return fmt.Sprintf("%v-%v", rangeStart.Format("02.01"), rangeEnd.Add(-time.Hour*24).Format("02.01"))
+	}
+	return rangeStart.Format("02.01")
+}
+
 func InitDB(ctx context.Context, errChannel chan error) {
 	time.Sleep(15 * time.Second)
 	appName := os.Getenv("APPNAME")
@@ -87,8 +97,16 @@ func GetTrafficCongestion(ctx context.Context, startDate time.Time, resolution i
 	}
 	defer conn.Close(ctx)
 	endDate := time.Now()
-	originalStartDate := startDate
-	increment := time.Hour * 24 * time.Duration(resolution)
+	var originalStartDate time.Time
+	if err != nil {
+		return nil, err
+	}
+	var increment time.Duration
+	if resolution == 0 {
+		increment = time.Hour
+	} else {
+		increment = time.Hour * 24 * time.Duration(resolution)
+	}
 	congestion := make([]*pb.CongestionEntry, 0)
 	index := make(map[string]int)
 	for startDate.Before(endDate) {
@@ -101,6 +119,12 @@ func GetTrafficCongestion(ctx context.Context, startDate time.Time, resolution i
 			Pairing:   &pb.StringInt32Map{Values: map[string]int32{}},
 		})
 		startDate = rangeEnd
+	}
+	if resolution == 0 && endDate.Minute() != 0 {
+		congestion = append(congestion, &pb.CongestionEntry{
+			Timerange: fmt.Sprintf("%v:00", endDate.Add(-time.Hour).Hour()),
+			Pairing:   &pb.StringInt32Map{Values: map[string]int32{}},
+		})
 	}
 	res, err := conn.Query(ctx, "SELECT url,COUNT(*),date FROM logs WHERE date >= $1 AND date < $2 GROUP BY url,date ORDER BY COUNT(*) DESC", originalStartDate, endDate)
 	if err != nil {
@@ -115,14 +139,15 @@ func GetTrafficCongestion(ctx context.Context, startDate time.Time, resolution i
 			return nil, err
 		}
 		var key string
-		if resolution != 1 {
+		if resolution == 1 || resolution == 0 {
+			key = date.Format("02.01")
+		} else {
 			elapsed := date.Sub(originalStartDate)
 			intervals := int(elapsed / increment)
 			rangeStart := originalStartDate.Add(time.Duration(intervals) * increment)
 			rangeEnd := rangeStart.Add(increment)
-			key = fmt.Sprintf("%v-%v", rangeStart.Format("02/01"), rangeEnd.Add(-time.Hour*24).Format("02/01"))
-		} else {
-			key = date.Format("02/01")
+			key = fmt.Sprintf("%v-%v", rangeStart.Format("02.01"), rangeEnd.Add(-time.Hour*24).Format("02.01"))
+
 		}
 		if i, ok := index[key]; ok {
 			congestion[i].Pairing.Values[url] = int32(count)
@@ -203,14 +228,6 @@ func GetUptimeScore(ctx context.Context, startDate time.Time) (*pb.FloatDistribu
 	return &pb.FloatDistribution{Distribution: &pb.StringFloat32Map{Values: distribution}}, nil
 }
 
-func timerangeLabel(rangeStart time.Time, increment time.Duration, resolution int32) string {
-	if resolution != 1 {
-		rangeEnd := rangeStart.Add(increment)
-		return fmt.Sprintf("%v-%v", rangeStart.Format("02/01"), rangeEnd.Add(-time.Hour*24).Format("02/01"))
-	}
-	return rangeStart.Format("02/01")
-}
-
 func GetThroughput(ctx context.Context, start time.Time, resolution int32) (*pb.Throughput, error) {
 	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
 	if err != nil {
@@ -218,7 +235,12 @@ func GetThroughput(ctx context.Context, start time.Time, resolution int32) (*pb.
 	}
 	defer conn.Close(ctx)
 	endDate := time.Now()
-	increment := time.Hour * 24 * time.Duration(resolution)
+	var increment time.Duration
+	if resolution == 0 {
+		increment = time.Hour
+	} else {
+		increment = time.Hour * 24 * time.Duration(resolution)
+	}
 	congestion := make([]*pb.ThroughputEntry, 0)
 	index := make(map[string]int)
 	for cursor := start; cursor.Before(endDate); cursor = cursor.Add(increment) {
@@ -228,6 +250,12 @@ func GetThroughput(ctx context.Context, start time.Time, resolution int32) (*pb.
 			Value:     0,
 		})
 		index[timerange] = len(congestion) - 1
+	}
+	if resolution == 0 && endDate.Minute() != 0 {
+		congestion = append(congestion, &pb.ThroughputEntry{
+			Timerange: fmt.Sprintf("%v:00", endDate.Add(-time.Hour).Hour()),
+			Value:     0,
+		})
 	}
 	res, err := conn.Query(ctx, `
 		SELECT FLOOR(EXTRACT(EPOCH FROM (date - $1)) / $3)::int, COUNT(*)
