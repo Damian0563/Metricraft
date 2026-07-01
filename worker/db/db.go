@@ -14,7 +14,7 @@ import (
 
 func timerangeLabel(rangeStart time.Time, increment time.Duration, resolution int32) string {
 	if resolution == 0 {
-		return fmt.Sprintf("%v:00", rangeStart.Hour())
+		return fmt.Sprintf("%s %d:00", rangeStart.Format("02.01"), rangeStart.Hour())
 	} else if resolution != 1 {
 		rangeEnd := rangeStart.Add(increment)
 		return fmt.Sprintf("%v-%v", rangeStart.Format("02.01"), rangeEnd.Add(-time.Hour*24).Format("02.01"))
@@ -96,10 +96,10 @@ func GetTrafficCongestion(ctx context.Context, startDate time.Time, resolution i
 		return nil, err
 	}
 	defer conn.Close(ctx)
-	endDate := time.Now()
-	var originalStartDate time.Time
-	if err != nil {
-		return nil, err
+	now := time.Now()
+	endDate := now
+	if resolution == 0 {
+		endDate = now.Truncate(time.Hour).Add(2 * time.Hour)
 	}
 	var increment time.Duration
 	if resolution == 0 {
@@ -108,50 +108,36 @@ func GetTrafficCongestion(ctx context.Context, startDate time.Time, resolution i
 		increment = time.Hour * 24 * time.Duration(resolution)
 	}
 	congestion := make([]*pb.CongestionEntry, 0)
-	index := make(map[string]int)
-	for startDate.Before(endDate) {
-		rangeStart := startDate
-		rangeEnd := startDate.Add(increment)
-		timerange := timerangeLabel(rangeStart, increment, resolution)
-		index[timerange] = len(congestion)
+	for cursor := startDate; cursor.Before(endDate); cursor = cursor.Add(increment) {
 		congestion = append(congestion, &pb.CongestionEntry{
-			Timerange: timerange,
-			Pairing:   &pb.StringInt32Map{Values: map[string]int32{}},
-		})
-		startDate = rangeEnd
-	}
-	if resolution == 0 && endDate.Minute() != 0 {
-		congestion = append(congestion, &pb.CongestionEntry{
-			Timerange: fmt.Sprintf("%v:00", endDate.Add(-time.Hour).Hour()),
+			Timerange: timerangeLabel(cursor, increment, resolution),
 			Pairing:   &pb.StringInt32Map{Values: map[string]int32{}},
 		})
 	}
-	res, err := conn.Query(ctx, "SELECT url,COUNT(*),date FROM logs WHERE date >= $1 AND date < $2 GROUP BY url,date ORDER BY COUNT(*) DESC", originalStartDate, endDate)
+	res, err := conn.Query(ctx, `
+		SELECT url, FLOOR(EXTRACT(EPOCH FROM (date - $1)) / $3)::int, COUNT(*)
+		FROM logs
+		WHERE date >= $1 AND date < $2
+		GROUP BY url, 2
+		ORDER BY COUNT(*) DESC
+	`, startDate, endDate, increment.Seconds())
 	if err != nil {
 		return nil, err
 	}
+	defer res.Close()
 	for res.Next() {
 		var url string
+		var bucket int
 		var count int
-		var date time.Time
-		err = res.Scan(&url, &count, &date)
-		if err != nil {
+		if err := res.Scan(&url, &bucket, &count); err != nil {
 			return nil, err
 		}
-		var key string
-		if resolution == 1 || resolution == 0 {
-			key = date.Format("02.01")
-		} else {
-			elapsed := date.Sub(originalStartDate)
-			intervals := int(elapsed / increment)
-			rangeStart := originalStartDate.Add(time.Duration(intervals) * increment)
-			rangeEnd := rangeStart.Add(increment)
-			key = fmt.Sprintf("%v-%v", rangeStart.Format("02.01"), rangeEnd.Add(-time.Hour*24).Format("02.01"))
-
+		if bucket >= 0 && bucket < len(congestion) {
+			congestion[bucket].Pairing.Values[url] += int32(count)
 		}
-		if i, ok := index[key]; ok {
-			congestion[i].Pairing.Values[url] = int32(count)
-		}
+	}
+	if err := res.Err(); err != nil {
+		return nil, err
 	}
 	return &pb.Congestion{Values: congestion}, nil
 }
@@ -235,25 +221,19 @@ func GetThroughput(ctx context.Context, start time.Time, resolution int32) (*pb.
 	}
 	defer conn.Close(ctx)
 	endDate := time.Now()
+	if resolution == 0 {
+		endDate = endDate.Truncate(time.Hour).Add(time.Hour)
+	}
 	var increment time.Duration
 	if resolution == 0 {
 		increment = time.Hour
 	} else {
 		increment = time.Hour * 24 * time.Duration(resolution)
 	}
-	congestion := make([]*pb.ThroughputEntry, 0)
-	index := make(map[string]int)
+	throughput := make([]*pb.ThroughputEntry, 0)
 	for cursor := start; cursor.Before(endDate); cursor = cursor.Add(increment) {
-		timerange := timerangeLabel(cursor, increment, resolution)
-		congestion = append(congestion, &pb.ThroughputEntry{
-			Timerange: timerange,
-			Value:     0,
-		})
-		index[timerange] = len(congestion) - 1
-	}
-	if resolution == 0 && endDate.Minute() != 0 {
-		congestion = append(congestion, &pb.ThroughputEntry{
-			Timerange: fmt.Sprintf("%v:00", endDate.Add(-time.Hour).Hour()),
+		throughput = append(throughput, &pb.ThroughputEntry{
+			Timerange: timerangeLabel(cursor, increment, resolution),
 			Value:     0,
 		})
 	}
@@ -274,12 +254,8 @@ func GetThroughput(ctx context.Context, start time.Time, resolution int32) (*pb.
 		if err := res.Scan(&bucket, &count); err != nil {
 			return nil, err
 		}
-		rangeStart := start.Add(time.Duration(bucket) * increment)
-		key := timerangeLabel(rangeStart, increment, resolution)
-		if idx, ok := index[key]; ok {
-			congestion[idx] = &pb.ThroughputEntry{Timerange: key, Value: int32(count)}
-		} else {
-			congestion[idx] = &pb.ThroughputEntry{Timerange: key, Value: 0}
+		if bucket >= 0 && bucket < len(throughput) {
+			throughput[bucket].Value = int32(count)
 		}
 		total += int32(count)
 	}
@@ -290,5 +266,5 @@ func GetThroughput(ctx context.Context, start time.Time, resolution int32) (*pb.
 	if seconds := endDate.Sub(start).Seconds(); seconds > 0 {
 		computedThroughput = float32(total) / float32(seconds)
 	}
-	return &pb.Throughput{Values: congestion, ComputedThroughput: computedThroughput}, nil
+	return &pb.Throughput{Values: throughput, ComputedThroughput: computedThroughput}, nil
 }

@@ -49,7 +49,7 @@ func SendRecovery(w http.ResponseWriter, r *http.Request) {
 	}
 	var payload types.SendRecoveryUser
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		http.Error(w, "Invalid payload", http.StatusInternalServerError)
+		http.Error(w, "Invalid payload", http.StatusBadRequest)
 		return
 	}
 	if !mail.ValidateMail(payload.Mail) {

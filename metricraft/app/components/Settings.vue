@@ -10,7 +10,22 @@
 						<div class="pb-6 border-b border-gray-200">
 							<h2 class="text-xl font-semibold text-gray-800 mb-4">Preferences</h2>
 							<label class="flex items-center justify-between cursor-pointer">
-								<span class="text-base font-medium text-gray-700">Real-time updates</span>
+								<div class="flex items-center gap-2">
+									<span class="text-base font-medium text-gray-700">Real-time updates</span>
+									<div class="group relative">
+										<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#00F376"
+											class="w-5 h-5 text-gray-400">
+											<path fill-rule="evenodd"
+												d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm8.706-1.442c1.146-.573 2.437.463 2.126 1.706l-.709 2.836.042-.02a.75.75 0 01.67 1.34l-.04.022c-1.147.573-2.438-.463-2.127-1.706l.71-2.836-.042.02a.75.75 0 11-.671-1.34l.041-.022ZM12 9a.75.75 0 100-1.5.75.75 0 000 1.5Z"
+												clip-rule="evenodd" />
+										</svg>
+										<div
+											class="absolute left-0 bottom-full mb-1 hidden group-hover:block w-72 p-3 bg-[#00F376] text-black text-s rounded-lg shadow-lg z-10">
+											<div> This setting is highly discouraged if your service expects heavy traffic.
+											</div>
+										</div>
+									</div>
+								</div>
 								<div class="relative">
 									<input type="checkbox" class="sr-only peer" :checked="realtimeEnabled"
 										@change="emit('realtimeToggle', ($event.target as HTMLInputElement).checked)" />
