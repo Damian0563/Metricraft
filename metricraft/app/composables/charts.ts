@@ -525,6 +525,7 @@ export const createTrafficCongestionTrends = (
 		const urlDataMap = new Map<string, number[]>();
 		const cumulativeMap = new Map<string, number>();
 		const totalPoints = data.values.length;
+		console.log(data)
 		data.values.forEach((entry: CongestionEntry, pointIndex: number) => {
 			labels.push(entry.timerange);
 			for (const [url, count] of Object.entries(getUrlCounts(entry.pairing))) {
@@ -544,7 +545,7 @@ export const createTrafficCongestionTrends = (
 				backgroundColor: color,
 				hoverBackgroundColor: color,
 				borderWidth: 0,
-				borderRadius: 4,
+				borderRadius: 0,
 				borderSkipped: false,
 				categoryPercentage: 0.7,
 				barPercentage: 0.9,
@@ -611,7 +612,8 @@ export const createTrafficCongestionTrends = (
 		});
 		const headers: additionalDataHeaders = { h1: 'Endpoint', h2: 'Total' };
 		return { chart, additionalData: createAdditionalData(cumulativeMap, headers, colorPicker) };
-	} catch (_) {
+	} catch (e) {
+		console.error(e)
 		return { chart: emptyChart(canvas), additionalData: null };
 	}
 }

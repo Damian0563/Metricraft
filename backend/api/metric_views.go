@@ -97,6 +97,7 @@ func Navigator(w http.ResponseWriter, r *http.Request) {
 	}
 	err = <-persistChan //this can be swallowed internally, even if error occured
 	httpresponse, err := json.Marshal(response)
+	w.Header().Set("Content-Type", "application/json")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

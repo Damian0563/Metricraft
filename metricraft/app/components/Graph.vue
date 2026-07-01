@@ -63,6 +63,7 @@ const colorPicker = useColorPicker();
 let chartInstance: Chart | ChoroplethChart | null = null;
 Chart.register(PointElement, LineController, LineElement, CategoryScale, LinearScale, BarController, BarElement, Tooltip, ChoroplethController, GeoFeature, ColorScale, ProjectionScale);
 onMounted((): void => {
+	if (chartInstance) chartInstance.destroy();
 	populateChart(props.data);
 });
 watch(() => props.data, (newData: any): void => {

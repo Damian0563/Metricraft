@@ -45,7 +45,6 @@
 									don't
 									use it for anything else. For more information refer to our documentation.</div>
 								<div v-else>Enter the email associated with your account to sign in.</div>
-								<div class="absolute right-2 -bottom-1 w-2 h-2 bg-gray-900 rotate-45"></div>
 							</div>
 						</div>
 					</div>
