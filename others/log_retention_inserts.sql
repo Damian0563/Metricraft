@@ -43,33 +43,80 @@ SELECT
 WHERE NOT EXISTS (SELECT 1 FROM settings);
 
 -- ---------------------------------------------------------------------------
--- Sample log rows (optional — useful for testing metrics and retention)
+-- Last 24 hours — endpoints from data-1782848361682.csv
+-- Quick seed: 96 rows every 15 minutes. Run this block alone for recent metrics.
 -- "user" stores the client IP (X-Real-IP), same as worker/db/db.go Insert()
 -- ---------------------------------------------------------------------------
 
+INSERT INTO logs (date, responseTime, url, "user", country, payload, headers, method, status)
+SELECT
+    NOW() - (step * INTERVAL '15 minutes'),
+    (18 + (step * 23 + (step / 4) * 11) % 420)::integer,
+    endpoints.url,
+    ips.ip,
+    ips.country,
+    endpoints.payload,
+    format(
+        '{"X-Real-IP":"%s","User-Agent":"Mozilla/5.0","Accept":"application/json","Content-Type":"application/json"}',
+        ips.ip
+    ),
+    endpoints.method,
+    endpoints.status
+FROM generate_series(0, 95) AS step
+CROSS JOIN LATERAL (
+    SELECT *
+    FROM (VALUES
+        (0,  'https://34.116.244.111:8000/cleanup',              '{}',                                  'POST', 200),
+        (1,  '/api/users/99',                                     '{"name":"Updated Name"}',             'PATCH', 200),
+        (2,  '/api/old-endpoint',                                 '{}',                                  'GET',  404),
+        (3,  'https://34.116.244.111:8000/receive/config-v2',   '{}',                                  'POST', 200),
+        (4,  '/api/batch/import',                                 '{"records":5000}',                    'PUT',  502),
+        (5,  'https://34.116.244.111:8000/drop',                  '{}',                                  'POST', 200),
+        (6,  'https://codrawapp.com/api/sync',                    '{}',                                  'POST', 200),
+        (7,  '/api/settings/realtime',                            '{"enabled":true}',                    'POST', 200),
+        (8,  '/api/export/csv',                                   '{"from":"2025-01-01","to":"2025-01-31"}', 'GET', 500),
+        (9,  '/api/analytics/throughput',                         '{"window":"1h"}',                     'GET',  200),
+        (10, '/api/users/42',                                       '{}',                                  'GET',  200),
+        (11, '/api/settings/retention',                           '{"retention":30}',                    'POST', 200),
+        (12, '/api/ws/connect',                                   '{}',                                  'GET',  101),
+        (13, '/api/sign',                                           '{"mail":"signup@example.com"}',       'POST', 200),
+        (14, '/api/verify/token',                                 '{"token":"abc123"}',                  'POST', 400),
+        (15, '/api/teams/invite',                                 '{"email":"teammate@example.com"}',    'POST', 201),
+        (16, '/api/admin',                                          '{}',                                  'GET',  403),
+        (17, '/api/reports',                                        '{"range":"7d"}',                      'POST', 200),
+        (18, '/api/dashboard',                                      '{}',                                  'GET',  200),
+        (19, '/api/metrics/geo',                                    '{}',                                  'GET',  200),
+        (20, '/api/webhooks/stripe',                                '{"type":"invoice.paid"}',             'POST', 200),
+        (21, '/api/users',                                          '{"page":1}',                          'GET',  200),
+        (22, '/api/analytics/latency',                              '{"percentile":95}',                   'GET',  200),
+        (23, '/api/auth/login',                                     '{"email":"user@example.com"}',        'POST', 200),
+        (24, 'https://metricraft.io/api/v1/ingest',                 '{}',                                  'POST', 200),
+        (25, '/api/metrics/uptime',                                 '{}',                                  'GET',  200),
+        (26, '/health',                                             '{}',                                  'GET',  200),
+        (27, '/api/metrics/status-codes',                           '{"window":"24h"}',                    'GET',  200),
+        (28, '/api/search',                                         '{"q":"metrics"}',                     'GET',  200),
+        (29, '/api/legacy/export',                                  '{"format":"csv"}',                    'GET',  504)
+    ) AS t(idx, url, payload, method, status)
+    WHERE t.idx = (step % 30)
+) AS endpoints
+CROSS JOIN LATERAL (
+    SELECT *
+    FROM (VALUES
+        ('203.0.113.10', 'United States'),
+        ('198.51.100.22', 'Germany'),
+        ('192.0.2.55', 'Poland'),
+        ('203.0.113.11', 'Canada'),
+        ('198.51.100.23', 'Netherlands'),
+        ('192.0.2.20', 'Spain')
+    ) AS t(ip, country)
+    WHERE t.ip = (ARRAY['203.0.113.10', '198.51.100.22', '192.0.2.55', '203.0.113.11', '198.51.100.23', '192.0.2.20'])[1 + (step % 6)]
+) AS ips;
+
+-- ---------------------------------------------------------------------------
+-- Older retention test rows (optional — useful for testing retention policy)
+-- ---------------------------------------------------------------------------
+
 INSERT INTO logs (date, responseTime, url, "user", country, payload, headers, method, status) VALUES
-(
-    NOW() - INTERVAL '1 hour',
-    42,
-    '/api/users',
-    '203.0.113.10',
-    'United States',
-    '{"page":1}',
-    '{"X-Real-IP":"203.0.113.10","User-Agent":"Mozilla/5.0","Accept":"application/json"}',
-    'GET',
-    200
-),
-(
-    NOW() - INTERVAL '6 hours',
-    128,
-    '/api/dashboard',
-    '198.51.100.22',
-    'Germany',
-    '{}',
-    '{"X-Real-IP":"198.51.100.22","User-Agent":"Mozilla/5.0","Accept":"application/json"}',
-    'GET',
-    200
-),
 (
     NOW() - INTERVAL '2 days',
     890,
@@ -104,116 +151,6 @@ INSERT INTO logs (date, responseTime, url, "user", country, payload, headers, me
     200
 ),
 (
-    NOW() - INTERVAL '5 minutes',
-    18,
-    '/api/users',
-    '203.0.113.10',
-    'United States',
-    '{"page":2}',
-    '{"X-Real-IP":"203.0.113.10","User-Agent":"Mozilla/5.0","Accept":"application/json"}',
-    'GET',
-    200
-),
-(
-    NOW() - INTERVAL '20 minutes',
-    31,
-    '/api/users',
-    '203.0.113.11',
-    'United States',
-    '{"page":1}',
-    '{"X-Real-IP":"203.0.113.11","User-Agent":"Mozilla/5.0","Accept":"application/json"}',
-    'GET',
-    200
-),
-(
-    NOW() - INTERVAL '45 minutes',
-    55,
-    '/api/users/42',
-    '203.0.113.12',
-    'Canada',
-    '{}',
-    '{"X-Real-IP":"203.0.113.12","User-Agent":"Mozilla/5.0","Accept":"application/json"}',
-    'GET',
-    200
-),
-(
-    NOW() - INTERVAL '3 hours',
-    102,
-    '/api/dashboard',
-    '198.51.100.22',
-    'Germany',
-    '{}',
-    '{"X-Real-IP":"198.51.100.22","User-Agent":"Mozilla/5.0","Accept":"application/json"}',
-    'GET',
-    200
-),
-(
-    NOW() - INTERVAL '4 hours',
-    167,
-    '/api/dashboard',
-    '198.51.100.23',
-    'Germany',
-    '{}',
-    '{"X-Real-IP":"198.51.100.23","User-Agent":"Mozilla/5.0","Accept":"application/json"}',
-    'GET',
-    200
-),
-(
-    NOW() - INTERVAL '8 hours',
-    2400,
-    '/api/search',
-    '192.0.2.10',
-    'France',
-    '{"q":"metrics"}',
-    '{"X-Real-IP":"192.0.2.10","User-Agent":"Mozilla/5.0","Accept":"application/json"}',
-    'GET',
-    200
-),
-(
-    NOW() - INTERVAL '12 hours',
-    95,
-    '/api/auth/login',
-    '192.0.2.20',
-    'Spain',
-    '{"email":"user@example.com"}',
-    '{"X-Real-IP":"192.0.2.20","User-Agent":"Mozilla/5.0","Accept":"application/json","Content-Type":"application/json"}',
-    'POST',
-    200
-),
-(
-    NOW() - INTERVAL '18 hours',
-    412,
-    '/api/auth/login',
-    '192.0.2.21',
-    'Italy',
-    '{"email":"bad@example.com"}',
-    '{"X-Real-IP":"192.0.2.21","User-Agent":"Mozilla/5.0","Accept":"application/json","Content-Type":"application/json"}',
-    'POST',
-    401
-),
-(
-    NOW() - INTERVAL '1 day',
-    63,
-    '/api/settings/realtime',
-    '203.0.113.20',
-    'Netherlands',
-    '{"enabled":true}',
-    '{"X-Real-IP":"203.0.113.20","User-Agent":"Mozilla/5.0","Accept":"application/json","Content-Type":"application/json"}',
-    'POST',
-    200
-),
-(
-    NOW() - INTERVAL '1 day 4 hours',
-    88,
-    '/api/settings/retention',
-    '203.0.113.21',
-    'Belgium',
-    '{"retention":30}',
-    '{"X-Real-IP":"203.0.113.21","User-Agent":"Mozilla/5.0","Accept":"application/json","Content-Type":"application/json"}',
-    'POST',
-    200
-),
-(
     NOW() - INTERVAL '3 days',
     156,
     '/api/reports',
@@ -221,17 +158,6 @@ INSERT INTO logs (date, responseTime, url, "user", country, payload, headers, me
     'Poland',
     '{"range":"30d"}',
     '{"X-Real-IP":"192.0.2.55","User-Agent":"curl/8.5.0","Accept":"application/json"}',
-    'POST',
-    200
-),
-(
-    NOW() - INTERVAL '3 days 6 hours',
-    1340,
-    '/api/reports',
-    '192.0.2.56',
-    'Czech Republic',
-    '{"range":"90d"}',
-    '{"X-Real-IP":"192.0.2.56","User-Agent":"curl/8.5.0","Accept":"application/json"}',
     'POST',
     200
 ),
@@ -258,17 +184,6 @@ INSERT INTO logs (date, responseTime, url, "user", country, payload, headers, me
     200
 ),
 (
-    NOW() - INTERVAL '7 days 2 hours',
-    52,
-    '/api/users',
-    '203.0.113.31',
-    'Denmark',
-    '{"page":3}',
-    '{"X-Real-IP":"203.0.113.31","User-Agent":"Mozilla/5.0","Accept":"application/json"}',
-    'GET',
-    200
-),
-(
     NOW() - INTERVAL '10 days',
     3800,
     '/api/analytics/latency',
@@ -276,17 +191,6 @@ INSERT INTO logs (date, responseTime, url, "user", country, payload, headers, me
     'Japan',
     '{"percentile":95}',
     '{"X-Real-IP":"192.0.2.70","User-Agent":"PostmanRuntime/7.36.0","Accept":"application/json"}',
-    'GET',
-    200
-),
-(
-    NOW() - INTERVAL '12 days',
-    190,
-    '/api/analytics/throughput',
-    '192.0.2.71',
-    'South Korea',
-    '{"window":"1h"}',
-    '{"X-Real-IP":"192.0.2.71","User-Agent":"PostmanRuntime/7.36.0","Accept":"application/json"}',
     'GET',
     200
 ),
@@ -324,28 +228,6 @@ INSERT INTO logs (date, responseTime, url, "user", country, payload, headers, me
     500
 ),
 (
-    NOW() - INTERVAL '22 days',
-    145,
-    '/api/users/99',
-    '192.0.2.80',
-    'Switzerland',
-    '{"name":"Updated Name"}',
-    '{"X-Real-IP":"192.0.2.80","User-Agent":"Mozilla/5.0","Accept":"application/json","Content-Type":"application/json"}',
-    'PATCH',
-    200
-),
-(
-    NOW() - INTERVAL '25 days',
-    72,
-    '/api/users/99',
-    '192.0.2.81',
-    'Switzerland',
-    '{}',
-    '{"X-Real-IP":"192.0.2.81","User-Agent":"Mozilla/5.0","Accept":"application/json"}',
-    'DELETE',
-    204
-),
-(
     NOW() - INTERVAL '28 days',
     310,
     '/api/dashboard',
@@ -357,17 +239,6 @@ INSERT INTO logs (date, responseTime, url, "user", country, payload, headers, me
     200
 ),
 (
-    NOW() - INTERVAL '29 days',
-    5200,
-    '/api/batch/import',
-    '203.0.113.60',
-    'Brazil',
-    '{"records":5000}',
-    '{"X-Real-IP":"203.0.113.60","User-Agent":"python-requests/2.31.0","Accept":"application/json","Content-Type":"application/json"}',
-    'PUT',
-    502
-),
-(
     NOW() - INTERVAL '32 days',
     91,
     '/health',
@@ -375,28 +246,6 @@ INSERT INTO logs (date, responseTime, url, "user", country, payload, headers, me
     'Unknown',
     '{}',
     '{"User-Agent":"kube-probe/1.0","Accept":"*/*"}',
-    'GET',
-    200
-),
-(
-    NOW() - INTERVAL '35 days',
-    68,
-    '/api/users',
-    '203.0.113.70',
-    'Mexico',
-    '{"page":1}',
-    '{"X-Real-IP":"203.0.113.70","User-Agent":"Mozilla/5.0","Accept":"application/json"}',
-    'GET',
-    200
-),
-(
-    NOW() - INTERVAL '40 days',
-    203,
-    '/api/dashboard',
-    '198.51.100.80',
-    'Argentina',
-    '{}',
-    '{"X-Real-IP":"198.51.100.80","User-Agent":"Mozilla/5.0","Accept":"application/json"}',
     'GET',
     200
 ),
@@ -442,104 +291,5 @@ INSERT INTO logs (date, responseTime, url, "user", country, payload, headers, me
     '{"page":1}',
     '{"X-Real-IP":"203.0.113.90","User-Agent":"Mozilla/5.0","Accept":"application/json"}',
     'GET',
-    200
-),
-(
-    NOW() - INTERVAL '2 hours',
-    403,
-    '/api/admin',
-    '192.0.2.30',
-    'United States',
-    '{}',
-    '{"X-Real-IP":"192.0.2.30","User-Agent":"Mozilla/5.0","Accept":"application/json"}',
-    'GET',
-    403
-),
-(
-    NOW() - INTERVAL '9 hours',
-    256,
-    '/api/search',
-    '192.0.2.11',
-    'France',
-    '{"q":"dashboard"}',
-    '{"X-Real-IP":"192.0.2.11","User-Agent":"Mozilla/5.0","Accept":"application/json"}',
-    'GET',
-    200
-),
-(
-    NOW() - INTERVAL '9 hours 30 minutes',
-    278,
-    '/api/search',
-    '192.0.2.12',
-    'France',
-    '{"q":"retention"}',
-    '{"X-Real-IP":"192.0.2.12","User-Agent":"Mozilla/5.0","Accept":"application/json"}',
-    'GET',
-    200
-),
-(
-    NOW() - INTERVAL '4 days',
-    119,
-    '/api/metrics/uptime',
-    '198.51.100.45',
-    'Finland',
-    '{}',
-    '{"X-Real-IP":"198.51.100.45","User-Agent":"Mozilla/5.0","Accept":"application/json"}',
-    'GET',
-    200
-),
-(
-    NOW() - INTERVAL '6 days',
-    142,
-    '/api/metrics/status-codes',
-    '198.51.100.46',
-    'Finland',
-    '{"window":"24h"}',
-    '{"X-Real-IP":"198.51.100.46","User-Agent":"Mozilla/5.0","Accept":"application/json"}',
-    'GET',
-    200
-),
-(
-    NOW() - INTERVAL '8 days',
-    600,
-    '/api/metrics/geo',
-    '203.0.113.40',
-    'Singapore',
-    '{}',
-    '{"X-Real-IP":"203.0.113.40","User-Agent":"Mozilla/5.0","Accept":"application/json"}',
-    'GET',
-    200
-),
-(
-    NOW() - INTERVAL '11 days',
-    175,
-    '/api/ws/connect',
-    '192.0.2.75',
-    'New Zealand',
-    '{}',
-    '{"X-Real-IP":"192.0.2.75","User-Agent":"Mozilla/5.0","Upgrade":"websocket"}',
-    'GET',
-    101
-),
-(
-    NOW() - INTERVAL '16 days',
-    299,
-    '/api/verify/token',
-    '203.0.113.55',
-    'Romania',
-    '{"token":"abc123"}',
-    '{"X-Real-IP":"203.0.113.55","User-Agent":"Mozilla/5.0","Accept":"application/json","Content-Type":"application/json"}',
-    'POST',
-    400
-),
-(
-    NOW() - INTERVAL '24 days',
-    188,
-    '/api/sign',
-    '192.0.2.85',
-    'Greece',
-    '{"mail":"signup@example.com"}',
-    '{"X-Real-IP":"192.0.2.85","User-Agent":"Mozilla/5.0","Accept":"application/json","Content-Type":"application/json"}',
-    'POST',
     200
 );

@@ -15,7 +15,7 @@ import (
 )
 
 func Welcome(w http.ResponseWriter, r *http.Request) {
-	var jsonResponse = make(map[string]interface{})
+	var jsonResponse = make(map[string]any)
 	var unauthorized = false
 	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -47,15 +47,18 @@ func ToggleRealtime(w http.ResponseWriter, r *http.Request) {
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, true)
 	if !authed {
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	type realtimePayload struct {
 		Enabled bool `json:"enabled"`
 	}
 	var payload realtimePayload
-	json.NewDecoder(r.Body).Decode(&payload)
-	err := ChangeRealtime(payload.Enabled)
-	if err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if err := ChangeRealtime(payload.Enabled); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -70,12 +73,15 @@ func ChangeMetricsHandler(w http.ResponseWriter, r *http.Request) {
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, true)
 	if !authed {
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	var payload []types.Metric
-	json.NewDecoder(r.Body).Decode(&payload)
-	err := ChangeMetrics(payload)
-	if err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if err := ChangeMetrics(payload); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -105,9 +111,11 @@ func ChangeRetention(w http.ResponseWriter, r *http.Request) {
 		Retention int `json:"retention"`
 	}
 	var payload retentionPayload
-	json.NewDecoder(r.Body).Decode(&payload)
-	err = ChangeLogsRetention(payload.Retention)
-	if err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if err = ChangeLogsRetention(payload.Retention); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -122,6 +130,7 @@ func TeamMembers(w http.ResponseWriter, r *http.Request) {
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, false)
 	if !authed {
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	appName, err := token.GetAppName()
@@ -179,8 +188,7 @@ func UploadUsersFromCSV(w http.ResponseWriter, r *http.Request) {
 			}
 			invitees.Invitees = append(invitees.Invitees, address)
 		}
-		err = sendInvites(invitees.Invitees, appName)
-		if err != nil {
+		if err = sendInvites(invitees.Invitees, appName); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -204,17 +212,14 @@ func sendInvites(invitees []string, appName string) error {
 }
 
 func SendInvites(w http.ResponseWriter, r *http.Request) {
-	mode := r.URL.Query().Get("mode")
 	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	} else if mode == "" {
-		http.Error(w, "Invalid payload", http.StatusBadRequest)
 		return
 	}
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, true)
 	if !authed {
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	appName, err := token.GetAppName()
@@ -222,32 +227,24 @@ func SendInvites(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	if mode == "manual" {
-		var invitees types.Invite
-		err = json.NewDecoder(r.Body).Decode(&invitees)
-		if err != nil {
-			http.Error(w, "Invalid payload", http.StatusBadRequest)
+	var invitees types.Invite
+	if err = json.NewDecoder(r.Body).Decode(&invitees); err != nil {
+		http.Error(w, "Invalid payload", http.StatusBadRequest)
+		return
+	}
+	for i, address := range invitees.Invitees {
+		address = strings.TrimSpace(address)
+		if !mailer.ValidateMail(address) {
+			http.Error(w, "Invalid email address: "+address, http.StatusBadRequest)
 			return
 		}
-		for i, address := range invitees.Invitees {
-			address = strings.TrimSpace(address)
-			if !mailer.ValidateMail(address) {
-				http.Error(w, "Invalid email address: "+address, http.StatusBadRequest)
-				return
-			}
-			invitees.Invitees[i] = address
-		}
-		err = sendInvites(invitees.Invitees, appName)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-		} else {
-			w.WriteHeader(http.StatusOK)
-		}
-	} else if mode == "batch" {
-
-	} else {
-		http.Error(w, "Invalid payload", http.StatusBadRequest)
+		invitees.Invitees[i] = address
 	}
+	if err = sendInvites(invitees.Invitees, appName); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }
 
 func HandleInvite(w http.ResponseWriter, r *http.Request) {
@@ -267,6 +264,7 @@ func HandleInvite(w http.ResponseWriter, r *http.Request) {
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, false)
 	if !authed {
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	appName, err := token.GetAppName()
@@ -274,13 +272,11 @@ func HandleInvite(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	err = db.HandleInvite(mail, decision, appName)
-	if err != nil {
+	if err = db.HandleInvite(mail, decision, appName); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	err = mailer.NotifyDecision(mail, decision, appName)
-	if err != nil {
+	if err = mailer.NotifyDecision(mail, decision, appName); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -298,6 +294,10 @@ func PendingInvites(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	appName, err := token.GetAppName()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	pendingUsers, err := db.GetPendingUsers(appName)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -325,6 +325,7 @@ func DashboardInit(w http.ResponseWriter, r *http.Request) {
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, false)
 	if !authed {
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	var Response = types.DashboardInitPayload{}
@@ -336,20 +337,18 @@ func DashboardInit(w http.ResponseWriter, r *http.Request) {
 		Response.AppName = ""
 	} else {
 		Response.AppName = appName
-		signed, error := token.Sign(false)
-		if error != nil {
+		signed, err := token.Sign(false)
+		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			Response.Error = "Error occured during signing. Please try again later."
 		} else {
 			status := http.StatusOK
 			Response.SignedSecret = signed
-			Response.Settings, err = GetSettings()
-			if err != nil {
+			if Response.Settings, err = GetSettings(); err != nil {
 				Response.Error = "Error occured during fetching settings. Please try again later."
 				status = http.StatusInternalServerError
 			}
-			Response.Urls, err = GetUrls()
-			if err != nil {
+			if Response.Urls, err = GetUrls(); err != nil {
 				Response.Error = "Error occured during fetching urls. Please try again later."
 				status = http.StatusInternalServerError
 			}
@@ -366,14 +365,17 @@ func Sign(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Invalid payload", http.StatusBadRequest)
+		return
+	}
 	type signPayload struct {
 		Mail    string `json:"mail"`
 		Secret  string `json:"secret"`
 		AppName string `json:"appName",omitempty`
 	}
 	var payload signPayload
-	err = json.Unmarshal(body, &payload)
-	if err != nil {
+	if err = json.Unmarshal(body, &payload); err != nil {
 		http.Error(w, "Invalid payload", http.StatusBadRequest)
 		return
 	}
@@ -382,9 +384,9 @@ func Sign(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	payload.Mail = strings.TrimSpace(payload.Mail)
-	var jsonResponse = make(map[string]interface{})
+	var jsonResponse = make(map[string]any)
 	if payload.AppName != "" {
-		if uuid, error_db := db.CreateUser(payload.Mail, payload.Secret, payload.AppName); error_db != nil {
+		if uuid, err := db.CreateUser(payload.Mail, payload.Secret, payload.AppName); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			jsonResponse["token"] = ""
 			jsonResponse["err"] = "Error occured during account creation. Please try again later."
@@ -400,8 +402,7 @@ func Sign(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	} else {
-		uuid, ok := db.SignIn(payload.Mail, payload.Secret)
-		if ok {
+		if uuid, ok := db.SignIn(payload.Mail, payload.Secret); ok {
 			token := auth.NewToken(uuid)
 			signed, err := token.Sign(true)
 			if err != nil {

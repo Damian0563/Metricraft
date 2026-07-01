@@ -6,6 +6,11 @@ type CountryOrigin struct {
 	Country string `json:"country"`
 }
 
+type DateClip struct {
+	Start time.Time
+	End   time.Time
+}
+
 type Payload struct {
 	Headers map[string]string
 	Url     string

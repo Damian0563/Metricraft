@@ -37,7 +37,7 @@ export const uploadUsersFromCSV = async (file: File): Promise<void> => {
 }
 
 export const sendManualInvitesToUsers = async (invitees: string[]): Promise<void> => {
-	await useApi()(`/invites/send`, {
+	await useApi()(`/invites/manual`, {
 		method: "POST",
 		query: { mode: "manual" },
 		body: { invitees },

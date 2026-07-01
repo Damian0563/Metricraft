@@ -21,6 +21,7 @@
 						<select :value="props.timeframe"
 							@change="emit('timeframeChange', { metric: props.name, timeframe: ($event.target as HTMLSelectElement).value as string })"
 							class="appearance-none cursor-pointer rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-9 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 focus:border-[#00F376] focus:outline-none focus:ring-2 focus:ring-[#00F376]/30">
+							<option value="1d">Last 24 hours</option>
 							<option value="7d">Last 7 days</option>
 							<option value="30d">Last 30 days</option>
 							<option value="90d">Last 90 days</option>
@@ -81,6 +82,7 @@ const mutateAdditionalData = (additionalData: HTMLElement | null): void => {
 const populateChart = async (data: any): Promise<void> => {
 	const picker = colorPicker.value;
 	if (props.name === "Traffic congestion trends" && chartRef.value && picker) {
+		console.log(data)
 		const { chart, additionalData }: ChartData = createTrafficCongestionTrends(chartRef.value, toRaw(data), picker);
 		chartInstance = chart;
 		mutateAdditionalData(additionalData);
