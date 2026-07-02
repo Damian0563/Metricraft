@@ -85,7 +85,11 @@
 					</button>
 				</div>
 				<div class="bg-white rounded-xl shadow-xl p-8 border border-gray-100">
-					<h2 class="text-xl font-semibold text-gray-800 mb-4">Log Retention Policy</h2>
+					<h2 class="text-xl font-semibold text-gray-800 mb-4">Select timezone</h2>
+					<select></select>
+				</div>
+				<div class="bg-white rounded-xl shadow-xl p-8 border border-gray-100">
+					<h3 class="text-xl font-semibold text-gray-800 mb-4">Log Retention Policy</h3>
 					<div class="flex flex-col gap-3">
 						<select v-model="logRetention"
 							@change="changeRetention(Number(logRetention)); emit('changeRetention', Number(logRetention))"

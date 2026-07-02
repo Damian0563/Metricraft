@@ -12,9 +12,13 @@ import (
 	"worker/types"
 )
 
-func timerangeLabel(rangeStart time.Time, increment time.Duration, resolution int32) string {
+func timerangeLabel(rangeStart time.Time, increment time.Duration, resolution int32, halfhour bool) string {
 	if resolution == 0 {
-		return fmt.Sprintf("%s %d:00", rangeStart.Format("02.01"), rangeStart.Hour())
+		digit := 0
+		if halfhour {
+			digit = 3
+		}
+		return fmt.Sprintf("%s %d:%d0", rangeStart.Format("02.01"), rangeStart.Hour(), digit)
 	} else if resolution != 1 {
 		rangeEnd := rangeStart.Add(increment)
 		return fmt.Sprintf("%v-%v", rangeStart.Format("02.01"), rangeEnd.Add(-time.Hour*24).Format("02.01"))
@@ -108,9 +112,10 @@ func GetTrafficCongestion(ctx context.Context, startDate time.Time, resolution i
 		increment = time.Hour * 24 * time.Duration(resolution)
 	}
 	congestion := make([]*pb.CongestionEntry, 0)
+	idx := 0
 	for cursor := startDate; cursor.Before(endDate); cursor = cursor.Add(increment) {
 		congestion = append(congestion, &pb.CongestionEntry{
-			Timerange: timerangeLabel(cursor, increment, resolution),
+			Timerange: timerangeLabel(cursor, increment, resolution, idx%2 == 0),
 			Pairing:   &pb.StringInt32Map{Values: map[string]int32{}},
 		})
 	}
@@ -226,14 +231,15 @@ func GetThroughput(ctx context.Context, start time.Time, resolution int32) (*pb.
 	}
 	var increment time.Duration
 	if resolution == 0 {
-		increment = time.Hour
+		increment = time.Minute * 30
 	} else {
 		increment = time.Hour * 24 * time.Duration(resolution)
 	}
 	throughput := make([]*pb.ThroughputEntry, 0)
+	idx := 0
 	for cursor := start; cursor.Before(endDate); cursor = cursor.Add(increment) {
 		throughput = append(throughput, &pb.ThroughputEntry{
-			Timerange: timerangeLabel(cursor, increment, resolution),
+			Timerange: timerangeLabel(cursor, increment, resolution, idx%2 == 0),
 			Value:     0,
 		})
 	}
