@@ -11,6 +11,20 @@ const emptyChart = (canvas: HTMLCanvasElement): Chart => {
 		options: { responsive: true, maintainAspectRatio: false },
 	});
 }
+const formatTimeRangeTitle = (labels: string[], dataIndex: number): string => {
+	if (dataIndex < 0 || dataIndex >= labels.length) return '';
+	const start = labels[dataIndex];
+	const end = labels[dataIndex + 1];
+	return end != null ? `${start} - ${end}` : (start ?? '');
+};
+const resolveHoveredIndex = (
+	tooltipItems: Array<{ dataIndex?: number }>,
+	chartInstance: Chart,
+): number =>
+	tooltipItems.find((item) => item.dataIndex != null)?.dataIndex ??
+	chartInstance.getActiveElements()[0]?.index ??
+	-1;
+
 const emptyChoroplethChart = (canvas: HTMLCanvasElement): ChoroplethChart =>
 	new ChoroplethChart(canvas, {
 		data: { labels: [], datasets: [] },
@@ -131,7 +145,9 @@ export const createThroughput = (
 						titleFont: { weight: 'bold', size: 13 },
 						bodyFont: { size: 12 },
 						callbacks: {
-							title: (items) => labels[items[0]?.dataIndex ?? 0] ?? '',
+							title: function (tooltipItems) {
+								return formatTimeRangeTitle(labels, resolveHoveredIndex(tooltipItems, this.chart));
+							},
 							label: (item) => `Requests: ${Number(item.parsed.y).toLocaleString()}`,
 							labelColor: () => ({
 								borderColor: '#00F376',
@@ -525,7 +541,6 @@ export const createTrafficCongestionTrends = (
 		const urlDataMap = new Map<string, number[]>();
 		const cumulativeMap = new Map<string, number>();
 		const totalPoints = data.values.length;
-		console.log(data)
 		data.values.forEach((entry: CongestionEntry, pointIndex: number) => {
 			labels.push(entry.timerange);
 			for (const [url, count] of Object.entries(getUrlCounts(entry.pairing))) {
@@ -597,13 +612,21 @@ export const createTrafficCongestionTrends = (
 					tooltip: {
 						enabled: true,
 						mode: 'index',
-						filter: (items) => items.raw !== 0,
+						filter: (item) => Number(item.parsed.y) !== 0,
 						intersect: false,
 						itemSort: (a, b) => (b.parsed.y as number) - (a.parsed.y as number),
 						callbacks: {
-							footer: (items) => {
-								const total = items.reduce((s, i) => s + (i.parsed.y as number), 0);
-								return `Total: ${total}`;
+							footer: function (tooltipItems) {
+								const dataIndex = resolveHoveredIndex(tooltipItems, this.chart);
+								if (dataIndex < 0) return '';
+								const total = datasets.reduce(
+									(sum, ds) => sum + (Number(ds.data[dataIndex]) || 0),
+									0,
+								);
+								return `Total: ${total.toLocaleString()}`;
+							},
+							title: function (tooltipItems) {
+								return formatTimeRangeTitle(labels, resolveHoveredIndex(tooltipItems, this.chart));
 							},
 						},
 					}
