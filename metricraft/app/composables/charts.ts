@@ -171,10 +171,15 @@ export const createThroughput = (
 				},
 			},
 		});
-		const additionalData = new Map<string, number>();
-		points.forEach((point: { x: number; y: number }) => {
-			additionalData.set(formatTimeRangeTitle(labels, point.x), point.y);
-		});
+		let additionalData: Map<string, number>;
+		if (timeframe === "1d") {
+			additionalData = new Map<string, number>()
+			points.forEach((point: { x: number; y: number }) => {
+				additionalData.set(formatTimeRangeTitle(labels, point.x), point.y);
+			});
+		} else {
+			additionalData = mapped
+		}
 		const headers: additionalDataHeaders = { h1: 'Timerange', h2: 'Number of requests' };
 		return { chart, additionalData: createAdditionalData(additionalData, headers) };
 	} catch (e) {
