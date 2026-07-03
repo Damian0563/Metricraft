@@ -3,6 +3,7 @@ import type { ChartData, TrafficCongestionData, ThroughputData, ThroughputEntry,
 import { ColorPicker } from "~/composables/colorpicker";
 import { ChoroplethChart, topojson } from 'chartjs-chart-geo';
 import { createAdditionalData } from "./chartUtils";
+import "chartjs-adapter-date-fns"
 
 const emptyChart = (canvas: HTMLCanvasElement): Chart => {
 	return new Chart(canvas, {
@@ -37,6 +38,7 @@ const truncateUrl = (url: string, max = 20): string => {
 export const createThroughput = (
 	canvas: HTMLCanvasElement,
 	data: ThroughputData,
+	timeframe: string,
 ): ChartData => {
 	try {
 		if (!data?.values?.length) throw new Error('Data is empty');
@@ -50,6 +52,20 @@ export const createThroughput = (
 			points.push({ x: index, y: cleanedVal });
 			mapped.set(timerange, cleanedVal);
 		});
+		let stepSize;
+		switch (timeframe) {
+			case "1d":
+				stepSize = 2;
+				break;
+			case "7d":
+				stepSize = 1;
+				break;
+			case "30d":
+				stepSize = 2;
+				break;
+			default:
+				stepSize = 3;
+		}
 		type ThroughputChart = Chart & { $hoveredIndex?: number | null };
 		const chart: Chart = new Chart(canvas, {
 			type: 'line',
@@ -98,20 +114,17 @@ export const createThroughput = (
 				layout: { padding: { right: 8, left: 2, bottom: 2, top: 4 } },
 				scales: {
 					x: {
-						type: 'linear',
-						min: 0,
-						max: Math.max(labels.length - 1, 0),
+						type: 'time',
+						min: labels[0],
+						max: labels[labels.length - 1],
 						grid: { display: false },
 						border: { display: false },
 						ticks: {
-							stepSize: 1,
+							stepSize: stepSize,
 							autoSkip: labels.length > 12,
 							maxRotation: labels.length > 8 ? 90 : 0,
 							padding: 6,
-							color: (ctx) => {
-								const hovered = (ctx.chart as ThroughputChart).$hoveredIndex;
-								return ctx.index === hovered ? '#0D6EFD' : '#475569';
-							},
+							color: '#475569',
 							font: { weight: 'bold', size: 11 },
 							callback: (value: string | number): string => labels[Number(value)] ?? '',
 						},
@@ -158,9 +171,14 @@ export const createThroughput = (
 				},
 			},
 		});
+		const additionalData = new Map<string, number>();
+		points.forEach((point: { x: number; y: number }) => {
+			additionalData.set(formatTimeRangeTitle(labels, point.x), point.y);
+		});
 		const headers: additionalDataHeaders = { h1: 'Timerange', h2: 'Number of requests' };
-		return { chart, additionalData: createAdditionalData(mapped, headers) };
-	} catch (_) {
+		return { chart, additionalData: createAdditionalData(additionalData, headers) };
+	} catch (e) {
+		console.error(e)
 		return { chart: emptyChart(canvas), additionalData: null };
 	}
 }
@@ -523,7 +541,7 @@ export const createGeographicalTraffic = async (
 		})
 		const headers: additionalDataHeaders = { h1: 'Country', h2: 'Total Traffic' };
 		return { chart, additionalData: createAdditionalData(mapped, headers) };
-	} catch (e) {
+	} catch (_) {
 		return { chart: emptyChoroplethChart(canvas), additionalData: null };
 	}
 }
@@ -531,7 +549,8 @@ export const createGeographicalTraffic = async (
 export const createTrafficCongestionTrends = (
 	canvas: HTMLCanvasElement,
 	data: TrafficCongestionData,
-	colorPicker: ColorPicker
+	colorPicker: ColorPicker,
+	timeframe: string,
 ): ChartData => {
 	const getUrlCounts = (pairing: StringInt32Map | undefined): Record<string, number> =>
 		pairing?.values ?? {};
@@ -552,6 +571,20 @@ export const createTrafficCongestionTrends = (
 				cumulativeMap.set(url, cumulativeMap.get(url)! + count);
 			}
 		});
+		let stepSize;
+		switch (timeframe) {
+			case "1d":
+				stepSize = 6;
+				break;
+			case "7d":
+				stepSize = 1;
+				break;
+			case "30d":
+				stepSize = 2;
+				break;
+			default:
+				stepSize = 3;
+		}
 		const datasets = Array.from(urlDataMap.entries()).map(([url, dataArray]) => {
 			const color = colorPicker.getColorForUrl(url);
 			return {
@@ -584,7 +617,15 @@ export const createTrafficCongestionTrends = (
 						stacked: true,
 						grid: { display: false },
 						border: { display: false },
-						ticks: { autoSkip: false, color: 'black', maxRotation: 90, padding: 6, font: { weight: 'bold' } },
+						ticks: {
+							autoSkip: false,
+							color: 'black',
+							maxRotation: 0,
+							padding: 6,
+							font: { weight: 'bold' },
+							callback: (_value: string | number, index: number): string =>
+								index % stepSize === 0 || index === 0 || (index === labels.length - 1 && (index - 1) % stepSize !== 0) ? (labels[index] ?? '') : '',
+						},
 						title: { display: true, text: 'Time', color: 'black', font: { weight: 'bold', size: 18 }, padding: { top: 2 } },
 					},
 					y: {

@@ -40,7 +40,7 @@
 </template>
 
 <script setup lang="ts">
-import { Chart, CategoryScale, LinearScale, BarController, BarElement, Tooltip, PointElement, LineElement, LineController } from "chart.js";
+import { Chart, CategoryScale, LinearScale, BarController, BarElement, Tooltip, PointElement, LineElement, LineController, TimeScale } from "chart.js";
 import { ChoroplethController, GeoFeature, ColorScale, ProjectionScale } from 'chartjs-chart-geo';
 import { ChoroplethChart } from 'chartjs-chart-geo';
 import { onMounted, toRaw } from "vue";
@@ -61,7 +61,7 @@ const additionalDataRef = ref<HTMLDivElement | null>(null);
 const seeDetails = ref<boolean>(false);
 const colorPicker = useColorPicker();
 let chartInstance: Chart | ChoroplethChart | null = null;
-Chart.register(PointElement, LineController, LineElement, CategoryScale, LinearScale, BarController, BarElement, Tooltip, ChoroplethController, GeoFeature, ColorScale, ProjectionScale);
+Chart.register(PointElement, TimeScale, LineController, LineElement, CategoryScale, LinearScale, BarController, BarElement, Tooltip, ChoroplethController, GeoFeature, ColorScale, ProjectionScale);
 onMounted((): void => {
 	if (chartInstance) chartInstance.destroy();
 	populateChart(props.data);
@@ -83,7 +83,7 @@ const mutateAdditionalData = (additionalData: HTMLElement | null): void => {
 const populateChart = async (data: any): Promise<void> => {
 	const picker = colorPicker.value;
 	if (props.name === "Traffic congestion trends" && chartRef.value && picker) {
-		const { chart, additionalData }: ChartData = createTrafficCongestionTrends(chartRef.value, toRaw(data), picker);
+		const { chart, additionalData }: ChartData = createTrafficCongestionTrends(chartRef.value, toRaw(data), picker, props.timeframe);
 		chartInstance = chart;
 		mutateAdditionalData(additionalData);
 	} else if (props.name === "Geographical traffic" && chartRef.value) {
@@ -99,7 +99,7 @@ const populateChart = async (data: any): Promise<void> => {
 		chartInstance = chart;
 		mutateAdditionalData(additionalData);
 	} else if (props.name === "Throughput" && chartRef.value) {
-		const { chart, additionalData }: ChartData = createThroughput(chartRef.value, toRaw(data))
+		const { chart, additionalData }: ChartData = createThroughput(chartRef.value, toRaw(data), props.timeframe)
 		chartInstance = chart;
 		mutateAdditionalData(additionalData);
 	}

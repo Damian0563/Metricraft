@@ -18,7 +18,7 @@ const header = ref<string | null>(null);
 const aux_header = ref<string | null>(null);
 watch(() => props.data, (newData: any) => {
 	if (newData.metric === "Throughput") {
-		if (newData.data.computedThroughput === undefined) return;
+		if (newData.data.computedThroughput === undefined || newData.data.uniqUsers === undefined) return;
 		header.value = `${newData.data.computedThroughput.toFixed(4)} requests/s`
 		aux_header.value = `${newData.data.uniqUsers} unique users`
 	}
