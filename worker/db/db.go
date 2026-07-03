@@ -230,7 +230,7 @@ func GetThroughput(ctx context.Context, start time.Time, resolution int32) (*pb.
 	}
 	var increment time.Duration
 	if resolution == 0 {
-		increment = time.Minute * 30
+		increment = time.Minute * 60
 	} else {
 		increment = time.Hour * 24 * time.Duration(resolution)
 	}

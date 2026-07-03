@@ -2,24 +2,27 @@
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm md:p-8 w-full h-full"
 		@click.self="close">
 		<div
-			class="relative flex w-full max-w-xl max-h-[90vh] flex-col overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-slate-100"
+			class="flex w-full max-w-xl max-h-[90vh] flex-col overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-slate-100"
 			role="dialog" aria-modal="true">
-			<button @click="createCSV"
-				class="absolute top-3 left-3 z-10 flex h-8 w-32 items-center justify-center rounded-lg text-dark-gray transition-colors hover:bg-slate-100 hover:text-[#00F376]">
-				Export to CSV </button>
-			<span class="absolute top-3 left-38 z-10 flex h-8 w-72 items-center justify-center rounded-lg text-dark-gray">
-				{{ props.metric }}
-			</span>
-			<button type="button" @click="close"
-				class="absolute top-3 right-3 z-10 flex h-8 w-8 items-center justify-center rounded-lg text-dark-gray transition-colors hover:bg-slate-100 hover:text-[#00F376]"
-				aria-label="Close">
-				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-					stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
-					<line x1="18" y1="6" x2="6" y2="18"></line>
-					<line x1="6" y1="6" x2="18" y2="18"></line>
-				</svg>
-			</button>
-			<div class="overflow-y-auto px-6 py-8 pt-10 mt-4">
+			<div class="flex shrink-0 items-center gap-2 border-b border-slate-100 px-4 py-3">
+				<button @click="createCSV"
+					class="flex h-8 shrink-0 items-center justify-center rounded-lg px-3 text-dark-gray transition-colors hover:bg-slate-100 hover:text-[#00F376]">
+					Export to CSV
+				</button>
+				<span class="min-w-0 flex-1 truncate text-center text-dark-gray">
+					{{ props.metric }}
+				</span>
+				<button type="button" @click="close"
+					class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-dark-gray transition-colors hover:bg-slate-100 hover:text-[#00F376]"
+					aria-label="Close">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+						stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
+						<line x1="18" y1="6" x2="6" y2="18"></line>
+						<line x1="6" y1="6" x2="18" y2="18"></line>
+					</svg>
+				</button>
+			</div>
+			<div class="min-h-0 flex-1 overflow-y-auto px-6 py-4">
 				<div ref="contentRef" class="additional-data-content"></div>
 			</div>
 		</div>
