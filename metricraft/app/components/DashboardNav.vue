@@ -21,6 +21,10 @@
 								class="text-sm font-medium text-gray-700 mt-4 hover:cursor-pointer text-center block">
 								Team
 							</span>
+							<span @click="emit('workers'); options = false"
+								class="text-sm font-medium text-gray-700 mt-4 hover:cursor-pointer text-center block">
+								Metricraft workers
+							</span>
 							<span @click="emit('settings'); options = false"
 								class="text-sm font-medium text-gray-700 mt-4 hover:cursor-pointer text-center block">
 								Settings
@@ -43,6 +47,7 @@ const appName = useState<string>('appName');
 const emit = defineEmits<{
 	settings: [value: void];
 	team: [value: void];
+	workers: [value: void];
 }>();
 const options = ref(false)
 const signOut = () => {

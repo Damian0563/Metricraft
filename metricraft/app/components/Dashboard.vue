@@ -1,6 +1,6 @@
 <template>
 	<div>
-		<DashboardNav @settings=handleSettings @team=handleTeam />
+		<DashboardNav @settings=handleSettings @team=handleTeam @workers=handleWorkers />
 		<GraphGrid v-if="!settings" :metrics="derivedMetrics" @load="emit('load')" />
 		<Settings v-if="settings" :realtimeEnabled="realtimeEnabled" :logRetention="logRetention"
 			:derivedMetrics="derivedMetrics" @realtime-toggle="handleRealtimeToggle" @customize-view="handleCustomizeView"
@@ -58,6 +58,10 @@ const handleRealtimeToggle = (val: boolean) => {
 
 const handleSettings = () => {
 	navigateTo('/dashboard?settings')
+}
+
+const handleWorkers = () => {
+	navigateTo('/workers')
 }
 
 const handleTeam = () => {

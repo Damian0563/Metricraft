@@ -12,7 +12,7 @@ type Server struct {
 }
 
 func (s *Server) GetTrafficCongestion(ctx context.Context, req *pb.Timeframe) (*pb.Congestion, error) {
-	start := req.Start.AsTime().Add(time.Hour).Truncate(time.Hour)
+	start := req.Start.AsTime().Add(time.Hour * 2).Truncate(time.Hour)
 	resolution := req.Resolution
 	return db.GetTrafficCongestion(ctx, start, resolution)
 }
