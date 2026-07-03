@@ -12,13 +12,13 @@ import (
 	"worker/types"
 )
 
-func timerangeLabel(rangeStart time.Time, increment time.Duration, resolution int32, halfhour bool) string {
+func timerangeLabel(rangeStart time.Time, increment time.Duration, resolution int32, mode string) string {
 	if resolution == 0 {
-		digit := 0
-		if halfhour {
-			digit = 3
+		if mode == "congestion" {
+			return fmt.Sprintf("%02d:00", rangeStart.Hour())
+		} else {
+			return fmt.Sprintf("%02d:%02d", rangeStart.Hour(), rangeStart.Minute())
 		}
-		return fmt.Sprintf("%s %d:%d0", rangeStart.Format("02.01"), rangeStart.Hour(), digit)
 	} else if resolution != 1 {
 		rangeEnd := rangeStart.Add(increment)
 		return fmt.Sprintf("%v-%v", rangeStart.Format("02.01"), rangeEnd.Add(-time.Hour*24).Format("02.01"))
@@ -112,10 +112,9 @@ func GetTrafficCongestion(ctx context.Context, startDate time.Time, resolution i
 		increment = time.Hour * 24 * time.Duration(resolution)
 	}
 	congestion := make([]*pb.CongestionEntry, 0)
-	idx := 0
 	for cursor := startDate; cursor.Before(endDate); cursor = cursor.Add(increment) {
 		congestion = append(congestion, &pb.CongestionEntry{
-			Timerange: timerangeLabel(cursor, increment, resolution, idx%2 == 0),
+			Timerange: timerangeLabel(cursor, increment, resolution, "congestion"),
 			Pairing:   &pb.StringInt32Map{Values: map[string]int32{}},
 		})
 	}
@@ -235,11 +234,10 @@ func GetThroughput(ctx context.Context, start time.Time, resolution int32) (*pb.
 	} else {
 		increment = time.Hour * 24 * time.Duration(resolution)
 	}
-	throughput := make([]*pb.ThroughputEntry, 0)
-	idx := 0
+	var throughput []*pb.ThroughputEntry
 	for cursor := start; cursor.Before(endDate); cursor = cursor.Add(increment) {
 		throughput = append(throughput, &pb.ThroughputEntry{
-			Timerange: timerangeLabel(cursor, increment, resolution, idx%2 == 0),
+			Timerange: timerangeLabel(cursor, increment, resolution, "throughput"),
 			Value:     0,
 		})
 	}
@@ -272,5 +270,10 @@ func GetThroughput(ctx context.Context, start time.Time, resolution int32) (*pb.
 	if seconds := endDate.Sub(start).Seconds(); seconds > 0 {
 		computedThroughput = float32(total) / float32(seconds)
 	}
-	return &pb.Throughput{Values: throughput, ComputedThroughput: computedThroughput}, nil
+	var uniqUsers int32
+	if err = conn.QueryRow(ctx, "SELECT COUNT(DISTINCT(\"user\")) FROM logs WHERE date >= $1 AND date < $2", start, endDate).Scan(&uniqUsers); err != nil {
+		return nil, err
+	}
+	defer res.Close()
+	return &pb.Throughput{Values: throughput, ComputedThroughput: computedThroughput, UniqUsers: uniqUsers}, nil
 }

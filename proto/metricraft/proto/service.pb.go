@@ -210,6 +210,7 @@ type Throughput struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Values             []*ThroughputEntry     `protobuf:"bytes,1,rep,name=values,proto3" json:"values,omitempty"`
 	ComputedThroughput float32                `protobuf:"fixed32,2,opt,name=computedThroughput,proto3" json:"computedThroughput,omitempty"`
+	UniqUsers          int32                  `protobuf:"varint,3,opt,name=uniqUsers,proto3" json:"uniqUsers,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -254,6 +255,13 @@ func (x *Throughput) GetValues() []*ThroughputEntry {
 func (x *Throughput) GetComputedThroughput() float32 {
 	if x != nil {
 		return x.ComputedThroughput
+	}
+	return 0
+}
+
+func (x *Throughput) GetUniqUsers() int32 {
+	if x != nil {
+		return x.UniqUsers
 	}
 	return 0
 }
@@ -472,11 +480,12 @@ const file_service_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\x02R\x05value:\x028\x01\"U\n" +
 	"\x11floatDistribution\x12@\n" +
-	"\fdistribution\x18\x01 \x01(\v2\x1c.metricraft.StringFloat32MapR\fdistribution\"q\n" +
+	"\fdistribution\x18\x01 \x01(\v2\x1c.metricraft.StringFloat32MapR\fdistribution\"\x8f\x01\n" +
 	"\n" +
 	"throughput\x123\n" +
 	"\x06values\x18\x01 \x03(\v2\x1b.metricraft.ThroughputEntryR\x06values\x12.\n" +
-	"\x12computedThroughput\x18\x02 \x01(\x02R\x12computedThroughput\"E\n" +
+	"\x12computedThroughput\x18\x02 \x01(\x02R\x12computedThroughput\x12\x1c\n" +
+	"\tuniqUsers\x18\x03 \x01(\x05R\tuniqUsers\"E\n" +
 	"\x0fThroughputEntry\x12\x1c\n" +
 	"\ttimerange\x18\x01 \x01(\tR\ttimerange\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\x05R\x05value\"e\n" +

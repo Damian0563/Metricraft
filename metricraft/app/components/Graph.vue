@@ -83,7 +83,6 @@ const mutateAdditionalData = (additionalData: HTMLElement | null): void => {
 const populateChart = async (data: any): Promise<void> => {
 	const picker = colorPicker.value;
 	if (props.name === "Traffic congestion trends" && chartRef.value && picker) {
-		console.log(data)
 		const { chart, additionalData }: ChartData = createTrafficCongestionTrends(chartRef.value, toRaw(data), picker);
 		chartInstance = chart;
 		mutateAdditionalData(additionalData);
