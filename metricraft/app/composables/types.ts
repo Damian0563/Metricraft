@@ -1,6 +1,12 @@
 import type { Chart } from "chart.js";
 import type { ChoroplethChart } from 'chartjs-chart-geo';
 
+export type Worker = {
+	url: string;
+	pollInterval: number;
+	headers?: Record<string, string>;
+}
+
 export type signPayload = {
 	mail: string;
 	secret: string;

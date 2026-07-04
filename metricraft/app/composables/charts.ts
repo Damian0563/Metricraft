@@ -19,9 +19,9 @@ const formatTimeRangeTitle = (labels: string[], dataIndex: number, timeframe: st
 	} else {
 		const start = labels[dataIndex];
 		const end = labels[dataIndex + 1];
-		return end != null ? `${start} - ${end}` : `${start}-${labels[0]}`;
+		if (timeframe === "1d") return end != null ? `${start} - ${end}` : `${start}-${labels[0]}`;
+		return end != null ? `${start} - ${end}` : `${start}`;
 	}
-
 };
 const resolveHoveredIndex = (
 	tooltipItems: Array<{ dataIndex?: number }>,

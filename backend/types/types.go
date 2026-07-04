@@ -18,6 +18,12 @@ type User struct {
 	Settings Settings `json:"settings,omitempty"`
 }
 
+type Worker struct {
+	Url          string            `json:"url"`
+	PollInterval int               `json:"pollInterval"`
+	Headers      map[string]string `json:"headers,omitempty"`
+}
+
 type ExistsErrResponse struct {
 	Exists bool
 	Err    error

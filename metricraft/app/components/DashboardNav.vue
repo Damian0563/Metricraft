@@ -18,13 +18,15 @@
 					<div class="relative">
 						<div v-if="options"
 							class="dropdown-panel absolute top-0 right-0 z-10 mt-6 mr-2 bg-white rounded-xl p-3 min-w-48 border border-gray-100 flex flex-col gap-1">
-							<button type="button" class="dropdown-item" @click="emit('team'); options = false">
+							<button type="button" class="dropdown-item" @click="navigateTo('/invite'); options = false">
 								Team
 							</button>
-							<button type="button" class="dropdown-item" @click="emit('workers'); options = false">
+							<button type="button" class="dropdown-item" @click="navigateTo('/workers'); options = false">
 								Metricraft workers
 							</button>
-							<button type="button" class="dropdown-item" @click="emit('settings'); options = false">
+							<button type="button" class="dropdown-item" @click="
+								navigateTo('/dashboard?settings')
+								; options = false">
 								Settings
 							</button>
 							<button
@@ -42,11 +44,6 @@
 <script setup lang="ts">
 import { invalidateCookie } from "~/composables/helpers"
 const appName = useState<string>('appName');
-const emit = defineEmits<{
-	settings: [value: void];
-	team: [value: void];
-	workers: [value: void];
-}>();
 const options = ref(false)
 const signOut = () => {
 	invalidateCookie()

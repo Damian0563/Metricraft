@@ -1,6 +1,6 @@
 <template>
 	<div>
-		<DashboardNav :appName="appName" @settings="handleSettings" />
+		<DashboardNav />
 		<Popup :message="errorMessage" @close="errorMessage = ''" />
 		<Spinner :loading="loading" />
 		<div class="w-full px-8 py-2">

@@ -117,12 +117,18 @@ func GetTrafficCongestion(ctx context.Context, startDate time.Time, resolution i
 			Pairing:   &pb.StringInt32Map{Values: map[string]int32{}},
 		})
 	}
+	var truncPeriod string
+	if resolution != 0 {
+		truncPeriod = "day"
+	} else {
+		truncPeriod = "hour"
+	}
 	res, err := conn.Query(ctx, `
 		SELECT url,
 			FLOOR(
 				EXTRACT(EPOCH FROM
-					date_trunc('day', (date AT TIME ZONE $4) AT TIME ZONE $5)
-					- date_trunc('day', ($1 AT TIME ZONE $4) AT TIME ZONE $5)
+					date_trunc($6, (date AT TIME ZONE $4) AT TIME ZONE $5)
+					- date_trunc($6, ($1 AT TIME ZONE $4) AT TIME ZONE $5)
 				) / $3
 			)::int AS bucket,
 			COUNT(*)
@@ -130,7 +136,7 @@ func GetTrafficCongestion(ctx context.Context, startDate time.Time, resolution i
 		WHERE date >= $1 AND date < $2
 		GROUP BY url, bucket
 		ORDER BY COUNT(*) DESC
-	`, alignedStart, endDate, increment.Seconds(), storageTimezone, tz)
+	`, alignedStart, endDate, increment.Seconds(), storageTimezone, tz, truncPeriod)
 	if err != nil {
 		return nil, err
 	}
@@ -250,19 +256,25 @@ func GetThroughput(ctx context.Context, start time.Time, resolution int32, timez
 			Value:     0,
 		})
 	}
+	var truncPeriod string
+	if resolution != 0 {
+		truncPeriod = "day"
+	} else {
+		truncPeriod = "hour"
+	}
 	res, err := conn.Query(ctx, `
 		SELECT
 			FLOOR(
 				EXTRACT(EPOCH FROM
-					date_trunc('day', (date AT TIME ZONE $4) AT TIME ZONE $5)
-					- date_trunc('day', ($1 AT TIME ZONE $4) AT TIME ZONE $5)
+					date_trunc($6, (date AT TIME ZONE $4) AT TIME ZONE $5)
+					- date_trunc($6, ($1 AT TIME ZONE $4) AT TIME ZONE $5)
 				) / $3
 			)::int AS bucket,
 			COUNT(*)
 		FROM logs
 		WHERE date >= $1 AND date < $2
 		GROUP BY bucket
-	`, alignedStart, endDate, increment.Seconds(), storageTimezone, tz)
+	`, alignedStart, endDate, increment.Seconds(), storageTimezone, tz, truncPeriod)
 	if err != nil {
 		return nil, err
 	}
