@@ -25,7 +25,7 @@ type resolutionDays struct {
 	Days int32
 }
 
-func convertTimeframe(timeframe string) (time.Time, resolutionDays) {
+func convertTimeframe(timeframe string, timezone string) (time.Time, resolutionDays) {
 	if timeframe == "" {
 		timeframe = "7d"
 	}
@@ -35,7 +35,12 @@ func convertTimeframe(timeframe string) (time.Time, resolutionDays) {
 		num = 7
 		fmt.Println(err)
 	}
-	now := time.Now()
+	loc := time.UTC
+	if timezone != "" {
+		if loaded, loadErr := time.LoadLocation(timezone); loadErr == nil {
+			loc = loaded
+		}
+	}
 	var timeResolution map[int]resolutionDays = map[int]resolutionDays{
 		1:   {Days: 0},
 		7:   {Days: 1},
@@ -45,7 +50,14 @@ func convertTimeframe(timeframe string) (time.Time, resolutionDays) {
 		180: {Days: 14},
 		365: {Days: 30},
 	}
-	return now.Add(-time.Hour * 24 * time.Duration(num)), timeResolution[num]
+	now := time.Now().In(loc)
+	var start time.Time
+	if num != 1 {
+		start = now.Add(-time.Duration(num) * 24 * time.Hour)
+	} else {
+		start = now.Add(-23 * time.Hour)
+	}
+	return start.UTC(), timeResolution[num]
 }
 
 func Navigator(w http.ResponseWriter, r *http.Request) {
@@ -69,25 +81,26 @@ func Navigator(w http.ResponseWriter, r *http.Request) {
 	client := pb.NewMetricraftClient(grpcConn)
 	metric := r.URL.Query().Get("metric")
 	timeframe := r.URL.Query().Get("timeframe")
+	timezone := r.URL.Query().Get("timezone")
 	persistChan := make(chan error, 1)
 	if persist := r.URL.Query().Get("persist"); persist == "true" {
 		go persistTimeframeSelection(persistChan, metric, timeframe)
 	} else {
 		persistChan <- nil
 	}
-	convertedTimeframe, resolution := convertTimeframe(timeframe)
+	convertedTimeframe, resolution := convertTimeframe(timeframe, timezone)
 	var response any
 	switch metric {
 	case "Traffic congestion trends":
-		response, err = client.GetTrafficCongestion(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days})
+		response, err = client.GetTrafficCongestion(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days, Timezone: timezone})
 	case "Geographical traffic":
-		response, err = client.GetGeographicalTraffic(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days})
+		response, err = client.GetGeographicalTraffic(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days, Timezone: timezone})
 	case "P95 Latency":
-		response, err = client.GetP95Latency(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days})
+		response, err = client.GetP95Latency(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days, Timezone: timezone})
 	case "Uptime Score":
-		response, err = client.GetUptimeScore(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days})
+		response, err = client.GetUptimeScore(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days, Timezone: timezone})
 	case "Throughput":
-		response, err = client.GetThroughput(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days})
+		response, err = client.GetThroughput(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days, Timezone: timezone})
 	default:
 		break
 	}

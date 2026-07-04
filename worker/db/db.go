@@ -90,41 +90,47 @@ func Insert(payload types.Payload) error {
 			country = "Unknown"
 		}
 	}
-	_, err = conn.Exec(ctx, "INSERT INTO logs (date, responseTime, url, \"user\",country, payload, headers, method, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)", payload.Time, payload.Metrics.Duration, payload.Url, realip, country, string(body), string(headers), payload.Method, payload.Metrics.StatusCode)
+	_, err = conn.Exec(ctx, "INSERT INTO logs (date, responseTime, url, \"user\",country, payload, headers, method, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)", payload.Time.UTC(), payload.Metrics.Duration, payload.Url, realip, country, string(body), string(headers), payload.Method, payload.Metrics.StatusCode)
 	return err
 }
 
-func GetTrafficCongestion(ctx context.Context, startDate time.Time, resolution int32) (*pb.Congestion, error) {
+func GetTrafficCongestion(ctx context.Context, startDate time.Time, resolution int32, timezone string) (*pb.Congestion, error) {
 	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close(ctx)
-	now := time.Now()
-	endDate := now
-	if resolution == 0 {
-		endDate = now.Truncate(time.Hour).Add(2 * time.Hour)
-	}
+	tz := validTimezone(timezone)
+	loc := loadLocation(tz)
+	alignedStart := alignStart(startDate, loc, resolution)
 	var increment time.Duration
 	if resolution == 0 {
 		increment = time.Hour
 	} else {
 		increment = time.Hour * 24 * time.Duration(resolution)
 	}
+	endDate := rangeEnd(loc, increment, resolution)
 	congestion := make([]*pb.CongestionEntry, 0)
-	for cursor := startDate; cursor.Before(endDate); cursor = cursor.Add(increment) {
+	for cursor := alignedStart; cursor.Before(endDate); cursor = cursor.Add(increment) {
 		congestion = append(congestion, &pb.CongestionEntry{
-			Timerange: timerangeLabel(cursor, increment, resolution, "congestion"),
+			Timerange: timerangeLabel(cursor.In(loc), increment, resolution, "congestion"),
 			Pairing:   &pb.StringInt32Map{Values: map[string]int32{}},
 		})
 	}
 	res, err := conn.Query(ctx, `
-		SELECT url, FLOOR(EXTRACT(EPOCH FROM (date - $1)) / $3)::int, COUNT(*)
+		SELECT url,
+			FLOOR(
+				EXTRACT(EPOCH FROM
+					date_trunc('day', (date AT TIME ZONE $4) AT TIME ZONE $5)
+					- date_trunc('day', ($1 AT TIME ZONE $4) AT TIME ZONE $5)
+				) / $3
+			)::int AS bucket,
+			COUNT(*)
 		FROM logs
 		WHERE date >= $1 AND date < $2
-		GROUP BY url, 2
+		GROUP BY url, bucket
 		ORDER BY COUNT(*) DESC
-	`, startDate, endDate, increment.Seconds())
+	`, alignedStart, endDate, increment.Seconds(), storageTimezone, tz)
 	if err != nil {
 		return nil, err
 	}
@@ -146,15 +152,16 @@ func GetTrafficCongestion(ctx context.Context, startDate time.Time, resolution i
 	return &pb.Congestion{Values: congestion}, nil
 }
 
-func GetGeographicalTraffic(ctx context.Context, startDate time.Time) (*pb.Distribution, error) {
+func GetGeographicalTraffic(ctx context.Context, startDate time.Time, timezone string) (*pb.Distribution, error) {
 	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close(ctx)
-	endDate := time.Now()
+	loc := loadLocation(timezone)
+	endDate := time.Now().In(loc).UTC()
 	distribution := make(map[string]int32)
-	res, err := conn.Query(ctx, "SELECT country,COUNT(*) FROM logs WHERE date BETWEEN $1 AND $2 GROUP BY country ORDER BY COUNT(*) DESC", startDate, endDate)
+	res, err := conn.Query(ctx, "SELECT country,COUNT(*) FROM logs WHERE date >= $1 AND date < $2 GROUP BY country ORDER BY COUNT(*) DESC", startDate, endDate)
 	if err != nil {
 		return nil, err
 	}
@@ -170,15 +177,16 @@ func GetGeographicalTraffic(ctx context.Context, startDate time.Time) (*pb.Distr
 	return &pb.Distribution{Distribution: &pb.StringInt32Map{Values: distribution}}, nil
 }
 
-func GetP95Latency(ctx context.Context, startDate time.Time) (*pb.Distribution, error) {
+func GetP95Latency(ctx context.Context, startDate time.Time, timezone string) (*pb.Distribution, error) {
 	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close(ctx)
-	endDate := time.Now()
+	loc := loadLocation(timezone)
+	endDate := time.Now().In(loc).UTC()
 	distribution := make(map[string]int32)
-	res, err := conn.Query(ctx, "SELECT url,percentile_cont(0.95) WITHIN GROUP (ORDER BY responsetime) AS percentile FROM logs WHERE date BETWEEN $1 AND $2 AND status BETWEEN 200 AND 299 GROUP BY url ORDER BY percentile DESC", startDate, endDate)
+	res, err := conn.Query(ctx, "SELECT url,percentile_cont(0.95) WITHIN GROUP (ORDER BY responsetime) AS percentile FROM logs WHERE date >= $1 AND date < $2 AND status BETWEEN 200 AND 299 GROUP BY url ORDER BY percentile DESC", startDate, endDate)
 	if err != nil {
 		return nil, err
 	}
@@ -194,15 +202,16 @@ func GetP95Latency(ctx context.Context, startDate time.Time) (*pb.Distribution, 
 	return &pb.Distribution{Distribution: &pb.StringInt32Map{Values: distribution}}, nil
 }
 
-func GetUptimeScore(ctx context.Context, startDate time.Time) (*pb.FloatDistribution, error) {
+func GetUptimeScore(ctx context.Context, startDate time.Time, timezone string) (*pb.FloatDistribution, error) {
 	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close(ctx)
-	endDate := time.Now()
+	loc := loadLocation(timezone)
+	endDate := time.Now().In(loc).UTC()
 	distribution := make(map[string]float32)
-	res, err := conn.Query(ctx, "SELECT url, 100.0 * COUNT(*) FILTER (WHERE status BETWEEN 200 AND 299) / NULLIF(COUNT(*), 0) AS availability FROM logs WHERE date BETWEEN $1 AND $2 GROUP BY url ORDER BY availability DESC", startDate, endDate)
+	res, err := conn.Query(ctx, "SELECT url, 100.0 * COUNT(*) FILTER (WHERE status BETWEEN 200 AND 299) / NULLIF(COUNT(*), 0) AS availability FROM logs WHERE date >= $1 AND date < $2 GROUP BY url ORDER BY availability DESC", startDate, endDate)
 	if err != nil {
 		return nil, err
 	}
@@ -218,35 +227,42 @@ func GetUptimeScore(ctx context.Context, startDate time.Time) (*pb.FloatDistribu
 	return &pb.FloatDistribution{Distribution: &pb.StringFloat32Map{Values: distribution}}, nil
 }
 
-func GetThroughput(ctx context.Context, start time.Time, resolution int32) (*pb.Throughput, error) {
+func GetThroughput(ctx context.Context, start time.Time, resolution int32, timezone string) (*pb.Throughput, error) {
 	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close(ctx)
-	endDate := time.Now()
-	if resolution == 0 {
-		endDate = endDate.Truncate(time.Hour).Add(time.Hour)
-	}
+	tz := validTimezone(timezone)
+	loc := loadLocation(tz)
+	alignedStart := alignStart(start, loc, resolution)
 	var increment time.Duration
 	if resolution == 0 {
 		increment = time.Minute * 60
 	} else {
 		increment = time.Hour * 24 * time.Duration(resolution)
 	}
+	endDate := rangeEnd(loc, increment, resolution)
 	var throughput []*pb.ThroughputEntry
-	for cursor := start; cursor.Before(endDate); cursor = cursor.Add(increment) {
+	for cursor := alignedStart; cursor.Before(endDate); cursor = cursor.Add(increment) {
 		throughput = append(throughput, &pb.ThroughputEntry{
-			Timerange: timerangeLabel(cursor, increment, resolution, "throughput"),
+			Timerange: timerangeLabel(cursor.In(loc), increment, resolution, "throughput"),
 			Value:     0,
 		})
 	}
 	res, err := conn.Query(ctx, `
-		SELECT FLOOR(EXTRACT(EPOCH FROM (date - $1)) / $3)::int, COUNT(*)
+		SELECT
+			FLOOR(
+				EXTRACT(EPOCH FROM
+					date_trunc('day', (date AT TIME ZONE $4) AT TIME ZONE $5)
+					- date_trunc('day', ($1 AT TIME ZONE $4) AT TIME ZONE $5)
+				) / $3
+			)::int AS bucket,
+			COUNT(*)
 		FROM logs
 		WHERE date >= $1 AND date < $2
-		GROUP BY 1
-	`, start, endDate, increment.Seconds())
+		GROUP BY bucket
+	`, alignedStart, endDate, increment.Seconds(), storageTimezone, tz)
 	if err != nil {
 		return nil, err
 	}
@@ -267,13 +283,12 @@ func GetThroughput(ctx context.Context, start time.Time, resolution int32) (*pb.
 		return nil, err
 	}
 	var computedThroughput float32
-	if seconds := endDate.Sub(start).Seconds(); seconds > 0 {
+	if seconds := endDate.Sub(alignedStart).Seconds(); seconds > 0 {
 		computedThroughput = float32(total) / float32(seconds)
 	}
 	var uniqUsers int32
-	if err = conn.QueryRow(ctx, "SELECT COUNT(DISTINCT(\"user\")) FROM logs WHERE date >= $1 AND date < $2", start, endDate).Scan(&uniqUsers); err != nil {
+	if err = conn.QueryRow(ctx, "SELECT COUNT(DISTINCT(\"user\")) FROM logs WHERE date >= $1 AND date < $2", alignedStart, endDate).Scan(&uniqUsers); err != nil {
 		return nil, err
 	}
-	defer res.Close()
 	return &pb.Throughput{Values: throughput, ComputedThroughput: computedThroughput, UniqUsers: uniqUsers}, nil
 }

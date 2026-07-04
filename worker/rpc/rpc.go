@@ -3,7 +3,6 @@ package rpc
 import (
 	"context"
 	pb "metricraft/proto/metricraft/proto"
-	"time"
 	"worker/db"
 )
 
@@ -12,28 +11,21 @@ type Server struct {
 }
 
 func (s *Server) GetTrafficCongestion(ctx context.Context, req *pb.Timeframe) (*pb.Congestion, error) {
-	start := req.Start.AsTime().Add(time.Hour * 2).Truncate(time.Hour)
-	resolution := req.Resolution
-	return db.GetTrafficCongestion(ctx, start, resolution)
+	return db.GetTrafficCongestion(ctx, req.Start.AsTime(), req.Resolution, req.Timezone)
 }
 
 func (s *Server) GetGeographicalTraffic(ctx context.Context, req *pb.Timeframe) (*pb.Distribution, error) {
-	start := req.Start.AsTime()
-	return db.GetGeographicalTraffic(ctx, start)
+	return db.GetGeographicalTraffic(ctx, req.Start.AsTime(), req.Timezone)
 }
 
 func (s *Server) GetP95Latency(ctx context.Context, req *pb.Timeframe) (*pb.Distribution, error) {
-	start := req.Start.AsTime()
-	return db.GetP95Latency(ctx, start)
+	return db.GetP95Latency(ctx, req.Start.AsTime(), req.Timezone)
 }
 
 func (s *Server) GetUptimeScore(ctx context.Context, req *pb.Timeframe) (*pb.FloatDistribution, error) {
-	start := req.Start.AsTime()
-	return db.GetUptimeScore(ctx, start)
+	return db.GetUptimeScore(ctx, req.Start.AsTime(), req.Timezone)
 }
 
 func (s *Server) GetThroughput(ctx context.Context, req *pb.Timeframe) (*pb.Throughput, error) {
-	start := req.Start.AsTime().Add(time.Hour).Truncate(time.Hour)
-	resolution := req.Resolution
-	return db.GetThroughput(ctx, start, resolution)
+	return db.GetThroughput(ctx, req.Start.AsTime(), req.Resolution, req.Timezone)
 }

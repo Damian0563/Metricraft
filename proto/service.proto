@@ -15,6 +15,7 @@ service Metricraft {
 message timeframe{
   google.protobuf.Timestamp start = 1;
   int32 resolution = 2;
+  string timezone = 3;
 }
 
 message StringInt32Map {
