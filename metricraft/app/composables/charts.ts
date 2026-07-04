@@ -11,11 +11,17 @@ const emptyChart = (canvas: HTMLCanvasElement): Chart => {
 		options: { responsive: true, maintainAspectRatio: false },
 	});
 }
-const formatTimeRangeTitle = (labels: string[], dataIndex: number): string => {
+const formatTimeRangeTitle = (labels: string[], dataIndex: number, timeframe: string | null = null): string => {
 	if (dataIndex < 0 || dataIndex >= labels.length) return '';
-	const start = labels[dataIndex];
-	const end = labels[dataIndex + 1];
-	return end != null ? `${start} - ${end}` : (start ?? '');
+	if (timeframe !== "1d" && timeframe !== "7d") {
+		const start = labels[dataIndex];
+		return start ?? '';
+	} else {
+		const start = labels[dataIndex];
+		const end = labels[dataIndex + 1];
+		return end != null ? `${start} - ${end}` : `${start}-${labels[0]}`;
+	}
+
 };
 const resolveHoveredIndex = (
 	tooltipItems: Array<{ dataIndex?: number }>,
@@ -54,7 +60,7 @@ export const createThroughput = (
 		let stepSize;
 		switch (timeframe) {
 			case "1d":
-				stepSize = 2;
+				stepSize = 6;
 				break;
 			case "7d":
 				stepSize = 1;
@@ -118,7 +124,7 @@ export const createThroughput = (
 						border: { display: false },
 						ticks: {
 							autoSkip: false,
-							maxRotation: labels.length > 8 ? 90 : 0,
+							maxRotation: 0,
 							padding: 6,
 							color: '#475569',
 							font: { weight: 'bold', size: 11 },
@@ -156,7 +162,7 @@ export const createThroughput = (
 						bodyFont: { size: 12 },
 						callbacks: {
 							title: function (tooltipItems) {
-								return formatTimeRangeTitle(labels, resolveHoveredIndex(tooltipItems, this.chart));
+								return formatTimeRangeTitle(labels, resolveHoveredIndex(tooltipItems, this.chart), timeframe);
 							},
 							label: (item) => `Requests: ${Number(item.parsed.y).toLocaleString()}`,
 							labelColor: () => ({
@@ -668,7 +674,7 @@ export const createTrafficCongestionTrends = (
 								return `Total: ${total.toLocaleString()}`;
 							},
 							title: function (tooltipItems) {
-								return formatTimeRangeTitle(labels, resolveHoveredIndex(tooltipItems, this.chart));
+								return formatTimeRangeTitle(labels, resolveHoveredIndex(tooltipItems, this.chart), timeframe);
 							},
 						},
 					}

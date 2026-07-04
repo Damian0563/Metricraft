@@ -23,7 +23,8 @@ export const getDashboard = async (): Promise<dashboardInitPayload> => {
 
 
 export const fetchMetric = async (metric: string, timeframe: string, persist: boolean = false): Promise<Map<string, number>> => {
-	return await useApi()<Map<string, number>>(`/dashboard/fetch?persist=${persist}`, {
+	const userZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+	return await useApi()<Map<string, number>>(`/dashboard/fetch?persist=${persist}&timezone=${userZone}`, {
 		method: "GET",
 		query: { metric, timeframe },
 	})
