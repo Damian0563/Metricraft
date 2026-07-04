@@ -3,7 +3,6 @@ import type { ChartData, TrafficCongestionData, ThroughputData, ThroughputEntry,
 import { ColorPicker } from "~/composables/colorpicker";
 import { ChoroplethChart, topojson } from 'chartjs-chart-geo';
 import { createAdditionalData } from "./chartUtils";
-import "chartjs-adapter-date-fns"
 
 const emptyChart = (canvas: HTMLCanvasElement): Chart => {
 	return new Chart(canvas, {
@@ -42,15 +41,15 @@ export const createThroughput = (
 ): ChartData => {
 	try {
 		if (!data?.values?.length) throw new Error('Data is empty');
-		const mapped = new Map<string, number>();
+		const mapped = new Array<{ timerange: string, value: number }>();
 		const labels: string[] = [];
-		const points: Array<{ x: number; y: number }> = [];
-		data.values.forEach((entry: ThroughputEntry, index: number) => {
+		const values: number[] = [];
+		data.values.forEach((entry: ThroughputEntry) => {
 			const { timerange, value } = entry;
 			const cleanedVal = value !== undefined ? value : 0;
 			labels.push(timerange);
-			points.push({ x: index, y: cleanedVal });
-			mapped.set(timerange, cleanedVal);
+			values.push(cleanedVal);
+			mapped.push({ timerange: timerange, value: cleanedVal });
 		});
 		let stepSize;
 		switch (timeframe) {
@@ -87,9 +86,10 @@ export const createThroughput = (
 				},
 			],
 			data: {
+				labels,
 				datasets: [{
 					label: 'Throughput',
-					data: points,
+					data: values,
 					showLine: true,
 					tension: 0.3,
 					borderColor: '#00C962',
@@ -114,19 +114,16 @@ export const createThroughput = (
 				layout: { padding: { right: 8, left: 2, bottom: 2, top: 4 } },
 				scales: {
 					x: {
-						type: 'time',
-						min: labels[0],
-						max: labels[labels.length - 1],
 						grid: { display: false },
 						border: { display: false },
 						ticks: {
-							stepSize: stepSize,
-							autoSkip: labels.length > 12,
+							autoSkip: false,
 							maxRotation: labels.length > 8 ? 90 : 0,
 							padding: 6,
 							color: '#475569',
 							font: { weight: 'bold', size: 11 },
-							callback: (value: string | number): string => labels[Number(value)] ?? '',
+							callback: (_value: string | number, index: number): string =>
+								index % stepSize === 0 || index === 0 || (index === labels.length - 1 && (index - 1) % stepSize !== 0) ? (labels[index] ?? '') : '',
 						},
 						title: {
 							display: true,
@@ -171,17 +168,16 @@ export const createThroughput = (
 				},
 			},
 		});
-		let additionalData: Map<string, number>;
+		let addData: Array<{ timerange: string, value: number }> = new Array<{ timerange: string, value: number }>();
 		if (timeframe === "1d") {
-			additionalData = new Map<string, number>()
-			points.forEach((point: { x: number; y: number }) => {
-				additionalData.set(formatTimeRangeTitle(labels, point.x), point.y);
+			values.forEach((value, index) => {
+				addData.push({ timerange: formatTimeRangeTitle(labels, index), value: value });
 			});
 		} else {
-			additionalData = mapped
+			addData = mapped
 		}
 		const headers: additionalDataHeaders = { h1: 'Timerange', h2: 'Number of requests' };
-		return { chart, additionalData: createAdditionalData(additionalData, headers) };
+		return { chart, additionalData: createAdditionalData(addData, headers) };
 	} catch (e) {
 		console.error(e)
 		return { chart: emptyChart(canvas), additionalData: null };

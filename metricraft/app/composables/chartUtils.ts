@@ -1,19 +1,38 @@
 import type { additionalDataHeaders } from "~/composables/types";
 import type { ColorPicker } from "~/composables/colorpicker";
 
+type AdditionalDataRow = {
+	utterance: string;
+	value: number;
+	color: string | null;
+};
+
 export const createAdditionalData = (
-	data: Map<string, number>,
+	data: Map<string, number> | Array<{ timerange: string, value: number }>,
 	headers: additionalDataHeaders,
 	colorPicker: ColorPicker | null = null
 ): HTMLTableElement | null => {
-	if (!data.size) return null;
-	const rows = Array.from(data.entries())
-		.map(([url, values]) => ({
-			url,
-			sum: values,
-			color: colorPicker?.getColorForUrl(url),
-		}))
-		.sort((a, b) => b.sum - a.sum);
+	let rows: AdditionalDataRow[];
+	if (data instanceof Map) {
+		if (!data.size) return null;
+		rows = Array.from(data.entries())
+			.map(([url, sum]) => ({
+				utterance: url,
+				value: sum,
+				color: colorPicker?.getColorForUrl(url) ?? null,
+			}))
+			.sort((a, b) => b.value - a.value);
+	} else if (data instanceof Array) {
+		if (!data.length) return null;
+		rows = data.map(({ timerange, value }) => ({
+			utterance: timerange,
+			value,
+			color: colorPicker?.getColorForUrl(timerange) ?? null,
+		}));
+		rows.reverse();
+	} else {
+		return null;
+	}
 	const table = document.createElement('table');
 	table.classList.add('w-full', 'text-xs', 'table-fixed', 'border-separate', 'border-spacing-0');
 	const colgroup = document.createElement('colgroup');
@@ -32,7 +51,7 @@ export const createAdditionalData = (
 	thead.appendChild(headerRow);
 	table.appendChild(thead);
 	const tbody = document.createElement('tbody');
-	rows.forEach(({ url, sum, color }, index) => {
+	rows.forEach(({ utterance, value, color }, index) => {
 		const row = document.createElement('tr');
 		row.classList.add('transition-colors', 'hover:bg-white/70');
 		if (index > 0) row.classList.add('border-t', 'border-slate-100');
@@ -48,13 +67,13 @@ export const createAdditionalData = (
 		}
 		const label = document.createElement('span');
 		label.classList.add('truncate', 'text-slate-600');
-		label.textContent = url;
-		label.title = url;
+		label.textContent = utterance;
+		label.title = utterance;
 		urlWrap.appendChild(label);
 		urlCell.appendChild(urlWrap);
 		const totalCell = document.createElement('td');
 		totalCell.classList.add('py-1.5', 'px-3', 'text-right', 'tabular-nums', 'font-semibold', 'text-slate-700', 'whitespace-nowrap');
-		totalCell.textContent = String(sum);
+		totalCell.textContent = String(value);
 		row.appendChild(urlCell);
 		row.appendChild(totalCell);
 		tbody.appendChild(row);
