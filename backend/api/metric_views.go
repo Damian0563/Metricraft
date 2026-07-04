@@ -2,6 +2,7 @@ package api
 
 import (
 	"backend/auth"
+	"backend/types"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -117,4 +118,27 @@ func Navigator(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(httpresponse)
+}
+
+func SaveWorker(w http.ResponseWriter, r *http.Request) {
+	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	token := auth.NewToken(r.Header.Get("Session-Token"))
+	authed := token.ValidateRequest(&w, true)
+	if !authed {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	if grpcConn == nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	var worker types.Worker
+	if err := json.NewDecoder(r.Body).Decode(&worker); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }

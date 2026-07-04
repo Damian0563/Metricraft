@@ -10,12 +10,24 @@ service Metricraft {
   rpc getP95Latency(timeframe) returns (distribution);
   rpc getUptimeScore(timeframe) returns (floatDistribution);
   rpc getThroughput(timeframe) returns (throughput);
+  rpc createWorker(worker) returns (status);
 }
 
 message timeframe{
   google.protobuf.Timestamp start = 1;
   int32 resolution = 2;
   string timezone = 3;
+}
+
+message worker{
+  string url = 1;
+  int32 pollInterval = 2;
+  map<string, string> headers = 3;
+}
+
+message status{
+  bool success = 1;
+  string err = 2;
 }
 
 message StringInt32Map {
