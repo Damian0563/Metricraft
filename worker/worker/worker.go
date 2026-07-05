@@ -1,26 +1,29 @@
 package worker
 
 import (
+	supabase "backend/db"
 	"context"
 	"fmt"
 	pb "metricraft/proto/metricraft/proto"
 	"net/http"
 	"time"
+	"worker/db"
 )
 
 func TestWorker(ctx context.Context, worker *pb.Worker) (*pb.Status, error) {
 	req, err := http.NewRequest("GET", worker.Url, nil)
-	for k, v := range worker.Headers {
-		req.Header.Set(k, v)
-	}
 	if err != nil {
 		return nil, err
+	}
+	for k, v := range worker.Headers {
+		req.Header.Set(k, v)
 	}
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println(worker.Url, resp.StatusCode)
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 		return &pb.Status{Success: true, Err: ""}, nil
 	} else {
@@ -34,9 +37,33 @@ func StartWorker(ctx context.Context, worker *pb.Worker) {
 	}
 	interval := time.Duration(worker.PollInterval) * time.Minute
 	for {
-		res, err := TestWorker(ctx, worker)
-		fmt.Println(res, err)
+		resp, err := TestWorker(ctx, worker)
+		if err != nil {
+			fmt.Println(err, worker.Url)
+			return
+		}
+		if err := db.InsertWorkerLog(ctx, worker.Url, resp.Success); err != nil {
+			fmt.Println(err, worker.Url)
+			return
+		}
 		time.Sleep(interval)
 
+	}
+}
+
+func OrchestrateWorkers(ctx context.Context, errChannel chan error) {
+	time.Sleep(15 * time.Second)
+	appName, err := db.GetAppname(ctx)
+	if err != nil {
+		errChannel <- err
+		return
+	}
+	workers, err := supabase.GetWorkers(appName)
+	if err != nil {
+		errChannel <- err
+		return
+	}
+	for _, worker := range workers {
+		go StartWorker(ctx, &pb.Worker{Url: worker.Url, PollInterval: int32(worker.PollInterval), Headers: worker.Headers})
 	}
 }
