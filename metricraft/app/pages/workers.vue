@@ -1,7 +1,8 @@
 <template>
 	<div>
 		<DashboardNav />
-		<Popup :message="errorMessage ?? ''" @close="errorMessage = null" />
+		<Notice :message="errorMessage ?? ''" @close="errorMessage = null" />
+		<Spinner :loading="saving" />
 		<div class="w-full px-8 py-2">
 			<div class="relative flex items-center justify-center mb-6">
 				<button @click="goBack"
@@ -118,17 +119,27 @@
 
 <script setup lang="ts">
 import { getCookie } from '@/composables/helpers'
-import { saveWorker } from '@/composables/workers'
+import { getExistingWorkers, saveWorker } from '@/composables/workers'
 import type { Worker } from '@/composables/types'
 type HeaderRow = { key: string; value: string }
 const workerUrl = ref('')
 const pollInterval = ref<number | null>(10)
 const headerRows = ref<HeaderRow[]>([])
 const errorMessage = ref<string | null>(null)
+const { data: existingWorkers, error: fetchError } = await useAsyncData<Worker[]>('existingWorkers', () => getExistingWorkers())
+const saving = ref(false)
+watch(existingWorkers, (workers) => {
+	if (workers) {
+		console.log(workers)
+	}
+}, { immediate: true })
+if (fetchError.value) {
+	errorMessage.value = 'Failed to load workers.'
+}
 const canSave = computed(() => {
 	const url = workerUrl.value.trim()
 	const interval = pollInterval.value
-	return url.length > 0 && interval !== null && interval >= 5
+	return url.length > 0 && interval !== null && interval >= 5 && interval <= 60
 })
 
 const buildHeaders = (): Record<string, string> => {
@@ -153,15 +164,26 @@ const removeHeader = (index: number) => {
 
 const save = async () => {
 	if (!canSave.value) return
+	saving.value = true
 	const worker: Worker = {
 		url: workerUrl.value,
 		pollInterval: pollInterval.value!,
 		headers: buildHeaders(),
 	}
 	try {
-		await saveWorker(worker)
-	} catch (_) {
-		errorMessage.value = "Something went wrong while saving the worker. Please try again."
+		const res: { success: boolean; err: string } = await saveWorker(worker)
+		if (!res.success) {
+			errorMessage.value = res.err
+		}
+	} catch (e: any) {
+		const message = typeof e?.data === 'string' ? e.data.trim() : ''
+		if (e?.status === 400 && message) {
+			errorMessage.value = message
+		} else {
+			errorMessage.value = "Something went wrong while saving the worker. Please try again."
+		}
+	} finally {
+		saving.value = false
 	}
 }
 

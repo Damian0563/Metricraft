@@ -70,6 +70,7 @@ func main() {
 	router.Post("/settings/retention", api.ChangeRetention)
 	router.Post("/settings/metrics", api.ChangeMetricsHandler)
 	router.Get("/dashboard/fetch", api.Navigator) //?persist=boolean
+	router.Get("/dashboard/worker/list", api.ListWorkers)
 	router.Post("/dashboard/worker/new", api.SaveWorker)
 	router.Get("/invites/pending", api.PendingInvites)
 	router.Get("/invites/team", api.TeamMembers)
