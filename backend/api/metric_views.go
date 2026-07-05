@@ -67,12 +67,8 @@ func Navigator(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	token := auth.NewToken(r.Header.Get("Session-Token"))
-	authed, err := token.Verify()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	} else if !authed {
-		w.WriteHeader(http.StatusUnauthorized)
+	authed := token.ValidateRequest(&w, false)
+	if !authed {
 		return
 	}
 	if grpcConn == nil {
@@ -91,6 +87,7 @@ func Navigator(w http.ResponseWriter, r *http.Request) {
 	}
 	convertedTimeframe, resolution := convertTimeframe(timeframe, timezone)
 	var response any
+	var err error
 	switch metric {
 	case "Traffic congestion trends":
 		response, err = client.GetTrafficCongestion(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days, Timezone: timezone})
@@ -128,7 +125,6 @@ func SaveWorker(w http.ResponseWriter, r *http.Request) {
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, true)
 	if !authed {
-		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	if grpcConn == nil {
@@ -186,7 +182,6 @@ func ListWorkers(w http.ResponseWriter, r *http.Request) {
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, true)
 	if !authed {
-		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	appName, err := token.GetAppName()

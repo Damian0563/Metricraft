@@ -12,6 +12,7 @@ import (
 	"worker/db"
 	"worker/enter"
 	"worker/rpc"
+	"worker/worker"
 )
 
 func loadEnv() {
@@ -43,6 +44,7 @@ func main() {
 	ctx := context.Background()
 	errChannel := make(chan error)
 	go db.InitDB(ctx, errChannel)
+	go worker.OrchestrateWorkers(ctx, errChannel)
 	go func(errChannel chan error) {
 		lis, err := net.Listen("tcp", ":50051")
 		if err != nil {

@@ -60,6 +60,10 @@ func InitDB(ctx context.Context, errChannel chan error) {
 		errChannel <- err
 		return
 	}
+	if _, err = conn.Exec(context.Background(), "CREATE TABLE IF NOT EXISTS worker_logs (date TIMESTAMP, url TEXT, up INTEGER)"); err != nil {
+		errChannel <- err
+		return
+	}
 	if _, err = conn.Exec(context.Background(), "CREATE INDEX IF NOT EXISTS idx_date ON logs (date)"); err != nil {
 		errChannel <- err
 		return
@@ -158,6 +162,20 @@ func GetTrafficCongestion(ctx context.Context, startDate time.Time, resolution i
 	return &pb.Congestion{Values: congestion}, nil
 }
 
+func InsertWorkerLog(ctx context.Context, url string, success bool) error {
+	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
+	if err != nil {
+		return err
+	}
+	defer conn.Close(ctx)
+	var status int = 0
+	if success {
+		status = 1
+	}
+	_, err = conn.Exec(ctx, "INSERT INTO worker_logs (date, url, up) VALUES ($1, $2, $3)", time.Now(), url, status)
+	return err
+}
+
 func GetGeographicalTraffic(ctx context.Context, startDate time.Time, timezone string) (*pb.Distribution, error) {
 	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
 	if err != nil {
@@ -231,6 +249,20 @@ func GetUptimeScore(ctx context.Context, startDate time.Time, timezone string) (
 		distribution[url] = float32(availability)
 	}
 	return &pb.FloatDistribution{Distribution: &pb.StringFloat32Map{Values: distribution}}, nil
+}
+
+func GetAppname(ctx context.Context) (string, error) {
+	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
+	if err != nil {
+		return "", err
+	}
+	defer conn.Close(ctx)
+	var appName string
+	err = conn.QueryRow(ctx, "SELECT appname FROM settings").Scan(&appName)
+	if err != nil {
+		return "", err
+	}
+	return appName, nil
 }
 
 func GetThroughput(ctx context.Context, start time.Time, resolution int32, timezone string) (*pb.Throughput, error) {

@@ -225,6 +225,11 @@ func SaveWorker(appName string, worker types.Worker, errChan chan error) {
 		errChan <- err
 		return
 	}
+	tx, err := conn.Begin(context.Background())
+	if err != nil {
+		errChan <- err
+		return
+	}
 	defer conn.Close(context.Background())
 	var workers string
 	err = conn.QueryRow(context.Background(), "SELECT workers FROM workers WHERE app_name=$1", appName).Scan(&workers)
@@ -258,8 +263,18 @@ func SaveWorker(appName string, worker types.Worker, errChan chan error) {
 		}
 	}
 	workerList = append(workerList, string(marshalledWorker))
-	_, err = conn.Exec(context.Background(), "UPDATE workers SET workers=$1 WHERE app_name=$2", workerList, appName)
-	errChan <- err
+	marshalledUpdatedWorker, err := json.Marshal(worker)
+	if err != nil {
+		errChan <- err
+		return
+	}
+	_, err = tx.Exec(context.Background(), "UPDATE workers SET workers=$1 WHERE app_name=$2", marshalledUpdatedWorker, appName)
+	if err != nil {
+		tx.Rollback(context.Background())
+		errChan <- err
+		return
+	}
+	errChan <- tx.Commit(context.Background())
 }
 
 func GetWorkers(appName string) ([]types.Worker, error) {
@@ -325,7 +340,7 @@ func CreateUser(mail string, secret string, appName string) (string, error) {
 	if _, err = conn.Exec(context.Background(), "INSERT INTO users (created_at, mail, secret, app_name, uuid,owner) VALUES ($1, $2, $3, $4, $5,$6)", time.Now(), mail, string(hashedSecret), appName, uuid, owner); err != nil {
 		return "", err
 	}
-	if _, err = conn.Exec(context.Background(), "INSERT INTO workers (created_at, app_name) VALUES ($1, $2)", appName, uuid); err != nil {
+	if _, err = conn.Exec(context.Background(), "INSERT INTO workers (app_name) VALUES ($1)", appName); err != nil {
 		return "", err
 	}
 	return uuid, nil
