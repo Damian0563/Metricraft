@@ -2,6 +2,7 @@ package api
 
 import (
 	"backend/auth"
+	"backend/db"
 	"backend/types"
 	"context"
 	"encoding/json"
@@ -34,7 +35,6 @@ func convertTimeframe(timeframe string, timezone string) (time.Time, resolutionD
 	num, err := strconv.Atoi(timeframe)
 	if err != nil {
 		num = 7
-		fmt.Println(err)
 	}
 	loc := time.UTC
 	if timezone != "" {
@@ -135,10 +135,76 @@ func SaveWorker(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	client := pb.NewMetricraftClient(grpcConn)
 	var worker types.Worker
 	if err := json.NewDecoder(r.Body).Decode(&worker); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	errChan := make(chan error)
+	appName, err := token.GetAppName()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	go db.SaveWorker(appName, worker, errChan)
+	response, err := client.CreateWorker(context.Background(), &pb.Worker{
+		Url:          worker.Url,
+		PollInterval: int32(worker.PollInterval),
+		Headers:      worker.Headers,
+	})
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if err := <-errChan; err != nil {
+		if err.Error() == "Worker limit reached." || err.Error() == "Worker already exists for this url." {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if httpresponse, err := json.Marshal(response); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	} else {
+		if response.Success {
+			w.WriteHeader(http.StatusOK)
+		} else {
+			http.Error(w, response.Err, http.StatusBadRequest)
+		}
+		w.Write(httpresponse)
+	}
+}
+
+func ListWorkers(w http.ResponseWriter, r *http.Request) {
+	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	token := auth.NewToken(r.Header.Get("Session-Token"))
+	authed := token.ValidateRequest(&w, true)
+	if !authed {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	appName, err := token.GetAppName()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	workers, err := db.GetWorkers(appName)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	httpresponse, err := json.Marshal(workers)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
+	w.Write(httpresponse)
 }

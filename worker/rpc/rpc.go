@@ -4,6 +4,7 @@ import (
 	"context"
 	pb "metricraft/proto/metricraft/proto"
 	"worker/db"
+	"worker/worker"
 )
 
 type Server struct {
@@ -28,4 +29,10 @@ func (s *Server) GetUptimeScore(ctx context.Context, req *pb.Timeframe) (*pb.Flo
 
 func (s *Server) GetThroughput(ctx context.Context, req *pb.Timeframe) (*pb.Throughput, error) {
 	return db.GetThroughput(ctx, req.Start.AsTime(), req.Resolution, req.Timezone)
+}
+
+func (s *Server) CreateWorker(ctx context.Context, req *pb.Worker) (*pb.Status, error) {
+	bgCtx := context.WithoutCancel(ctx)
+	go worker.StartWorker(bgCtx, req)
+	return worker.TestWorker(ctx, req)
 }
