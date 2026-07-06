@@ -7,6 +7,8 @@ export type Worker = {
 	headers?: Record<string, string>;
 }
 
+export type HeaderRow = { key: string; value: string }
+
 export type signPayload = {
 	mail: string;
 	secret: string;

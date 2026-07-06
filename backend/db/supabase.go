@@ -263,7 +263,7 @@ func SaveWorker(appName string, worker types.Worker, errChan chan error) {
 		}
 	}
 	workerList = append(workerList, string(marshalledWorker))
-	marshalledUpdatedWorker, err := json.Marshal(worker)
+	marshalledUpdatedWorker, err := json.Marshal(workerList)
 	if err != nil {
 		errChan <- err
 		return

@@ -24,7 +24,6 @@ func loadEnv() {
 }
 
 func main() {
-	var err error
 	loadEnv()
 	MODE := os.Getenv("MODE")
 	if os.Getenv("SECRET") == "" || os.Getenv("DATABASE_LOGS") == "" {
@@ -42,28 +41,25 @@ func main() {
 	router := http.NewServeMux()
 	router.HandleFunc("/", enter.Enter)
 	ctx := context.Background()
-	errChannel := make(chan error)
-	go db.InitDB(ctx, errChannel)
-	go worker.OrchestrateWorkers(ctx, errChannel)
-	go func(errChannel chan error) {
+	initErr := make(chan error, 1)
+	go db.InitDB(ctx, initErr)
+	if err := <-initErr; err != nil {
+		panic(err)
+	}
+	go worker.OrchestrateWorkers(ctx)
+	go func() {
 		lis, err := net.Listen("tcp", ":50051")
 		if err != nil {
-			errChannel <- err
-			return
+			panic(err)
 		}
 		grpcServer := grpc.NewServer()
 		s := &rpc.Server{}
 		pb.RegisterMetricraftServer(grpcServer, s)
 		fmt.Println("gRPC server listening on port 50051")
-		err = grpcServer.Serve(lis)
-		if err != nil {
-			errChannel <- err
+		if err := grpcServer.Serve(lis); err != nil {
+			panic(err)
 		}
-	}(errChannel)
-	err = <-errChannel
-	if err != nil {
-		panic(err)
-	}
+	}()
 	fmt.Println("Listening on port 8081")
 	if err := http.ListenAndServe(":8081", router); err != nil {
 		panic(err)

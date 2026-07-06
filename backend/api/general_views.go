@@ -47,7 +47,6 @@ func ToggleRealtime(w http.ResponseWriter, r *http.Request) {
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, true)
 	if !authed {
-		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	type realtimePayload struct {
@@ -73,7 +72,6 @@ func ChangeMetricsHandler(w http.ResponseWriter, r *http.Request) {
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, true)
 	if !authed {
-		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	var payload []types.Metric
@@ -94,18 +92,9 @@ func ChangeRetention(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	token := auth.NewToken(r.Header.Get("Session-Token"))
-	authed, err := token.Verify()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+	authed := token.ValidateRequest(&w, false)
+	if !authed {
 		return
-	} else if !authed {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	} else {
-		if err = token.UpdateToken(); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
 	}
 	type retentionPayload struct {
 		Retention int `json:"retention"`
@@ -115,7 +104,7 @@ func ChangeRetention(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if err = ChangeLogsRetention(payload.Retention); err != nil {
+	if err := ChangeLogsRetention(payload.Retention); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -130,7 +119,6 @@ func TeamMembers(w http.ResponseWriter, r *http.Request) {
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, false)
 	if !authed {
-		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	appName, err := token.GetAppName()
@@ -163,7 +151,6 @@ func UploadUsersFromCSV(w http.ResponseWriter, r *http.Request) {
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, true)
 	if !authed {
-		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	appName, err := token.GetAppName()
@@ -219,7 +206,6 @@ func SendInvites(w http.ResponseWriter, r *http.Request) {
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, true)
 	if !authed {
-		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	appName, err := token.GetAppName()
@@ -264,7 +250,6 @@ func HandleInvite(w http.ResponseWriter, r *http.Request) {
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, false)
 	if !authed {
-		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	appName, err := token.GetAppName()
@@ -325,7 +310,6 @@ func DashboardInit(w http.ResponseWriter, r *http.Request) {
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, false)
 	if !authed {
-		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	var Response = types.DashboardInitPayload{}
