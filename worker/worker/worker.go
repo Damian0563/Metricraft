@@ -18,11 +18,12 @@ func TestWorker(ctx context.Context, worker *pb.Worker) (*pb.Status, error) {
 	for k, v := range worker.Headers {
 		req.Header.Set(k, v)
 	}
-	client := &http.Client{}
+	client := &http.Client{Timeout: time.Second * 10}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	fmt.Println(worker.Url, resp.StatusCode)
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 		return &pb.Status{Success: true, Err: ""}, nil
@@ -51,17 +52,15 @@ func StartWorker(ctx context.Context, worker *pb.Worker) {
 	}
 }
 
-func OrchestrateWorkers(ctx context.Context, errChannel chan error) {
+func OrchestrateWorkers(ctx context.Context) {
 	time.Sleep(15 * time.Second)
 	appName, err := db.GetAppname(ctx)
 	if err != nil {
-		errChannel <- err
-		return
+		panic(err)
 	}
 	workers, err := supabase.GetWorkers(appName)
 	if err != nil {
-		errChannel <- err
-		return
+		panic(err)
 	}
 	for _, worker := range workers {
 		go StartWorker(ctx, &pb.Worker{Url: worker.Url, PollInterval: int32(worker.PollInterval), Headers: worker.Headers})

@@ -3,6 +3,8 @@
 		<DashboardNav />
 		<Notice :message="errorMessage ?? ''" @close="errorMessage = null" />
 		<Spinner :loading="saving" />
+		<WorkerEditor :open="showWorkerEditor" :worker="editingWorker" @close="closeWorkerEditor"
+			@save="handleWorkerUpdate" />
 		<div class="w-full px-8 py-2">
 			<div class="relative flex items-center justify-center mb-6">
 				<button @click="goBack"
@@ -14,9 +16,9 @@
 				</button>
 				<h1 class="text-3xl font-bold text-center" style="color: #00F376;">Metricraft Workers</h1>
 			</div>
-			<div class="max-w-7xl mx-auto grid gap-8 lg:grid-rows-3">
-				<div class="lg:row-span-1">
-					<div class="bg-white rounded-xl shadow-xl p-8 border border-gray-100 h-full">
+			<div class="max-w-8xl mx-auto grid gap-4 lg:grid-cols-[minmax(0,1fr)_40rem] lg:items-start">
+				<div class="flex flex-col gap-4 min-w-0">
+					<div class="bg-white rounded-xl shadow-xl p-8 border border-gray-100">
 						<h2 class="text-xl font-semibold text-gray-800 mb-4">What are workers?</h2>
 						<p class="text-sm text-gray-600 leading-relaxed mb-4">
 							Workers are lightweight reverse proxies that sit in front of your application and capture HTTP
@@ -32,84 +34,52 @@
 							current even when traffic is low.
 						</p>
 					</div>
-				</div>
-				<div class="lg:row-span-2">
 					<div class="bg-white rounded-xl shadow-xl p-8 border border-gray-100">
 						<h2 class="text-xl font-semibold text-gray-800 mb-2">Configure worker</h2>
 						<p class="text-sm text-gray-500 mb-6">
 							Enter the upstream URL the worker should monitor and how frequently it should check the endpoint.
 						</p>
-						<div class="space-y-6">
-							<div>
-								<label for="worker-url" class="block text-sm font-medium text-gray-700 mb-2">Upstream URL</label>
-								<input id="worker-url" v-model="workerUrl" type="url" placeholder="https://api.example.com/health"
-									class="w-full px-4 py-2 rounded-lg border border-gray-200 text-gray-800 focus:outline-none focus:border-[#00F376] transition-colors" />
-								<p class="mt-2 text-xs text-gray-500">
-									The full address of the service the worker proxies traffic to and records metrics for.
-								</p>
-							</div>
-
-							<div class="flex flex-col gap-8 xl:flex-row xl:justify-between">
-								<div class="shrink-0">
-									<label for="poll-interval" class="block text-sm font-medium text-gray-700 mb-2">Poll interval
-										(minutes)</label>
-									<input id="poll-interval" v-model.number="pollInterval" type="number" min="5" step="1"
-										placeholder="10" max="60"
-										class="w-full max-w-xs px-4 py-2 rounded-lg border border-gray-200 text-gray-800 focus:outline-none focus:border-[#00F376] transition-colors" />
-									<p class="mt-2 text-xs text-gray-500 max-w-xs">
-										How often the worker sends a health check request to keep metrics fresh between real user traffic.
-									</p>
-								</div>
-								<div class="flex-1 min-w-0">
-									<div class="flex items-center justify-between mb-2">
-										<label class="block text-sm font-medium text-gray-700">Headers</label>
-										<button type="button" @click="addHeader"
-											class="text-sm font-medium text-[#00F376] hover:text-[#00D96A] transition-colors cursor-pointer">
-											+ Add header
-										</button>
-									</div>
-
-									<div v-if="headerRows.length === 0"
-										class="rounded-lg border border-dashed border-gray-200 px-4 py-6 text-center">
-										<p class="text-sm text-gray-500">No custom headers configured.</p>
-										<button type="button" @click="addHeader"
-											class="mt-2 text-sm font-medium text-[#00F376] hover:text-[#00D96A] transition-colors cursor-pointer">
-											Add your first header
-										</button>
-									</div>
-
-									<div v-else class="space-y-2 max-h-48 overflow-y-auto pr-1">
-										<div v-for="(header, index) in headerRows" :key="index" class="flex items-center gap-2">
-											<input v-model="header.key" type="text" placeholder="Authorization"
-												class="w-2/5 min-w-0 px-3 py-2 rounded-lg border border-gray-200 text-gray-800 text-sm focus:outline-none focus:border-[#00F376] transition-colors" />
-											<input v-model="header.value" type="text" placeholder="Bearer token…"
-												class="flex-1 min-w-0 px-3 py-2 rounded-lg border border-gray-200 text-gray-800 text-sm focus:outline-none focus:border-[#00F376] transition-colors" />
-											<button type="button" @click="removeHeader(index)"
-												class="shrink-0 p-2 text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
-												aria-label="Remove header">
-												<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-													<path fill-rule="evenodd"
-														d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-														clip-rule="evenodd" />
-												</svg>
-											</button>
-										</div>
-									</div>
-
-									<p class="mt-2 text-xs text-gray-500">
-										Optional HTTP headers included on each poll request, for example auth tokens or custom
-										<code class="text-gray-600">Accept</code> values.
-									</p>
-								</div>
+						<WorkerForm ref="newWorkerFormRef" :saving="saving" show-helper-text save-label="Save worker"
+							@save="handleNewWorkerSave" />
+					</div>
+				</div>
+				<div class="bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden lg:sticky lg:top-8 h-full">
+					<div class="px-6 py-5 border-b border-gray-100">
+						<h2 class="text-xl font-semibold text-gray-800">Configured workers</h2>
+						<p class="text-sm text-gray-500 mt-1">
+							{{ workersList.length }} worker{{ workersList.length === 1 ? '' : 's' }} monitoring your endpoints.
+						</p>
+					</div>
+					<div v-if="workersList.length > 0" class="max-h-[calc(100vh-12rem)] overflow-y-auto">
+						<div v-for="worker in workersList" :key="worker.url"
+							class="flex items-center gap-3 px-6 py-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors">
+							<p class="min-w-0 flex-1 font-medium text-gray-900 text-sm break-all leading-snug">{{ worker.url }}</p>
+							<div class="flex shrink-0 items-center gap-2">
+								<button type="button" @click="openWorkerEditor(worker)"
+									class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg border border-[#00F376] text-[#00B35C] bg-[#00F376]/10 hover:bg-[#00F376]/20 transition-colors cursor-pointer">
+									<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+										<path
+											d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+									</svg>
+									Edit worker
+								</button>
+								<button type="button" @click="deleteWorker(worker.url)"
+									class="px-4 py-2 text-sm font-semibold rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors cursor-pointer">
+									Delete
+								</button>
 							</div>
 						</div>
-
-						<div class="mt-10 pt-6 border-t border-gray-100 flex justify-end">
-							<button @click="save" :disabled="!canSave"
-								class="px-8 py-3 bg-[#00F376] text-gray-900 font-bold rounded-lg hover:bg-[#00D96A] transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider text-sm cursor-pointer">
-								Save worker
-							</button>
+					</div>
+					<div v-else class="px-6 py-10 text-center">
+						<div class="mx-auto mb-3 h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
+							<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+								<path fill-rule="evenodd"
+									d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"
+									clip-rule="evenodd" />
+							</svg>
 						</div>
+						<p class="text-sm text-gray-500">No workers configured yet.</p>
+						<p class="text-xs text-gray-400 mt-1">Saved workers will appear here.</p>
 					</div>
 				</div>
 			</div>
@@ -118,70 +88,96 @@
 </template>
 
 <script setup lang="ts">
-import { getCookie } from '@/composables/helpers'
-import { getExistingWorkers, saveWorker } from '@/composables/workers'
+import { getCookie, parseApiError } from '@/composables/helpers'
+import { getExistingWorkers, saveWorker, updateWorker, deleteWorkerEntry } from '@/composables/workers'
 import type { Worker } from '@/composables/types'
-type HeaderRow = { key: string; value: string }
-const workerUrl = ref('')
-const pollInterval = ref<number | null>(10)
-const headerRows = ref<HeaderRow[]>([])
+
 const errorMessage = ref<string | null>(null)
 const { data: existingWorkers, error: fetchError } = await useAsyncData<Worker[]>('existingWorkers', () => getExistingWorkers())
+const workersList = ref<Worker[]>([])
+const showWorkerEditor = ref(false)
+const editingWorker = ref<Worker | null>(null)
+const originalWorkerUrl = ref<string | null>(null)
 const saving = ref(false)
+const newWorkerFormRef = ref<{ resetForm: () => void } | null>(null)
 watch(existingWorkers, (workers) => {
 	if (workers) {
-		console.log(workers)
+		workersList.value = workers
 	}
 }, { immediate: true })
+
 if (fetchError.value) {
 	errorMessage.value = 'Failed to load workers.'
 }
-const canSave = computed(() => {
-	const url = workerUrl.value.trim()
-	const interval = pollInterval.value
-	return url.length > 0 && interval !== null && interval >= 5 && interval <= 60
-})
 
-const buildHeaders = (): Record<string, string> => {
-	const headers: Record<string, string> = {}
-	for (const { key, value } of headerRows.value) {
-		const trimmedKey = key.trim()
-		const trimmedValue = value.trim()
-		if (trimmedKey && trimmedValue) {
-			headers[trimmedKey] = trimmedValue
-		}
-	}
-	return headers
+const openWorkerEditor = (worker: Worker) => {
+	editingWorker.value = worker
+	originalWorkerUrl.value = worker.url
+	showWorkerEditor.value = true
 }
 
-const addHeader = () => {
-	headerRows.value.push({ key: '', value: '' })
+const closeWorkerEditor = () => {
+	showWorkerEditor.value = false
+	editingWorker.value = null
+	originalWorkerUrl.value = null
 }
 
-const removeHeader = (index: number) => {
-	headerRows.value.splice(index, 1)
-}
-
-const save = async () => {
-	if (!canSave.value) return
+const handleWorkerUpdate = async (updatedWorker: Worker) => {
+	const originalUrl = originalWorkerUrl.value
+	if (!originalUrl) return
+	const index = workersList.value.findIndex((worker) => worker.url === originalUrl)
+	if (index === -1) return
+	workersList.value = [
+		...workersList.value.slice(0, index),
+		updatedWorker,
+		...workersList.value.slice(index + 1),
+	]
+	closeWorkerEditor()
 	saving.value = true
-	const worker: Worker = {
-		url: workerUrl.value,
-		pollInterval: pollInterval.value!,
-		headers: buildHeaders(),
+	try {
+		const res: { success: boolean; err: string } = await updateWorker(updatedWorker)
+		if (!res.success) {
+			errorMessage.value = res.err
+		}
+	} catch (e: unknown) {
+		errorMessage.value = parseApiError(e, 'Something went wrong while saving the worker. Please try again.')
+	} finally {
+		saving.value = false
 	}
+}
+
+const handleNewWorkerSave = async (worker: Worker) => {
+	saving.value = true
 	try {
 		const res: { success: boolean; err: string } = await saveWorker(worker)
 		if (!res.success) {
 			errorMessage.value = res.err
+			return
 		}
-	} catch (e: any) {
-		const message = typeof e?.data === 'string' ? e.data.trim() : ''
-		if (e?.status === 400 && message) {
-			errorMessage.value = message
-		} else {
-			errorMessage.value = "Something went wrong while saving the worker. Please try again."
+		workersList.value.push(worker)
+		newWorkerFormRef.value?.resetForm()
+	} catch (e: unknown) {
+		errorMessage.value = parseApiError(e, 'Something went wrong while saving the worker. Please try again.')
+	} finally {
+		saving.value = false
+	}
+}
+
+const deleteWorker = async (url: string) => {
+	closeWorkerEditor()
+	saving.value = true
+	try {
+		const res: { success: boolean; err: string } = await deleteWorkerEntry(url)
+		if (!res.success) {
+			errorMessage.value = res.err
+			return
 		}
+		workersList.value = workersList.value.filter((worker) => worker.url !== url)
+		if (originalWorkerUrl.value === url) {
+			closeWorkerEditor()
+		}
+	} catch (e: unknown) {
+		errorMessage.value = parseApiError(e, 'Something went wrong while deleting the worker. Please try again.')
 	} finally {
 		saving.value = false
 	}

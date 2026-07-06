@@ -51,3 +51,30 @@ export const evaluatePasswordStrength = (password: string): number => {
 export const invalidateCookie = (): void => {
 	document.cookie = "session-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 }
+
+export const parseApiError = (error: unknown, fallback: string): string => {
+	if (!error || typeof error !== 'object') return fallback
+
+	const { data } = error as { data?: unknown }
+	if (data && typeof data === 'object') {
+		const record = data as Record<string, unknown>
+		if (typeof record.err === 'string' && record.err.trim()) return record.err.trim()
+	}
+
+	if (typeof data === 'string') {
+		const trimmed = data.trim()
+		const jsonStart = trimmed.indexOf('{')
+		if (jsonStart !== -1) {
+			try {
+				const parsed = JSON.parse(trimmed.slice(jsonStart)) as Record<string, unknown>
+				if (typeof parsed.err === 'string' && parsed.err.trim()) return parsed.err.trim()
+			} catch {
+				// fall through to plain-text handling
+			}
+		}
+		const firstLine = trimmed.split('\n').map((line) => line.trim()).find(Boolean)
+		if (firstLine && !firstLine.startsWith('{')) return firstLine
+	}
+
+	return fallback
+}
