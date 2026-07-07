@@ -74,7 +74,7 @@ export const saveWorker = async (worker: Worker): Promise<{ success: boolean; er
 }
 
 export const updateWorker = async (worker: Worker): Promise<{ success: boolean; err: string }> => {
-	return await useApi()(`/dashboard/worker/update/${encodeURIComponent(worker.url)}`, {
+	return await useApi()(`/dashboard/worker/update`, {
 		method: "POST",
 		body: worker,
 	})

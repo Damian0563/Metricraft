@@ -48,7 +48,7 @@ func main() {
 	}
 	go worker.OrchestrateWorkers(ctx)
 	go func() {
-		lis, err := net.Listen("tcp", ":50051")
+		lis, err := net.Listen("tcp", os.Getenv("grpc"))
 		if err != nil {
 			panic(err)
 		}

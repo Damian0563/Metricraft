@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/go-chi/chi/v5"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	pb "metricraft/proto/metricraft/proto"
@@ -202,4 +203,56 @@ func ListWorkers(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(httpresponse)
+}
+
+func DeleteWorker(w http.ResponseWriter, r *http.Request) {
+	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	token := auth.NewToken(r.Header.Get("Session-Token"))
+	authed := token.ValidateRequest(&w, true)
+	if !authed {
+		return
+	}
+	url := chi.URLParam(r, "url")
+	appName, err := token.GetAppName()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if err := db.DeleteWorker(appName, url); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	// TODO: trigger worker orchestration
+	w.WriteHeader(http.StatusOK)
+}
+
+func UpdateWorker(w http.ResponseWriter, r *http.Request) {
+	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	token := auth.NewToken(r.Header.Get("Session-Token"))
+	authed := token.ValidateRequest(&w, true)
+	if !authed {
+		return
+	}
+	var worker types.Worker
+	if err := json.NewDecoder(r.Body).Decode(&worker); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	appName, err := token.GetAppName()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if err := db.UpdateWorker(appName, worker); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	//TODO: trigger worker orchestration
+	w.WriteHeader(http.StatusOK)
 }
