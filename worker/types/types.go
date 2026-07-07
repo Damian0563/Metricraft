@@ -1,6 +1,10 @@
 package types
 
-import "time"
+import (
+	"context"
+	"sync"
+	"time"
+)
 
 type CountryOrigin struct {
 	Country string `json:"country"`
@@ -23,4 +27,9 @@ type Payload struct {
 type ResponseMetrics struct {
 	StatusCode int
 	Duration   int64
+}
+
+type Orchestrator struct {
+	Mutex    sync.Mutex
+	Registry map[string]context.CancelFunc
 }
