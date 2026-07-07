@@ -127,12 +127,6 @@ const handleWorkerUpdate = async (updatedWorker: Worker) => {
 	if (!originalUrl) return
 	const index = workersList.value.findIndex((worker) => worker.url === originalUrl)
 	if (index === -1) return
-	workersList.value = [
-		...workersList.value.slice(0, index),
-		updatedWorker,
-		...workersList.value.slice(index + 1),
-	]
-	closeWorkerEditor()
 	saving.value = true
 	try {
 		const res: { success: boolean; err: string } = await updateWorker(updatedWorker)
@@ -144,6 +138,13 @@ const handleWorkerUpdate = async (updatedWorker: Worker) => {
 	} finally {
 		saving.value = false
 	}
+	workersList.value = [
+		...workersList.value.slice(0, index),
+		updatedWorker,
+		...workersList.value.slice(index + 1),
+	]
+	closeWorkerEditor()
+
 }
 
 const handleNewWorkerSave = async (worker: Worker) => {

@@ -72,6 +72,8 @@ func main() {
 	router.Get("/dashboard/fetch", api.Navigator) //?persist=boolean
 	router.Get("/dashboard/worker/list", api.ListWorkers)
 	router.Post("/dashboard/worker/new", api.SaveWorker)
+	router.Patch("/dashboard/worker/update", api.UpdateWorker)
+	router.Delete("/dashboard/worker/delete/{url}", api.DeleteWorker)
 	router.Get("/invites/pending", api.PendingInvites)
 	router.Get("/invites/team", api.TeamMembers)
 	router.Post("/invites/handle", api.HandleInvite) //?user=string&action=boolean
