@@ -8,12 +8,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/go-chi/chi/v5"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	pb "metricraft/proto/metricraft/proto"
 	"net/http"
-	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -217,8 +215,11 @@ func DeleteWorker(w http.ResponseWriter, r *http.Request) {
 	if !authed {
 		return
 	}
-	workerURL, err := url.QueryUnescape(chi.URLParam(r, "url"))
-	if err != nil {
+	type dummyWorker struct {
+		Url string `json:"url"`
+	}
+	var dummy dummyWorker
+	if err := json.NewDecoder(r.Body).Decode(&dummy); err != nil {
 		http.Error(w, "Invalid worker URL", http.StatusBadRequest)
 		return
 	}
@@ -227,8 +228,9 @@ func DeleteWorker(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	if err := db.DeleteWorker(appName, workerURL); err != nil {
-		if errors.Is(err, errors.New("worker not found")) {
+	if err := db.DeleteWorker(appName, dummy.Url); err != nil {
+		notFound := errors.New("worker not found")
+		if errors.Is(err, notFound) {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
@@ -240,7 +242,7 @@ func DeleteWorker(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	client := pb.NewMetricraftClient(grpcConn)
-	response, err := client.DeleteWorker(context.Background(), &pb.WorkerUrl{Url: workerURL})
+	response, err := client.DeleteWorker(r.Context(), &pb.WorkerUrl{Url: dummy.Url})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -283,7 +285,7 @@ func UpdateWorker(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	client := pb.NewMetricraftClient(grpcConn)
-	response, err := client.UpdateWorker(context.Background(), &pb.Worker{
+	response, err := client.UpdateWorker(r.Context(), &pb.Worker{
 		Url:          worker.Url,
 		PollInterval: int32(worker.PollInterval),
 		Headers:      worker.Headers,

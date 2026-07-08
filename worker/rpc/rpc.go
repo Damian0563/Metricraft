@@ -41,6 +41,9 @@ func (s *Server) UpdateWorker(ctx context.Context, req *pb.Worker) (*pb.Status, 
 }
 
 func (s *Server) DeleteWorker(ctx context.Context, req *pb.WorkerUrl) (*pb.Status, error) {
+	if err := db.DeleteWorkerlogs(ctx, req.Url); err != nil {
+		return nil, err
+	}
 	worker.CancelWorker(req.Url)
 	return &pb.Status{Success: true}, nil
 }

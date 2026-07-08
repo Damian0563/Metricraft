@@ -168,7 +168,7 @@ func InsertWorkerLog(ctx context.Context, url string, success bool) error {
 		return err
 	}
 	defer conn.Close(ctx)
-	var status int = 0
+	status := 0
 	if success {
 		status = 1
 	}
@@ -335,4 +335,23 @@ func GetThroughput(ctx context.Context, start time.Time, resolution int32, timez
 		return nil, err
 	}
 	return &pb.Throughput{Values: throughput, ComputedThroughput: computedThroughput, UniqUsers: uniqUsers}, nil
+}
+
+func DeleteWorkerlogs(ctx context.Context, url string) error {
+	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
+	if err != nil {
+		return err
+	}
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Close(ctx)
+	_, err = tx.Exec(ctx, "DELETE FROM worker_logs WHERE url=$1", url)
+	if err != nil {
+		tx.Rollback(ctx)
+		return err
+	}
+	err = tx.Commit(ctx)
+	return err
 }

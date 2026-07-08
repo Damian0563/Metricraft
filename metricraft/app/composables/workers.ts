@@ -81,8 +81,9 @@ export const updateWorker = async (worker: Worker): Promise<{ success: boolean; 
 }
 
 export const deleteWorkerEntry = async (workerUrl: string): Promise<{ success: boolean; err: string }> => {
-	return await useApi()(`/dashboard/worker/delete/${encodeURIComponent(workerUrl)}`, {
+	return await useApi()(`/dashboard/worker/delete`, {
 		method: "DELETE",
+		body: { url: workerUrl },
 	})
 }
 
