@@ -134,6 +134,7 @@ const handleWorkerUpdate = async (updatedWorker: Worker) => {
 		const res: { success: boolean; err: string } = await updateWorker(updatedWorker)
 		if (!res.success) {
 			errorMessage.value = res.err
+			return
 		}
 		workersList.value = [
 			...workersList.value.slice(0, index),
@@ -141,9 +142,7 @@ const handleWorkerUpdate = async (updatedWorker: Worker) => {
 			...workersList.value.slice(index + 1),
 		]
 		closeWorkerEditor()
-		if (res.success) {
-			cleanMessage.value = 'Worker updated successfully.'
-		}
+		cleanMessage.value = 'Worker updated successfully.'
 	} catch (e: unknown) {
 		errorMessage.value = parseApiError(e, 'Something went wrong while saving the worker. Please try again.')
 	} finally {

@@ -102,14 +102,6 @@ func OrchestrateWorkers(ctx context.Context) {
 		panic(err)
 	}
 	var wg sync.WaitGroup
-	defer func() {
-		Orchestrator.Mutex.Lock()
-		for _, cancel := range Orchestrator.Registry {
-			cancel()
-		}
-		Orchestrator.Registry = make(map[string]context.CancelFunc)
-		Orchestrator.Mutex.Unlock()
-	}()
 	for _, w := range workers {
 		workerCtx, cancel := context.WithCancel(ctx)
 		Orchestrator.Mutex.Lock()
