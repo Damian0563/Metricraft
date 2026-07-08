@@ -6,12 +6,14 @@ import (
 	"backend/types"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	pb "metricraft/proto/metricraft/proto"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -215,18 +217,41 @@ func DeleteWorker(w http.ResponseWriter, r *http.Request) {
 	if !authed {
 		return
 	}
-	url := chi.URLParam(r, "url")
+	workerURL, err := url.QueryUnescape(chi.URLParam(r, "url"))
+	if err != nil {
+		http.Error(w, "Invalid worker URL", http.StatusBadRequest)
+		return
+	}
 	appName, err := token.GetAppName()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	if err := db.DeleteWorker(appName, url); err != nil {
+	if err := db.DeleteWorker(appName, workerURL); err != nil {
+		if errors.Is(err, errors.New("worker not found")) {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	// TODO: trigger worker orchestration
-	w.WriteHeader(http.StatusOK)
+	if grpcConn == nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	client := pb.NewMetricraftClient(grpcConn)
+	response, err := client.DeleteWorker(context.Background(), &pb.WorkerUrl{Url: workerURL})
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	httpresponse, err := json.Marshal(response)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(httpresponse)
 }
 
 func UpdateWorker(w http.ResponseWriter, r *http.Request) {
@@ -253,6 +278,29 @@ func UpdateWorker(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	//TODO: trigger worker orchestration
-	w.WriteHeader(http.StatusOK)
+	if grpcConn == nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	client := pb.NewMetricraftClient(grpcConn)
+	response, err := client.UpdateWorker(context.Background(), &pb.Worker{
+		Url:          worker.Url,
+		PollInterval: int32(worker.PollInterval),
+		Headers:      worker.Headers,
+	})
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	httpresponse, err := json.Marshal(response)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Success {
+		w.Write(httpresponse)
+	} else {
+		http.Error(w, response.Err, http.StatusBadRequest)
+	}
 }

@@ -31,8 +31,25 @@ func (s *Server) GetThroughput(ctx context.Context, req *pb.Timeframe) (*pb.Thro
 	return db.GetThroughput(ctx, req.Start.AsTime(), req.Resolution, req.Timezone)
 }
 
+func (s *Server) UpdateWorker(ctx context.Context, req *pb.Worker) (*pb.Status, error) {
+	status, err := worker.TestWorker(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	worker.RegisterAndStartWorker(req)
+	return status, nil
+}
+
+func (s *Server) DeleteWorker(ctx context.Context, req *pb.WorkerUrl) (*pb.Status, error) {
+	worker.CancelWorker(req.Url)
+	return &pb.Status{Success: true}, nil
+}
+
 func (s *Server) CreateWorker(ctx context.Context, req *pb.Worker) (*pb.Status, error) {
-	bgCtx := context.WithoutCancel(ctx)
-	go worker.StartWorker(bgCtx, req)
-	return worker.TestWorker(ctx, req)
+	status, err := worker.TestWorker(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	worker.RegisterAndStartWorker(req)
+	return status, nil
 }

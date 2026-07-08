@@ -11,12 +11,18 @@ service Metricraft {
   rpc getUptimeScore(timeframe) returns (floatDistribution);
   rpc getThroughput(timeframe) returns (throughput);
   rpc createWorker(worker) returns (status);
+  rpc deleteWorker(workerUrl) returns (status);
+  rpc updateWorker(worker) returns (status);
 }
 
 message timeframe{
   google.protobuf.Timestamp start = 1;
   int32 resolution = 2;
   string timezone = 3;
+}
+
+message workerUrl{
+  string url = 1;
 }
 
 message worker{
