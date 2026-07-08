@@ -2,6 +2,7 @@
 	<div>
 		<DashboardNav />
 		<Notice :message="errorMessage ?? ''" @close="errorMessage = null" />
+		<Popup :message="cleanMessage" @close="cleanMessage = ''" />
 		<Spinner :loading="saving" />
 		<WorkerEditor :open="showWorkerEditor" :worker="editingWorker" @close="closeWorkerEditor"
 			@save="handleWorkerUpdate" />
@@ -93,6 +94,7 @@ import { getExistingWorkers, saveWorker, updateWorker, deleteWorkerEntry } from 
 import type { Worker } from '@/composables/types'
 
 const errorMessage = ref<string | null>(null)
+const cleanMessage = ref<string>('')
 const { data: existingWorkers, error: fetchError } = await useAsyncData<Worker[]>('existingWorkers', () => getExistingWorkers())
 const workersList = ref<Worker[]>([])
 const showWorkerEditor = ref(false)
@@ -133,17 +135,20 @@ const handleWorkerUpdate = async (updatedWorker: Worker) => {
 		if (!res.success) {
 			errorMessage.value = res.err
 		}
+		workersList.value = [
+			...workersList.value.slice(0, index),
+			updatedWorker,
+			...workersList.value.slice(index + 1),
+		]
+		closeWorkerEditor()
+		if (res.success) {
+			cleanMessage.value = 'Worker updated successfully.'
+		}
 	} catch (e: unknown) {
 		errorMessage.value = parseApiError(e, 'Something went wrong while saving the worker. Please try again.')
 	} finally {
 		saving.value = false
 	}
-	workersList.value = [
-		...workersList.value.slice(0, index),
-		updatedWorker,
-		...workersList.value.slice(index + 1),
-	]
-	closeWorkerEditor()
 
 }
 
@@ -177,6 +182,7 @@ const deleteWorker = async (url: string) => {
 		if (originalWorkerUrl.value === url) {
 			closeWorkerEditor()
 		}
+		cleanMessage.value = 'Worker deleted successfully.'
 	} catch (e: unknown) {
 		errorMessage.value = parseApiError(e, 'Something went wrong while deleting the worker. Please try again.')
 	} finally {

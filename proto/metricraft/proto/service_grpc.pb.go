@@ -25,6 +25,8 @@ const (
 	Metricraft_GetUptimeScore_FullMethodName         = "/metricraft.Metricraft/getUptimeScore"
 	Metricraft_GetThroughput_FullMethodName          = "/metricraft.Metricraft/getThroughput"
 	Metricraft_CreateWorker_FullMethodName           = "/metricraft.Metricraft/createWorker"
+	Metricraft_DeleteWorker_FullMethodName           = "/metricraft.Metricraft/deleteWorker"
+	Metricraft_UpdateWorker_FullMethodName           = "/metricraft.Metricraft/updateWorker"
 )
 
 // MetricraftClient is the client API for Metricraft service.
@@ -37,6 +39,8 @@ type MetricraftClient interface {
 	GetUptimeScore(ctx context.Context, in *Timeframe, opts ...grpc.CallOption) (*FloatDistribution, error)
 	GetThroughput(ctx context.Context, in *Timeframe, opts ...grpc.CallOption) (*Throughput, error)
 	CreateWorker(ctx context.Context, in *Worker, opts ...grpc.CallOption) (*Status, error)
+	DeleteWorker(ctx context.Context, in *WorkerUrl, opts ...grpc.CallOption) (*Status, error)
+	UpdateWorker(ctx context.Context, in *Worker, opts ...grpc.CallOption) (*Status, error)
 }
 
 type metricraftClient struct {
@@ -107,6 +111,26 @@ func (c *metricraftClient) CreateWorker(ctx context.Context, in *Worker, opts ..
 	return out, nil
 }
 
+func (c *metricraftClient) DeleteWorker(ctx context.Context, in *WorkerUrl, opts ...grpc.CallOption) (*Status, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Status)
+	err := c.cc.Invoke(ctx, Metricraft_DeleteWorker_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *metricraftClient) UpdateWorker(ctx context.Context, in *Worker, opts ...grpc.CallOption) (*Status, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Status)
+	err := c.cc.Invoke(ctx, Metricraft_UpdateWorker_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MetricraftServer is the server API for Metricraft service.
 // All implementations must embed UnimplementedMetricraftServer
 // for forward compatibility.
@@ -117,6 +141,8 @@ type MetricraftServer interface {
 	GetUptimeScore(context.Context, *Timeframe) (*FloatDistribution, error)
 	GetThroughput(context.Context, *Timeframe) (*Throughput, error)
 	CreateWorker(context.Context, *Worker) (*Status, error)
+	DeleteWorker(context.Context, *WorkerUrl) (*Status, error)
+	UpdateWorker(context.Context, *Worker) (*Status, error)
 	mustEmbedUnimplementedMetricraftServer()
 }
 
@@ -144,6 +170,12 @@ func (UnimplementedMetricraftServer) GetThroughput(context.Context, *Timeframe) 
 }
 func (UnimplementedMetricraftServer) CreateWorker(context.Context, *Worker) (*Status, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateWorker not implemented")
+}
+func (UnimplementedMetricraftServer) DeleteWorker(context.Context, *WorkerUrl) (*Status, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteWorker not implemented")
+}
+func (UnimplementedMetricraftServer) UpdateWorker(context.Context, *Worker) (*Status, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateWorker not implemented")
 }
 func (UnimplementedMetricraftServer) mustEmbedUnimplementedMetricraftServer() {}
 func (UnimplementedMetricraftServer) testEmbeddedByValue()                    {}
@@ -274,6 +306,42 @@ func _Metricraft_CreateWorker_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Metricraft_DeleteWorker_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WorkerUrl)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetricraftServer).DeleteWorker(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Metricraft_DeleteWorker_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetricraftServer).DeleteWorker(ctx, req.(*WorkerUrl))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Metricraft_UpdateWorker_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Worker)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetricraftServer).UpdateWorker(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Metricraft_UpdateWorker_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetricraftServer).UpdateWorker(ctx, req.(*Worker))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Metricraft_ServiceDesc is the grpc.ServiceDesc for Metricraft service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -304,6 +372,14 @@ var Metricraft_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "createWorker",
 			Handler:    _Metricraft_CreateWorker_Handler,
+		},
+		{
+			MethodName: "deleteWorker",
+			Handler:    _Metricraft_DeleteWorker_Handler,
+		},
+		{
+			MethodName: "updateWorker",
+			Handler:    _Metricraft_UpdateWorker_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

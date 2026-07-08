@@ -2,7 +2,6 @@ package worker
 
 import (
 	supabase "backend/db"
-	btype "backend/types"
 	"context"
 	"fmt"
 	pb "metricraft/proto/metricraft/proto"
@@ -40,7 +39,10 @@ func TestWorker(ctx context.Context, worker *pb.Worker) (*pb.Status, error) {
 	}
 }
 
-func StartWorker(ctx context.Context, worker *pb.Worker) {
+func StartWorker(ctx context.Context, worker *pb.Worker, wg *sync.WaitGroup) {
+	if wg != nil {
+		defer wg.Done()
+	}
 	if _, err := TestWorker(ctx, worker); err != nil {
 		return
 	}
@@ -54,7 +56,7 @@ func StartWorker(ctx context.Context, worker *pb.Worker) {
 		select {
 		case <-ctx.Done():
 			return
-		default:
+		case <-time.After(interval):
 			resp, err := TestWorker(ctx, worker)
 			if err != nil {
 				fmt.Println(err, worker.Url)
@@ -64,29 +66,30 @@ func StartWorker(ctx context.Context, worker *pb.Worker) {
 				fmt.Println(err, worker.Url)
 				return
 			}
-			time.Sleep(interval)
 		}
-
 	}
 }
 
-func UpdateWorker(worker btype.Worker) {
+func registerAndStart(worker *pb.Worker) {
 	CancelWorker(worker.Url)
 	Orchestrator.Mutex.Lock()
-	context, cancel := context.WithCancel(context.Background())
+	workerCtx, cancel := context.WithCancel(context.Background())
 	Orchestrator.Registry[worker.Url] = cancel
 	Orchestrator.Mutex.Unlock()
-	go StartWorker(context, &pb.Worker{Url: worker.Url, PollInterval: int32(worker.PollInterval), Headers: worker.Headers})
+	go StartWorker(workerCtx, worker, nil)
+}
+
+func RegisterAndStartWorker(worker *pb.Worker) {
+	registerAndStart(worker)
 }
 
 func CancelWorker(url string) {
-	cancel, ok := Orchestrator.Registry[url]
-	if ok {
+	Orchestrator.Mutex.Lock()
+	if cancel, ok := Orchestrator.Registry[url]; ok {
 		cancel()
-		Orchestrator.Mutex.Lock()
 		delete(Orchestrator.Registry, url)
-		Orchestrator.Mutex.Unlock()
 	}
+	Orchestrator.Mutex.Unlock()
 }
 
 func OrchestrateWorkers(ctx context.Context) {
@@ -99,17 +102,6 @@ func OrchestrateWorkers(ctx context.Context) {
 		panic(err)
 	}
 	var wg sync.WaitGroup
-	for _, worker := range workers {
-		ctx, cancel := context.WithCancel(ctx)
-		Orchestrator.Mutex.Lock()
-		CancelWorker(worker.Url)
-		Orchestrator.Registry[worker.Url] = cancel
-		Orchestrator.Mutex.Unlock()
-		wg.Add(1)
-		go StartWorker(ctx, &pb.Worker{Url: worker.Url, PollInterval: int32(worker.PollInterval), Headers: worker.Headers})
-		defer wg.Done()
-	}
-	wg.Wait()
 	defer func() {
 		Orchestrator.Mutex.Lock()
 		for _, cancel := range Orchestrator.Registry {
@@ -118,4 +110,16 @@ func OrchestrateWorkers(ctx context.Context) {
 		Orchestrator.Registry = make(map[string]context.CancelFunc)
 		Orchestrator.Mutex.Unlock()
 	}()
+	for _, w := range workers {
+		workerCtx, cancel := context.WithCancel(ctx)
+		Orchestrator.Mutex.Lock()
+		if prev, ok := Orchestrator.Registry[w.Url]; ok {
+			prev()
+		}
+		Orchestrator.Registry[w.Url] = cancel
+		Orchestrator.Mutex.Unlock()
+		wg.Add(1)
+		go StartWorker(workerCtx, &pb.Worker{Url: w.Url, PollInterval: int32(w.PollInterval), Headers: w.Headers}, &wg)
+	}
+	wg.Wait()
 }

@@ -128,6 +128,7 @@ func DeleteWorker(appName string, url string) error {
 	if err = json.Unmarshal([]byte(workers), &workerList); err != nil {
 		return err
 	}
+	found := false
 	for i, workerEntry := range workerList {
 		var currentWorker types.Worker
 		if err = json.Unmarshal([]byte(workerEntry), &currentWorker); err != nil {
@@ -135,8 +136,12 @@ func DeleteWorker(appName string, url string) error {
 		}
 		if currentWorker.Url == url {
 			workerList = slices.Delete(workerList, i, i+1)
+			found = true
 			break
 		}
+	}
+	if !found {
+		return errors.New("worker not found")
 	}
 	marshalledUpdatedWorker, err := json.Marshal(workerList)
 	if err != nil {
