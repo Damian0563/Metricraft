@@ -34,6 +34,7 @@ message worker{
 message status{
   bool success = 1;
   string err = 2;
+  int32 statusCode = 3;
 }
 
 message StringInt32Map {

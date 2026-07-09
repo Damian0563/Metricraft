@@ -32,10 +32,7 @@ func (s *Server) GetThroughput(ctx context.Context, req *pb.Timeframe) (*pb.Thro
 }
 
 func (s *Server) UpdateWorker(ctx context.Context, req *pb.Worker) (*pb.Status, error) {
-	status, err := worker.TestWorker(ctx, req)
-	if err != nil {
-		return nil, err
-	}
+	status := worker.TestWorker(ctx, req)
 	worker.RegisterAndStartWorker(req)
 	return status, nil
 }
@@ -49,10 +46,7 @@ func (s *Server) DeleteWorker(ctx context.Context, req *pb.WorkerUrl) (*pb.Statu
 }
 
 func (s *Server) CreateWorker(ctx context.Context, req *pb.Worker) (*pb.Status, error) {
-	status, err := worker.TestWorker(ctx, req)
-	if err != nil {
-		return nil, err
-	}
+	status := worker.TestWorker(ctx, req)
 	worker.RegisterAndStartWorker(req)
 	return status, nil
 }

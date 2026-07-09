@@ -6,7 +6,6 @@ import (
 	"backend/types"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -166,11 +165,6 @@ func SaveWorker(w http.ResponseWriter, r *http.Request) {
 	if httpresponse, err := json.Marshal(response); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	} else {
-		if response.Success {
-			w.WriteHeader(http.StatusOK)
-		} else {
-			http.Error(w, response.Err, http.StatusBadRequest)
-		}
 		w.Write(httpresponse)
 	}
 }
@@ -219,7 +213,7 @@ func DeleteWorker(w http.ResponseWriter, r *http.Request) {
 		Url string `json:"url"`
 	}
 	var dummy dummyWorker
-	if err := json.NewDecoder(r.Body).Decode(&dummy); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&dummy); err != nil || strings.TrimSpace(dummy.Url) == "" {
 		http.Error(w, "Invalid worker URL", http.StatusBadRequest)
 		return
 	}
@@ -229,11 +223,6 @@ func DeleteWorker(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := db.DeleteWorker(appName, dummy.Url); err != nil {
-		notFound := errors.New("worker not found")
-		if errors.Is(err, notFound) {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		}
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -242,7 +231,7 @@ func DeleteWorker(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	client := pb.NewMetricraftClient(grpcConn)
-	response, err := client.DeleteWorker(r.Context(), &pb.WorkerUrl{Url: dummy.Url})
+	response, err := client.DeleteWorker(context.Background(), &pb.WorkerUrl{Url: dummy.Url})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -285,7 +274,7 @@ func UpdateWorker(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	client := pb.NewMetricraftClient(grpcConn)
-	response, err := client.UpdateWorker(r.Context(), &pb.Worker{
+	response, err := client.UpdateWorker(context.Background(), &pb.Worker{
 		Url:          worker.Url,
 		PollInterval: int32(worker.PollInterval),
 		Headers:      worker.Headers,
@@ -300,9 +289,5 @@ func UpdateWorker(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	if response.Success {
-		w.Write(httpresponse)
-	} else {
-		http.Error(w, response.Err, http.StatusBadRequest)
-	}
+	w.Write(httpresponse)
 }

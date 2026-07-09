@@ -66,14 +66,14 @@ export const useWorkerForm = (source: () => Worker | null) => {
 	}
 }
 
-export const saveWorker = async (worker: Worker): Promise<{ success: boolean; err: string }> => {
+export const saveWorker = async (worker: Worker): Promise<{ success: boolean; err: string; statusCode: number }> => {
 	return await useApi()("/dashboard/worker/new", {
 		method: "POST",
 		body: worker,
 	})
 }
 
-export const updateWorker = async (worker: Worker): Promise<{ success: boolean; err: string }> => {
+export const updateWorker = async (worker: Worker): Promise<{ success: boolean; err: string; statusCode: number }> => {
 	return await useApi()(`/dashboard/worker/update`, {
 		method: "PATCH",
 		body: worker,

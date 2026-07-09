@@ -190,6 +190,7 @@ type Status struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
 	Err           string                 `protobuf:"bytes,2,opt,name=err,proto3" json:"err,omitempty"`
+	StatusCode    int32                  `protobuf:"varint,3,opt,name=statusCode,proto3" json:"statusCode,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -236,6 +237,13 @@ func (x *Status) GetErr() string {
 		return x.Err
 	}
 	return ""
+}
+
+func (x *Status) GetStatusCode() int32 {
+	if x != nil {
+		return x.StatusCode
+	}
+	return 0
 }
 
 type StringInt32Map struct {
@@ -642,10 +650,13 @@ const file_service_proto_rawDesc = "" +
 	"\aheaders\x18\x03 \x03(\v2\x1f.metricraft.worker.HeadersEntryR\aheaders\x1a:\n" +
 	"\fHeadersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"4\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"T\n" +
 	"\x06status\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x10\n" +
-	"\x03err\x18\x02 \x01(\tR\x03err\"\x8b\x01\n" +
+	"\x03err\x18\x02 \x01(\tR\x03err\x12\x1e\n" +
+	"\n" +
+	"statusCode\x18\x03 \x01(\x05R\n" +
+	"statusCode\"\x8b\x01\n" +
 	"\x0eStringInt32Map\x12>\n" +
 	"\x06values\x18\x01 \x03(\v2&.metricraft.StringInt32Map.ValuesEntryR\x06values\x1a9\n" +
 	"\vValuesEntry\x12\x10\n" +

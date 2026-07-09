@@ -56,6 +56,16 @@
 							class="flex items-center gap-3 px-6 py-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors">
 							<p class="min-w-0 flex-1 font-medium text-gray-900 text-sm break-all leading-snug">{{ worker.url }}</p>
 							<div class="flex shrink-0 items-center gap-2">
+								<span v-if="newWorkerStatusCodes[worker.url] !== undefined"
+									:title="`Status code returned by the server: ${newWorkerStatusCodes[worker.url]}`"
+									:class="['inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-full border', statusCodeClass(newWorkerStatusCodes[worker.url]!)]">
+									<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+										<path fill-rule="evenodd"
+											d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V7z"
+											clip-rule="evenodd" />
+									</svg>
+									{{ newWorkerStatusCodes[worker.url] }}
+								</span>
 								<button type="button" @click="openWorkerEditor(worker)"
 									class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg border border-[#00F376] text-[#00B35C] bg-[#00F376]/10 hover:bg-[#00F376]/20 transition-colors cursor-pointer">
 									<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -102,6 +112,13 @@ const editingWorker = ref<Worker | null>(null)
 const originalWorkerUrl = ref<string | null>(null)
 const saving = ref(false)
 const newWorkerFormRef = ref<{ resetForm: () => void } | null>(null)
+const newWorkerStatusCodes = ref<Record<string, number>>({})
+const statusCodeClass = (statusCode: number): string => {
+	if (statusCode >= 200 && statusCode < 300) return 'bg-[#00F376]/10 text-[#00B35C] border-[#00F376]'
+	if (statusCode >= 300 && statusCode < 400) return 'bg-blue-50 text-blue-600 border-blue-300'
+	if (statusCode >= 400 && statusCode < 500) return 'bg-amber-50 text-amber-600 border-amber-300'
+	return 'bg-red-50 text-red-600 border-red-300'
+}
 watch(existingWorkers, (workers) => {
 	if (workers) {
 		workersList.value = workers
@@ -131,22 +148,25 @@ const handleWorkerUpdate = async (updatedWorker: Worker) => {
 	if (index === -1) return
 	saving.value = true
 	try {
-		const res: { success: boolean; err: string } = await updateWorker(updatedWorker)
+		const res: { success: boolean; err: string; statusCode: number } = await updateWorker(updatedWorker)
 		if (!res.success) {
 			errorMessage.value = res.err
-			return
 		}
 		workersList.value = [
 			...workersList.value.slice(0, index),
 			updatedWorker,
 			...workersList.value.slice(index + 1),
 		]
-		closeWorkerEditor()
+		if (newWorkerStatusCodes.value.hasOwnProperty(originalUrl) && newWorkerStatusCodes.value[originalUrl] !== undefined) {
+			delete newWorkerStatusCodes.value[originalUrl]
+		}
+		newWorkerStatusCodes.value[updatedWorker.url] = res.statusCode
 		cleanMessage.value = 'Worker updated successfully.'
 	} catch (e: unknown) {
 		errorMessage.value = parseApiError(e, 'Something went wrong while saving the worker. Please try again.')
 	} finally {
 		saving.value = false
+		closeWorkerEditor()
 	}
 
 }
@@ -154,12 +174,12 @@ const handleWorkerUpdate = async (updatedWorker: Worker) => {
 const handleNewWorkerSave = async (worker: Worker) => {
 	saving.value = true
 	try {
-		const res: { success: boolean; err: string } = await saveWorker(worker)
+		const res: { success: boolean; err: string; statusCode: number } = await saveWorker(worker)
 		if (!res.success) {
 			errorMessage.value = res.err
-			return
 		}
 		workersList.value.push(worker)
+		newWorkerStatusCodes.value[worker.url] = res.statusCode
 		newWorkerFormRef.value?.resetForm()
 	} catch (e: unknown) {
 		errorMessage.value = parseApiError(e, 'Something went wrong while saving the worker. Please try again.')
@@ -178,6 +198,7 @@ const deleteWorker = async (url: string) => {
 			return
 		}
 		workersList.value = workersList.value.filter((worker) => worker.url !== url)
+		delete newWorkerStatusCodes.value[url]
 		if (originalWorkerUrl.value === url) {
 			closeWorkerEditor()
 		}
