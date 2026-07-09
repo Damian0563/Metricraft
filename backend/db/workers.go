@@ -17,12 +17,12 @@ func SaveWorker(appName string, worker types.Worker, errChan chan error) {
 		errChan <- err
 		return
 	}
+	defer conn.Close(ctx)
 	tx, err := conn.Begin(ctx)
 	if err != nil {
 		errChan <- err
 		return
 	}
-	defer conn.Close(ctx)
 	var workers string
 	err = tx.QueryRow(ctx, "SELECT workers FROM workers WHERE app_name=$1 FOR UPDATE", appName).Scan(&workers)
 	if err != nil {
@@ -182,7 +182,7 @@ func UpdateWorkers(ctx context.Context, tx *pgx.Tx, appName string, workerList [
 		(*tx).Rollback(ctx)
 		return err
 	}
-	tag, err := (*tx).Exec(ctx, "UPDATE workers SET workers=$1 WHERE app_name=$2 AND workers=$3", marshalledUpdatedWorker, appName, previousWorkers)
+	tag, err := (*tx).Exec(ctx, "UPDATE workers SET workers=$1 WHERE app_name=$2 AND workers::text=$3", marshalledUpdatedWorker, appName, previousWorkers)
 	if err != nil {
 		(*tx).Rollback(ctx)
 		return err

@@ -342,11 +342,11 @@ func DeleteWorkerlogs(ctx context.Context, url string) error {
 	if err != nil {
 		return err
 	}
+	defer conn.Close(ctx)
 	tx, err := conn.Begin(ctx)
 	if err != nil {
 		return err
 	}
-	defer conn.Close(ctx)
 	_, err = tx.Exec(ctx, "DELETE FROM worker_logs WHERE url=$1", url)
 	if err != nil {
 		tx.Rollback(ctx)

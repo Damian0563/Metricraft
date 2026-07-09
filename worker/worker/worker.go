@@ -17,10 +17,10 @@ var Orchestrator types.Orchestrator = types.Orchestrator{
 	Registry: make(map[string]context.CancelFunc),
 }
 
-func TestWorker(ctx context.Context, worker *pb.Worker) (*pb.Status, error) {
+func TestWorker(ctx context.Context, worker *pb.Worker) *pb.Status {
 	req, err := http.NewRequest("GET", worker.Url, nil)
 	if err != nil {
-		return nil, err
+		return &pb.Status{Success: false, Err: err.Error(), StatusCode: 500}
 	}
 	for k, v := range worker.Headers {
 		req.Header.Set(k, v)
@@ -28,23 +28,20 @@ func TestWorker(ctx context.Context, worker *pb.Worker) (*pb.Status, error) {
 	client := &http.Client{Timeout: time.Second * 10}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, err
+		return &pb.Status{Success: false, Err: err.Error(), StatusCode: 500}
 	}
 	defer resp.Body.Close()
 	fmt.Println(worker.Url, resp.StatusCode)
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-		return &pb.Status{Success: true, Err: ""}, nil
+		return &pb.Status{Success: true, Err: "", StatusCode: int32(resp.StatusCode)}
 	} else {
-		return &pb.Status{Success: false, Err: fmt.Sprintf("Faulty response code of the health endpoint: %d. Confirm that the endpoint is working and the URL is correct.", resp.StatusCode)}, nil
+		return &pb.Status{Success: false, Err: fmt.Sprintf("Faulty response code of the health endpoint: %d. Confirm that the endpoint is working and the URL is correct.", resp.StatusCode), StatusCode: int32(resp.StatusCode)}
 	}
 }
 
 func StartWorker(ctx context.Context, worker *pb.Worker, wg *sync.WaitGroup) {
 	if wg != nil {
 		defer wg.Done()
-	}
-	if _, err := TestWorker(ctx, worker); err != nil {
-		return
 	}
 	interval := time.Duration(worker.PollInterval) * time.Minute
 	defer func() {
@@ -57,11 +54,7 @@ func StartWorker(ctx context.Context, worker *pb.Worker, wg *sync.WaitGroup) {
 		case <-ctx.Done():
 			return
 		case <-time.After(interval):
-			resp, err := TestWorker(ctx, worker)
-			if err != nil {
-				fmt.Println(err, worker.Url)
-				return
-			}
+			resp := TestWorker(ctx, worker)
 			if err := db.InsertWorkerLog(ctx, worker.Url, resp.Success); err != nil {
 				fmt.Println(err, worker.Url)
 				return
