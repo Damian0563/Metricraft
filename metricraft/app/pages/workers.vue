@@ -1,20 +1,13 @@
 <template>
-	<div>
+	<div class="min-h-screen pl-20">
 		<DashboardNav />
 		<Notice :message="errorMessage ?? ''" @close="errorMessage = null" />
 		<Popup :message="cleanMessage" @close="cleanMessage = ''" />
 		<Spinner :loading="saving" />
 		<WorkerEditor :open="showWorkerEditor" :worker="editingWorker" @close="closeWorkerEditor"
 			@save="handleWorkerUpdate" />
-		<div class="w-full px-8 py-2">
+		<div class="min-w-0 px-8 py-2">
 			<div class="relative flex items-center justify-center mb-6">
-				<button @click="goBack"
-					class="absolute left-0 text-white hover:text-[#00F376] transition-colors duration-200 flex items-center gap-2 cursor-pointer">
-					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-					</svg>
-					Back to Dashboard
-				</button>
 				<h1 class="text-3xl font-bold text-center" style="color: #00F376;">Metricraft Workers</h1>
 			</div>
 			<div class="max-w-8xl mx-auto grid gap-4 lg:grid-cols-[minmax(0,1fr)_40rem] lg:items-start">
@@ -208,10 +201,6 @@ const deleteWorker = async (url: string) => {
 	} finally {
 		saving.value = false
 	}
-}
-
-const goBack = () => {
-	navigateTo('/dashboard')
 }
 
 onMounted(() => {

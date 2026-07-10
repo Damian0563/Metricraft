@@ -45,8 +45,8 @@ export const createAdditionalData = (
 	const thead = document.createElement('thead');
 	const headerRow = document.createElement('tr');
 	headerRow.innerHTML = `
-		<th class="sticky top-0 z-10 bg-white text-left font-semibold text-slate-400 py-1.5 px-3 whitespace-nowrap">${headers.h1}</th>
-		<th class="sticky top-0 z-10 bg-white text-right font-semibold text-slate-400 py-1.5 px-3 whitespace-nowrap">${headers.h2}</th>
+		<th class="top-0 z-10 bg-white text-left font-semibold text-slate-400 py-1.5 px-3 whitespace-nowrap">${headers.h1}</th>
+		<th class="top-0 z-10 bg-white text-right font-semibold text-slate-400 py-1.5 px-3 whitespace-nowrap">${headers.h2}</th>
 	`;
 	thead.appendChild(headerRow);
 	table.appendChild(thead);
