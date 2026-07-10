@@ -1,11 +1,13 @@
 <template>
-	<div>
+	<div class="min-h-screen pl-20">
 		<DashboardNav />
-		<GraphGrid v-if="!settings" :metrics="derivedMetrics" @load="emit('load')" />
-		<Settings v-if="settings" :realtimeEnabled="realtimeEnabled" :logRetention="logRetention"
-			:derivedMetrics="derivedMetrics" @realtime-toggle="handleRealtimeToggle" @customize-view="handleCustomizeView"
-			@load="emit('load')" @update-metrics="emit('updateMetrics', $event)" @change-retention=" emit('changeRetention',
-				$event)" />
+		<div class="min-w-0 mt-4">
+			<GraphGrid v-if="!settings" :metrics="derivedMetrics" @load="emit('load')" />
+			<Settings v-if="settings" :realtimeEnabled="realtimeEnabled" :logRetention="logRetention"
+				:derivedMetrics="derivedMetrics" @realtime-toggle="handleRealtimeToggle" @customize-view="handleCustomizeView"
+				@load="emit('load')" @update-metrics="emit('updateMetrics', $event)" @change-retention=" emit('changeRetention',
+					$event)" />
+		</div>
 	</div>
 </template>
 
