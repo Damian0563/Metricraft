@@ -92,3 +92,11 @@ export const getExistingWorkers = async (): Promise<Worker[]> => {
 		method: "GET",
 	})
 }
+
+
+export const getWorkerUptime = async (url: string): Promise<any> => {
+	return await useApi()(`/dashboard/worker/uptime`, {
+		method: "POST",
+		body: { url: url },
+	})
+}

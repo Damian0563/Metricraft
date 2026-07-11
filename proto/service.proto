@@ -13,6 +13,7 @@ service Metricraft {
   rpc createWorker(worker) returns (status);
   rpc deleteWorker(workerUrl) returns (status);
   rpc updateWorker(worker) returns (status);
+  rpc getWorkerUptime(workerUrl) returns (workerUptime);
 }
 
 message timeframe{
@@ -35,6 +36,15 @@ message status{
   bool success = 1;
   string err = 2;
   int32 statusCode = 3;
+}
+
+message workerUptime{
+  repeated workerUptimeEntry entries = 1;
+}
+
+message workerUptimeEntry{
+  google.protobuf.Timestamp stamp = 1;
+  bool status = 2;
 }
 
 message StringInt32Map {

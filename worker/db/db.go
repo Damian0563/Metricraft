@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/jackc/pgx/v4"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	pb "metricraft/proto/metricraft/proto"
 	"os"
 	"time"
@@ -137,7 +138,7 @@ func GetTrafficCongestion(ctx context.Context, startDate time.Time, resolution i
 			)::int AS bucket,
 			COUNT(*)
 		FROM logs
-		WHERE date >= $1 AND date < $2
+		WHERE date > $1 AND date <= $2
 		GROUP BY url, bucket
 		ORDER BY COUNT(*) DESC
 	`, alignedStart, endDate, increment.Seconds(), storageTimezone, tz, truncPeriod)
@@ -185,7 +186,7 @@ func GetGeographicalTraffic(ctx context.Context, startDate time.Time, timezone s
 	loc := loadLocation(timezone)
 	endDate := time.Now().In(loc).UTC()
 	distribution := make(map[string]int32)
-	res, err := conn.Query(ctx, "SELECT country,COUNT(*) FROM logs WHERE date >= $1 AND date < $2 GROUP BY country ORDER BY COUNT(*) DESC", startDate, endDate)
+	res, err := conn.Query(ctx, "SELECT country,COUNT(*) FROM logs WHERE date > $1 AND date <= $2 GROUP BY country ORDER BY COUNT(*) DESC", startDate, endDate)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +211,7 @@ func GetP95Latency(ctx context.Context, startDate time.Time, timezone string) (*
 	loc := loadLocation(timezone)
 	endDate := time.Now().In(loc).UTC()
 	distribution := make(map[string]int32)
-	res, err := conn.Query(ctx, "SELECT url,percentile_cont(0.95) WITHIN GROUP (ORDER BY responsetime) AS percentile FROM logs WHERE date >= $1 AND date < $2 AND status BETWEEN 200 AND 299 GROUP BY url ORDER BY percentile DESC", startDate, endDate)
+	res, err := conn.Query(ctx, "SELECT url,percentile_cont(0.95) WITHIN GROUP (ORDER BY responsetime) AS percentile FROM logs WHERE date > $1 AND date <= $2 AND status BETWEEN 200 AND 299 GROUP BY url ORDER BY percentile DESC", startDate, endDate)
 	if err != nil {
 		return nil, err
 	}
@@ -235,7 +236,7 @@ func GetUptimeScore(ctx context.Context, startDate time.Time, timezone string) (
 	loc := loadLocation(timezone)
 	endDate := time.Now().In(loc).UTC()
 	distribution := make(map[string]float32)
-	res, err := conn.Query(ctx, "SELECT url, 100.0 * COUNT(*) FILTER (WHERE status BETWEEN 200 AND 299) / NULLIF(COUNT(*), 0) AS availability FROM logs WHERE date >= $1 AND date < $2 GROUP BY url ORDER BY availability DESC", startDate, endDate)
+	res, err := conn.Query(ctx, "SELECT url, 100.0 * COUNT(*) FILTER (WHERE status BETWEEN 200 AND 299) / NULLIF(COUNT(*), 0) AS availability FROM logs WHERE date > $1 AND date <= $2 GROUP BY url ORDER BY availability DESC", startDate, endDate)
 	if err != nil {
 		return nil, err
 	}
@@ -304,7 +305,7 @@ func GetThroughput(ctx context.Context, start time.Time, resolution int32, timez
 			)::int AS bucket,
 			COUNT(*)
 		FROM logs
-		WHERE date >= $1 AND date < $2
+		WHERE date > $1 AND date <= $2
 		GROUP BY bucket
 	`, alignedStart, endDate, increment.Seconds(), storageTimezone, tz, truncPeriod)
 	if err != nil {
@@ -331,10 +332,42 @@ func GetThroughput(ctx context.Context, start time.Time, resolution int32, timez
 		computedThroughput = float32(total) / float32(seconds)
 	}
 	var uniqUsers int32
-	if err = conn.QueryRow(ctx, "SELECT COUNT(DISTINCT(\"user\")) FROM logs WHERE date >= $1 AND date < $2", alignedStart, endDate).Scan(&uniqUsers); err != nil {
+	if err = conn.QueryRow(ctx, "SELECT COUNT(DISTINCT(\"user\")) FROM logs WHERE date > $1 AND date <= $2", alignedStart, endDate).Scan(&uniqUsers); err != nil {
 		return nil, err
 	}
 	return &pb.Throughput{Values: throughput, ComputedThroughput: computedThroughput, UniqUsers: uniqUsers}, nil
+}
+
+func GetWorkerUptime(ctx context.Context, url string) (*pb.WorkerUptime, error) {
+	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close(ctx)
+	uptime := make([]*pb.WorkerUptimeEntry, 0)
+	endDate := time.Now().Add(-time.Hour * 24 * 31)
+	res, err := conn.Query(ctx, "SELECT date, up FROM worker_logs WHERE url = $1 AND date > $2 ORDER BY date ASC", url, endDate)
+	if err != nil {
+		return nil, err
+	}
+	for res.Next() {
+		var date time.Time
+		var status int
+		if err := res.Scan(&date, &status); err != nil {
+			return nil, err
+		}
+		statusBool := false
+		if status == 1 {
+			statusBool = true
+		}
+		uptime = append(uptime, &pb.WorkerUptimeEntry{
+			Status: statusBool,
+			Stamp:  timestamppb.New(date),
+		})
+	}
+	//delete old logs, do not throw error if occured
+	_, _ = conn.Exec(ctx, "DELETE FROM worker_logs WHERE url = $1 AND date < $2", url, endDate)
+	return &pb.WorkerUptime{Entries: uptime}, nil
 }
 
 func DeleteWorkerlogs(ctx context.Context, url string) error {

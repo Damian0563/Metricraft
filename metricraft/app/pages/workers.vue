@@ -87,13 +87,16 @@
 					</div>
 				</div>
 			</div>
+			<div class="max-w-8xl mx-auto grid gap-4">
+
+			</div>
 		</div>
 	</div>
 </template>
 
 <script setup lang="ts">
 import { getCookie, parseApiError } from '@/composables/helpers'
-import { getExistingWorkers, saveWorker, updateWorker, deleteWorkerEntry } from '@/composables/workers'
+import { getExistingWorkers, saveWorker, updateWorker, deleteWorkerEntry, getWorkerUptime } from '@/composables/workers'
 import type { Worker } from '@/composables/types'
 
 const errorMessage = ref<string | null>(null)
@@ -112,9 +115,14 @@ const statusCodeClass = (statusCode: number): string => {
 	if (statusCode >= 400 && statusCode < 500) return 'bg-amber-50 text-amber-600 border-amber-300'
 	return 'bg-red-50 text-red-600 border-red-300'
 }
-watch(existingWorkers, (workers) => {
+watch(existingWorkers, async (workers) => {
 	if (workers) {
 		workersList.value = workers
+		const workerStatuses = await Promise.all(workers.map(async (worker) => {
+			const res = await getWorkerUptime(worker.url)
+			return { url: worker.url, uptime: res }
+		}))
+		console.log(workerStatuses)
 	}
 }, { immediate: true })
 

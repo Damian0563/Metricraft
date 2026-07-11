@@ -291,3 +291,40 @@ func UpdateWorker(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(httpresponse)
 }
+
+func GetWorkerUptime(w http.ResponseWriter, r *http.Request) {
+	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	token := auth.NewToken(r.Header.Get("Session-Token"))
+	authed := token.ValidateRequest(&w, false)
+	if !authed {
+		return
+	}
+	type dummyWorker struct {
+		Url string `json:"url"`
+	}
+	var dummy dummyWorker
+	if err := json.NewDecoder(r.Body).Decode(&dummy); err != nil || strings.TrimSpace(dummy.Url) == "" {
+		http.Error(w, "Invalid worker URL", http.StatusBadRequest)
+		return
+	}
+	if grpcConn == nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	client := pb.NewMetricraftClient(grpcConn)
+	response, err := client.GetWorkerUptime(context.Background(), &pb.WorkerUrl{Url: dummy.Url})
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	httpresponse, err := json.Marshal(response)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(httpresponse)
+}
