@@ -85,6 +85,7 @@ func (x *Timeframe) GetTimezone() string {
 type WorkerUrl struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Url           string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
+	Timezone      string                 `protobuf:"bytes,2,opt,name=timezone,proto3" json:"timezone,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -122,6 +123,13 @@ func (*WorkerUrl) Descriptor() ([]byte, []int) {
 func (x *WorkerUrl) GetUrl() string {
 	if x != nil {
 		return x.Url
+	}
+	return ""
+}
+
+func (x *WorkerUrl) GetTimezone() string {
+	if x != nil {
+		return x.Timezone
 	}
 	return ""
 }
@@ -737,9 +745,10 @@ const file_service_proto_rawDesc = "" +
 	"\n" +
 	"resolution\x18\x02 \x01(\x05R\n" +
 	"resolution\x12\x1a\n" +
-	"\btimezone\x18\x03 \x01(\tR\btimezone\"\x1d\n" +
+	"\btimezone\x18\x03 \x01(\tR\btimezone\"9\n" +
 	"\tworkerUrl\x12\x10\n" +
-	"\x03url\x18\x01 \x01(\tR\x03url\"\xb5\x01\n" +
+	"\x03url\x18\x01 \x01(\tR\x03url\x12\x1a\n" +
+	"\btimezone\x18\x02 \x01(\tR\btimezone\"\xb5\x01\n" +
 	"\x06worker\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12\"\n" +
 	"\fpollInterval\x18\x02 \x01(\x05R\fpollInterval\x129\n" +

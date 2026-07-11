@@ -95,8 +95,9 @@ export const getExistingWorkers = async (): Promise<Worker[]> => {
 
 
 export const getWorkerUptime = async (url: string): Promise<any> => {
+	const userZone = Intl.DateTimeFormat().resolvedOptions().timeZone
 	return await useApi()(`/dashboard/worker/uptime`, {
 		method: "POST",
-		body: { url: url },
+		body: { url: url, timezone: userZone },
 	})
 }

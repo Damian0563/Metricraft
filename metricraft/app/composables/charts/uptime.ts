@@ -20,13 +20,12 @@ export const createWorkerUptimeChart = (
 		if (!entries.length) throw new Error('Data is empty');
 		const dates: Date[] = entries.map((entry) => new Date((entry.stamp?.seconds ?? 0) * 1000));
 		const labels: string[] = dates.map((date) =>
-			date.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+			date.toLocaleString(undefined, { timeZone: 'UTC', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 		);
 		const statuses: boolean[] = entries.map((entry) => entry.status === true);
 		const colors: string[] = statuses.map((up) => (up ? upColor : downColor));
 		const upCount: number = statuses.filter(Boolean).length;
 		const uptimePct: number = statuses.length ? (upCount / statuses.length) * 100 : 0;
-		//const stepSize: number = Math.max(1, Math.ceil(labels.length / 8));
 		return new Chart(canvas, {
 			type: 'bar',
 			data: {
@@ -74,7 +73,7 @@ export const createWorkerUptimeChart = (
 					legend: { display: false },
 					title: {
 						display: true,
-						text: `Uptime: ${uptimePct.toFixed(1)}%`,
+						text: `Uptime: ${uptimePct.toFixed(1)}%, last 31 days`,
 						color: '#475569',
 						font: { weight: 'bold', size: 13 },
 						padding: { bottom: 8 },
@@ -88,7 +87,7 @@ export const createWorkerUptimeChart = (
 						callbacks: {
 							title: (items) => {
 								const index = items[0]?.dataIndex ?? 0;
-								return dates[index]?.toLocaleString() ?? '';
+								return dates[index]?.toLocaleString(undefined, { timeZone: 'UTC', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) ?? '';
 							},
 							label: (item) => (statuses[item.dataIndex] ? 'Status: Up' : 'Status: Down'),
 							labelColor: (item) => {
