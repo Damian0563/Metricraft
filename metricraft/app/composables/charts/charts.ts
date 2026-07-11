@@ -2,9 +2,9 @@ import { Chart } from "chart.js";
 import type { ChartData, TrafficCongestionData, ThroughputData, ThroughputEntry, DistributionData, additionalDataHeaders, CongestionEntry, StringInt32Map } from "~/composables/types";
 import { ColorPicker } from "~/composables/colorpicker";
 import { ChoroplethChart, topojson } from 'chartjs-chart-geo';
-import { createAdditionalData } from "./chartUtils";
+import { createAdditionalData } from "@/composables/charts/chartUtils";
 
-const emptyChart = (canvas: HTMLCanvasElement): Chart => {
+export const emptyChart = (canvas: HTMLCanvasElement): Chart => {
 	return new Chart(canvas, {
 		type: 'bar',
 		data: { labels: [], datasets: [] },
@@ -631,7 +631,7 @@ export const createTrafficCongestionTrends = (
 							padding: 6,
 							font: { weight: 'bold' },
 							callback: (_value: string | number, index: number): string =>
-								index % stepSize === 0 || index === 0 || (index === labels.length - 1 && (index - 1) % stepSize !== 0) ? (labels[index] ?? '') : '',
+								index == 0 || index === labels.length - 1 ? (labels[index] ?? '') : '',
 						},
 						title: { display: true, text: 'Time', color: 'black', font: { weight: 'bold', size: 18 }, padding: { top: 2 } },
 					},

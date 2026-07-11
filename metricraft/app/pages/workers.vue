@@ -87,8 +87,11 @@
 					</div>
 				</div>
 			</div>
-			<div class="max-w-8xl mx-auto grid gap-4">
-
+			<div v-if="workerUptimes.length > 0"
+				class="w-full bg-white rounded-xl shadow-xl border border-gray-100 p-8 mt-4 flex flex-col gap-8">
+				<h2 class="text-xl font-semibold text-gray-800">Worker uptime</h2>
+				<WorkerUptimeGraph v-for="entry in workerUptimes" :key="entry.url" :url="entry.url"
+					:data="entry.data" />
 			</div>
 		</div>
 	</div>
@@ -97,8 +100,7 @@
 <script setup lang="ts">
 import { getCookie, parseApiError } from '@/composables/helpers'
 import { getExistingWorkers, saveWorker, updateWorker, deleteWorkerEntry, getWorkerUptime } from '@/composables/workers'
-import type { Worker } from '@/composables/types'
-
+import type { Worker, WorkerUptimeData } from '@/composables/types'
 const errorMessage = ref<string | null>(null)
 const cleanMessage = ref<string>('')
 const { data: existingWorkers, error: fetchError } = await useAsyncData<Worker[]>('existingWorkers', () => getExistingWorkers())
@@ -107,6 +109,7 @@ const showWorkerEditor = ref(false)
 const editingWorker = ref<Worker | null>(null)
 const originalWorkerUrl = ref<string | null>(null)
 const saving = ref(false)
+const workerUptimes = ref<{ url: string, data: WorkerUptimeData }[]>([])
 const newWorkerFormRef = ref<{ resetForm: () => void } | null>(null)
 const newWorkerStatusCodes = ref<Record<string, number>>({})
 const statusCodeClass = (statusCode: number): string => {
@@ -118,11 +121,10 @@ const statusCodeClass = (statusCode: number): string => {
 watch(existingWorkers, async (workers) => {
 	if (workers) {
 		workersList.value = workers
-		const workerStatuses = await Promise.all(workers.map(async (worker) => {
-			const res = await getWorkerUptime(worker.url)
-			return { url: worker.url, uptime: res }
+		workerUptimes.value = await Promise.all(workers.map(async (worker) => {
+			const res: WorkerUptimeData = await getWorkerUptime(worker.url)
+			return { url: worker.url, data: res }
 		}))
-		console.log(workerStatuses)
 	}
 }, { immediate: true })
 

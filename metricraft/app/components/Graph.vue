@@ -45,7 +45,7 @@ import { ChoroplethController, GeoFeature, ColorScale, ProjectionScale } from 'c
 import { ChoroplethChart } from 'chartjs-chart-geo';
 import { onMounted, toRaw } from "vue";
 import { useColorPicker } from "~/composables/colorpicker";
-import { createTrafficCongestionTrends, createThroughput, createGeographicalTraffic, createP95Latency, createUptimeScore } from "~/composables/charts";
+import { createTrafficCongestionTrends, createThroughput, createGeographicalTraffic, createP95Latency, createUptimeScore } from "~/composables/charts/charts";
 import type { ChartData } from "~/composables/types";
 const props = defineProps<{
 	name: string;
