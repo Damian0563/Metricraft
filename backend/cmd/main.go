@@ -74,6 +74,7 @@ func main() {
 	router.Post("/dashboard/worker/new", api.SaveWorker)
 	router.Patch("/dashboard/worker/update", api.UpdateWorker)
 	router.Delete("/dashboard/worker/delete", api.DeleteWorker)
+	router.Post("/dashboard/worker/uptime", api.GetWorkerUptime)
 	router.Get("/invites/pending", api.PendingInvites)
 	router.Get("/invites/team", api.TeamMembers)
 	router.Post("/invites/handle", api.HandleInvite) //?user=string&action=boolean

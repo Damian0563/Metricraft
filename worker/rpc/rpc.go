@@ -50,3 +50,7 @@ func (s *Server) CreateWorker(ctx context.Context, req *pb.Worker) (*pb.Status, 
 	worker.RegisterAndStartWorker(req)
 	return status, nil
 }
+
+func (s *Server) GetWorkerUptime(ctx context.Context, req *pb.WorkerUrl) (*pb.WorkerUptime, error) {
+	return db.GetWorkerUptime(ctx, req.Url)
+}
