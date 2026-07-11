@@ -303,7 +303,8 @@ func GetWorkerUptime(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	type dummyWorker struct {
-		Url string `json:"url"`
+		Url      string `json:"url"`
+		Timezone string `json:"timezone"`
 	}
 	var dummy dummyWorker
 	if err := json.NewDecoder(r.Body).Decode(&dummy); err != nil || strings.TrimSpace(dummy.Url) == "" {
@@ -315,7 +316,7 @@ func GetWorkerUptime(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	client := pb.NewMetricraftClient(grpcConn)
-	response, err := client.GetWorkerUptime(context.Background(), &pb.WorkerUrl{Url: dummy.Url})
+	response, err := client.GetWorkerUptime(context.Background(), &pb.WorkerUrl{Url: dummy.Url, Timezone: dummy.Timezone})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

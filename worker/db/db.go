@@ -338,23 +338,35 @@ func GetThroughput(ctx context.Context, start time.Time, resolution int32, timez
 	return &pb.Throughput{Values: throughput, ComputedThroughput: computedThroughput, UniqUsers: uniqUsers}, nil
 }
 
-func GetWorkerUptime(ctx context.Context, url string) (*pb.WorkerUptime, error) {
+func GetWorkerUptime(ctx context.Context, url string, timezone string) (*pb.WorkerUptime, error) {
 	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close(ctx)
+	loc := loadLocation(timezone)
 	uptime := make([]*pb.WorkerUptimeEntry, 0)
-	endDate := time.Now().Add(-time.Hour * 24 * 31)
+	endDate := time.Now().In(loc).UTC().Add(-time.Hour * 24 * 31)
 	res, err := conn.Query(ctx, "SELECT date, up FROM worker_logs WHERE url = $1 AND date > $2 ORDER BY date ASC", url, endDate)
 	if err != nil {
 		return nil, err
 	}
+	pollInterval := time.Minute * 10
+	var lastPoll time.Time
 	for res.Next() {
 		var date time.Time
 		var status int
 		if err := res.Scan(&date, &status); err != nil {
 			return nil, err
+		}
+		if !lastPoll.IsZero() {
+			for date.After(lastPoll.Add(pollInterval)) {
+				lastPoll = lastPoll.Add(pollInterval)
+				uptime = append(uptime, &pb.WorkerUptimeEntry{
+					Status: false,
+					Stamp:  timestamppb.New(lastPoll),
+				})
+			}
 		}
 		statusBool := false
 		if status == 1 {
@@ -363,6 +375,15 @@ func GetWorkerUptime(ctx context.Context, url string) (*pb.WorkerUptime, error) 
 		uptime = append(uptime, &pb.WorkerUptimeEntry{
 			Status: statusBool,
 			Stamp:  timestamppb.New(date),
+		})
+		lastPoll = date
+	}
+	now := time.Now().In(loc).UTC()
+	for !lastPoll.IsZero() && now.After(lastPoll.Add(pollInterval)) {
+		lastPoll = lastPoll.Add(pollInterval)
+		uptime = append(uptime, &pb.WorkerUptimeEntry{
+			Status: false,
+			Stamp:  timestamppb.New(lastPoll),
 		})
 	}
 	//delete old logs, do not throw error if occured

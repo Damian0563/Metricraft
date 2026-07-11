@@ -24,6 +24,7 @@ message timeframe{
 
 message workerUrl{
   string url = 1;
+  string timezone = 2;
 }
 
 message worker{
