@@ -54,6 +54,15 @@ export type StringInt32Map = {
 	values?: Record<string, number>;
 };
 
+export type WorkerUptimeEntry = {
+	stamp?: { seconds?: number; nanos?: number };
+	status?: boolean;
+};
+
+export type WorkerUptimeData = {
+	entries?: WorkerUptimeEntry[];
+};
+
 export type dashboardInitPayload = {
 	appName: string;
 	urls: string[];
