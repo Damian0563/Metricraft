@@ -25,6 +25,7 @@ message timeframe{
 message workerUrl{
   string url = 1;
   string timezone = 2;
+  int32 pollInterval = 3;
 }
 
 message worker{

@@ -1,6 +1,7 @@
 import { Chart } from "chart.js";
 import type { ChartData, TrafficCongestionData, ThroughputData, ThroughputEntry, DistributionData, additionalDataHeaders, CongestionEntry, StringInt32Map } from "~/composables/types";
 import { ColorPicker } from "~/composables/colorpicker";
+import { truncateUrl } from "~/composables/helpers";
 import { ChoroplethChart, topojson } from 'chartjs-chart-geo';
 import { createAdditionalData } from "@/composables/charts/chartUtils";
 
@@ -35,10 +36,7 @@ const emptyChoroplethChart = (canvas: HTMLCanvasElement): ChoroplethChart =>
 	new ChoroplethChart(canvas, {
 		data: { labels: [], datasets: [] },
 	}) as ChoroplethChart;
-const truncateUrl = (url: string, max = 20): string => {
-	if (url.length <= max) return url;
-	return `${url.slice(0, max - 1)}…`;
-};
+
 
 export const createThroughput = (
 	canvas: HTMLCanvasElement,

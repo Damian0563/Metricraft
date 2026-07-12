@@ -134,7 +134,7 @@ func SaveWorker(w http.ResponseWriter, r *http.Request) {
 	}
 	client := pb.NewMetricraftClient(grpcConn)
 	var worker types.Worker
-	if err := json.NewDecoder(r.Body).Decode(&worker); err != nil || (worker.PollInterval < 10 && worker.PollInterval > 60) {
+	if err := json.NewDecoder(r.Body).Decode(&worker); err != nil || worker.PollInterval < 10 || worker.PollInterval > 60 {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -257,7 +257,7 @@ func UpdateWorker(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var worker types.Worker
-	if err := json.NewDecoder(r.Body).Decode(&worker); err != nil || (worker.PollInterval < 10 && worker.PollInterval > 60) {
+	if err := json.NewDecoder(r.Body).Decode(&worker); err != nil || worker.PollInterval < 10 || worker.PollInterval > 60 {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -304,8 +304,9 @@ func GetWorkerUptime(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	type dummyWorker struct {
-		Url      string `json:"url"`
-		Timezone string `json:"timezone"`
+		Url          string `json:"url"`
+		Timezone     string `json:"timezone"`
+		PollInterval int    `json:"pollInterval"`
 	}
 	var dummy dummyWorker
 	if err := json.NewDecoder(r.Body).Decode(&dummy); err != nil || strings.TrimSpace(dummy.Url) == "" {
@@ -317,7 +318,7 @@ func GetWorkerUptime(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	client := pb.NewMetricraftClient(grpcConn)
-	response, err := client.GetWorkerUptime(context.Background(), &pb.WorkerUrl{Url: dummy.Url, Timezone: dummy.Timezone})
+	response, err := client.GetWorkerUptime(context.Background(), &pb.WorkerUrl{Url: dummy.Url, Timezone: dummy.Timezone, PollInterval: int32(dummy.PollInterval)})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

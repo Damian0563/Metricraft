@@ -338,7 +338,7 @@ func GetThroughput(ctx context.Context, start time.Time, resolution int32, timez
 	return &pb.Throughput{Values: throughput, ComputedThroughput: computedThroughput, UniqUsers: uniqUsers}, nil
 }
 
-func GetWorkerUptime(ctx context.Context, url string, timezone string) (*pb.WorkerUptime, error) {
+func GetWorkerUptime(ctx context.Context, url string, timezone string, pollIntervalSetting int32) (*pb.WorkerUptime, error) {
 	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
 	if err != nil {
 		return nil, err
@@ -351,7 +351,7 @@ func GetWorkerUptime(ctx context.Context, url string, timezone string) (*pb.Work
 	if err != nil {
 		return nil, err
 	}
-	pollInterval := time.Minute * 10
+	pollInterval := time.Minute * time.Duration(pollIntervalSetting)
 	var lastPoll time.Time
 	for res.Next() {
 		var date time.Time
