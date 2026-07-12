@@ -10,6 +10,10 @@ export const useBackendUrl = (): config => {
 	}
 }
 
+export const truncateUrl = (url: string, max = 20): string => {
+	if (url.length <= max) return url;
+	return `${url.slice(0, max - 1)}…`;
+};
 export const getCookie = (cname: string): string => {
 	if (import.meta.server) return ""
 	try {
