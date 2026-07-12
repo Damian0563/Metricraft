@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	pb "metricraft/proto/metricraft/proto"
 	"net/http"
@@ -133,7 +134,7 @@ func SaveWorker(w http.ResponseWriter, r *http.Request) {
 	}
 	client := pb.NewMetricraftClient(grpcConn)
 	var worker types.Worker
-	if err := json.NewDecoder(r.Body).Decode(&worker); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&worker); err != nil || (worker.PollInterval < 10 && worker.PollInterval > 60) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -256,7 +257,7 @@ func UpdateWorker(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var worker types.Worker
-	if err := json.NewDecoder(r.Body).Decode(&worker); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&worker); err != nil || (worker.PollInterval < 10 && worker.PollInterval > 60) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -321,7 +322,7 @@ func GetWorkerUptime(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	httpresponse, err := json.Marshal(response)
+	httpresponse, err := protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(response)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

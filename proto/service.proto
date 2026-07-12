@@ -45,7 +45,7 @@ message workerUptime{
 
 message workerUptimeEntry{
   google.protobuf.Timestamp stamp = 1;
-  bool status = 2;
+  int32 status = 2;
 }
 
 message StringInt32Map {
