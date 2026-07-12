@@ -363,17 +363,13 @@ func GetWorkerUptime(ctx context.Context, url string, timezone string) (*pb.Work
 			for date.After(lastPoll.Add(pollInterval)) {
 				lastPoll = lastPoll.Add(pollInterval)
 				uptime = append(uptime, &pb.WorkerUptimeEntry{
-					Status: false,
+					Status: -1,
 					Stamp:  timestamppb.New(lastPoll),
 				})
 			}
 		}
-		statusBool := false
-		if status == 1 {
-			statusBool = true
-		}
 		uptime = append(uptime, &pb.WorkerUptimeEntry{
-			Status: statusBool,
+			Status: int32(status),
 			Stamp:  timestamppb.New(date),
 		})
 		lastPoll = date
@@ -382,7 +378,7 @@ func GetWorkerUptime(ctx context.Context, url string, timezone string) (*pb.Work
 	for !lastPoll.IsZero() && now.After(lastPoll.Add(pollInterval)) {
 		lastPoll = lastPoll.Add(pollInterval)
 		uptime = append(uptime, &pb.WorkerUptimeEntry{
-			Status: false,
+			Status: -1,
 			Stamp:  timestamppb.New(lastPoll),
 		})
 	}

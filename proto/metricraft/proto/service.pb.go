@@ -301,7 +301,7 @@ func (x *WorkerUptime) GetEntries() []*WorkerUptimeEntry {
 type WorkerUptimeEntry struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Stamp         *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=stamp,proto3" json:"stamp,omitempty"`
-	Status        bool                   `protobuf:"varint,2,opt,name=status,proto3" json:"status,omitempty"`
+	Status        int32                  `protobuf:"varint,2,opt,name=status,proto3" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -343,11 +343,11 @@ func (x *WorkerUptimeEntry) GetStamp() *timestamppb.Timestamp {
 	return nil
 }
 
-func (x *WorkerUptimeEntry) GetStatus() bool {
+func (x *WorkerUptimeEntry) GetStatus() int32 {
 	if x != nil {
 		return x.Status
 	}
-	return false
+	return 0
 }
 
 type StringInt32Map struct {
@@ -766,7 +766,7 @@ const file_service_proto_rawDesc = "" +
 	"\aentries\x18\x01 \x03(\v2\x1d.metricraft.workerUptimeEntryR\aentries\"]\n" +
 	"\x11workerUptimeEntry\x120\n" +
 	"\x05stamp\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\x05stamp\x12\x16\n" +
-	"\x06status\x18\x02 \x01(\bR\x06status\"\x8b\x01\n" +
+	"\x06status\x18\x02 \x01(\x05R\x06status\"\x8b\x01\n" +
 	"\x0eStringInt32Map\x12>\n" +
 	"\x06values\x18\x01 \x03(\v2&.metricraft.StringInt32Map.ValuesEntryR\x06values\x1a9\n" +
 	"\vValuesEntry\x12\x10\n" +

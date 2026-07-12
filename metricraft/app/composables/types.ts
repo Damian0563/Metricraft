@@ -55,8 +55,8 @@ export type StringInt32Map = {
 };
 
 export type WorkerUptimeEntry = {
-	stamp?: { seconds?: number; nanos?: number };
-	status?: boolean;
+	stamp?: string;
+	status?: number;
 };
 
 export type WorkerUptimeData = {
