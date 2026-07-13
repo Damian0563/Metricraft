@@ -14,11 +14,11 @@ export const welcome = async (): Promise<boolean> => {
 
 export const sign = async (payload: signPayload): Promise<string | null> => {
 	try {
-		let data: string = await useApi()(`/sign`, {
+		const data: string | signResponse = await useApi()(`/sign`, {
 			method: 'POST',
 			body: payload,
 		})
-		const object: signResponse = JSON.parse(data)
+		const object: signResponse = typeof data === 'string' ? JSON.parse(data) : data
 		if (object.err) {
 			throw object.err
 		}
@@ -26,6 +26,15 @@ export const sign = async (payload: signPayload): Promise<string | null> => {
 	} catch (e: any) {
 		if (e.status === 429) {
 			throw "Too many requests, try again later."
+		}
+		if (typeof e === 'string') {
+			throw e
+		}
+		if (e.data?.err) {
+			throw e.data.err
+		}
+		if (e.status === 401) {
+			throw "Invalid credentials."
 		}
 		throw "Something went wrong, Check your internet connection and try again."
 	}
