@@ -361,7 +361,7 @@ func Sign(w http.ResponseWriter, r *http.Request) {
 	type signPayload struct {
 		Mail    string `json:"mail"`
 		Secret  string `json:"secret"`
-		AppName string `json:"appName",omitempty`
+		AppName string `json:"appName,omitempty"`
 	}
 	var payload signPayload
 	if err = json.Unmarshal(body, &payload); err != nil {
@@ -374,16 +374,17 @@ func Sign(w http.ResponseWriter, r *http.Request) {
 	}
 	payload.Mail = strings.TrimSpace(payload.Mail)
 	var jsonResponse = make(map[string]any)
+	status := http.StatusOK
 	if payload.AppName != "" {
 		if uuid, err := db.CreateUser(payload.Mail, payload.Secret, payload.AppName); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			status = http.StatusInternalServerError
 			jsonResponse["token"] = ""
 			jsonResponse["err"] = "Error occured during account creation. Please try again later."
 		} else {
-			w.WriteHeader(http.StatusOK)
 			token := auth.NewToken(uuid)
 			signed, err := token.Sign(true)
 			if err != nil {
+				status = http.StatusInternalServerError
 				jsonResponse["token"] = ""
 				jsonResponse["err"] = "Error occured during signing. Please try again later."
 			} else {
@@ -395,18 +396,20 @@ func Sign(w http.ResponseWriter, r *http.Request) {
 			token := auth.NewToken(uuid)
 			signed, err := token.Sign(true)
 			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
+				status = http.StatusInternalServerError
 				jsonResponse["token"] = ""
 				jsonResponse["err"] = "Error occured during signing. Please try again later."
+			} else {
+				jsonResponse["token"] = signed
 			}
-			w.WriteHeader(http.StatusOK)
-			jsonResponse["token"] = signed
 		} else {
-			w.WriteHeader(http.StatusUnauthorized)
+			status = http.StatusUnauthorized
 			jsonResponse["token"] = ""
 			jsonResponse["err"] = "Invalid credentials"
 		}
 	}
 	response, _ := json.Marshal(jsonResponse)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
 	w.Write(response)
 }

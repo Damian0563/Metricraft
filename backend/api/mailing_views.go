@@ -144,51 +144,44 @@ func CheckVerification(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	payload.Mail = strings.TrimSpace(payload.Mail)
-	var routine = make(chan types.ExistsErrResponse, 2)
-	go db.CheckAllowed(routine, payload.Mail, payload.AppName)
+	routine := make(chan types.ExistsErrResponse, 1)
 	go redis.CheckCodeValidity(routine, payload.Mail, payload.Code)
-	for received := 2; received > 0; received-- {
-		select {
-		case response := <-routine:
-			switch response.Origin {
-			case "checkCodeValidity":
-				if response.Err != nil {
-					http.Error(w, "Something went wrong, please try again later", http.StatusInternalServerError)
-				} else {
-					if !response.Exists {
-						http.Error(w, "Invalid or expired verification code", http.StatusBadRequest)
-					}
-				}
-			case "checkAllowed":
-				msg := ""
-				if response.Err != nil {
-					msg = response.Err.Error()
-				}
-				switch {
-				case msg == "Owner is allowed to sign in", response.Err == nil && response.Exists:
-					w.WriteHeader(http.StatusOK)
-					return
-				case msg == "Permission needed from the owner", response.Err == nil && !response.Exists:
-					if err := db.AddToPendingList(payload.Mail, payload.AppName); err != nil {
-						http.Error(w, "Something went wrong, please try again later", http.StatusInternalServerError)
-					} else {
-						if err := mail.SendPermissionRequest(response.Owner, payload.Mail, payload.AppName); err != nil {
-							http.Error(w, "Something went wrong, please try again later", http.StatusInternalServerError)
-						} else {
-							http.Error(w, "Permission needed from the owner", http.StatusUnauthorized)
-						}
-					}
-				case msg == "App name verification needed.", response.Err == nil && response.Exists:
-					malicious := !db.VerifyAppName(payload.AppName)
-					if malicious {
-						http.Error(w, "Invalid app name", http.StatusForbidden)
-					} else {
-						w.WriteHeader(http.StatusOK)
-					}
-				default:
-					http.Error(w, "Something went wrong, please try again later", http.StatusInternalServerError)
-				}
-			}
+	codeResponse := <-routine
+	if codeResponse.Err != nil {
+		http.Error(w, "Something went wrong, please try again later", http.StatusInternalServerError)
+		return
+	}
+	if !codeResponse.Exists {
+		http.Error(w, "Invalid or expired verification code", http.StatusBadRequest)
+		return
+	}
+
+	go db.CheckAllowed(routine, payload.Mail, payload.AppName)
+	allowedResponse := <-routine
+	msg := ""
+	if allowedResponse.Err != nil {
+		msg = allowedResponse.Err.Error()
+	}
+	switch {
+	case msg == "Owner is allowed to sign in", allowedResponse.Err == nil && allowedResponse.Exists:
+		w.WriteHeader(http.StatusOK)
+	case msg == "Permission needed from the owner", allowedResponse.Err == nil && !allowedResponse.Exists:
+		if err := db.AddToPendingList(payload.Mail, payload.AppName); err != nil {
+			http.Error(w, "Something went wrong, please try again later", http.StatusInternalServerError)
+			return
 		}
+		if err := mail.SendPermissionRequest(allowedResponse.Owner, payload.Mail, payload.AppName); err != nil {
+			http.Error(w, "Something went wrong, please try again later", http.StatusInternalServerError)
+			return
+		}
+		http.Error(w, "Permission needed from the owner", http.StatusUnauthorized)
+	case msg == "App name verification needed.", allowedResponse.Err == nil && allowedResponse.Exists:
+		if !db.VerifyAppName(payload.AppName) {
+			http.Error(w, "Invalid app name", http.StatusForbidden)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	default:
+		http.Error(w, "Something went wrong, please try again later", http.StatusInternalServerError)
 	}
 }

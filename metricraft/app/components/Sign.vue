@@ -197,19 +197,20 @@ const handleSign = async () => {
 			validCode.value = false;
 			const sent: verifyResponse = await sendVerification(payload.mail);
 			if (!sent.success) {
-				emit('popup', String(sent.err));
+				emit('popup', sent.err || 'Unable to send a verification code. Please try again.');
 				return;
 			}
 			emit('popup', 'We sent you a verification code. Please check your email.');
 			toggleLoader(false);
 			await new Promise(resolve => setTimeout(resolve, 1000)); //just a small delay to make ui smooth
 			showVerficationCode.value = true;
-			toggleLoader(false);
 			await waitForValidCode();
+			if (!validCode.value) return;
+			toggleLoader(true);
 		}
 		await completeSign(payload);
 	} catch (e) {
-		emit('popup', String(e));
+		emit('popup', String(e || 'Something went wrong, please try again.'));
 	} finally {
 		toggleLoader(false);
 	}
@@ -220,12 +221,16 @@ const handleComplete = async (code: string) => {
 	if (code === "CLOSED") {
 		validCode.value = false
 		receivedCode.value = true;
+		emit('popup', 'Verification cancelled.');
 		return;
 	}
 	const verified: verifyResponse = await verify(mail.value, code, appName.value);
 	if (!verified.success) {
-		if (verified.status === 403) {
-			emit('notice', String(verified.err));
+		const message = verified.err || 'Verification failed. Please try again.';
+		if (verified.status === 401 || verified.status === 403) {
+			emit('notice', message);
+		} else {
+			emit('popup', message);
 		}
 		validCode.value = false
 	} else {
