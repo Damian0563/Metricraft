@@ -76,7 +76,7 @@ export type pendingUsersPayload = {
 }
 
 export type allowedUsersPayload = {
-	users: Array<{ mail: string, initials: string, status: boolean }>;
+	users: Array<{ mail: string, initials: string, status: boolean, receiveNotifications: boolean }>;
 }
 
 export type TeamUser = allowedUsersPayload["users"][number];

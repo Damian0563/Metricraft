@@ -172,13 +172,17 @@ const users = computed(() => teamUsers.value?.filter(user => user.status) ?? [])
 const selectedRecipients = ref<string[]>([])
 const recipientSelectionInitialized = ref(false)
 watch(users, (availableUsers) => {
-	const availableMails = availableUsers.map(user => user.mail)
+	const notificationEnabledMails = new Set(
+		availableUsers
+			.filter(user => user.receiveNotifications)
+			.map(user => user.mail),
+	)
 	if (!recipientSelectionInitialized.value) {
-		selectedRecipients.value = availableMails
-		recipientSelectionInitialized.value = true
+		selectedRecipients.value = [...notificationEnabledMails]
+		recipientSelectionInitialized.value = availableUsers.length > 0
 		return
 	}
-	selectedRecipients.value = selectedRecipients.value.filter(mail => availableMails.includes(mail))
+	selectedRecipients.value = selectedRecipients.value.filter(mail => notificationEnabledMails.has(mail))
 }, { immediate: true })
 const isRecipientSelected = (mail: string): boolean => selectedRecipients.value.includes(mail)
 const toggleRecipient = (mail: string) => {

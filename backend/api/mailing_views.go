@@ -147,21 +147,17 @@ func CheckVerification(w http.ResponseWriter, r *http.Request) {
 	var routine = make(chan types.ExistsErrResponse, 2)
 	go db.CheckAllowed(routine, payload.Mail, payload.AppName)
 	go redis.CheckCodeValidity(routine, payload.Mail, payload.Code)
-	var (
-		codeValid   bool
-		permitted   bool
-		internalErr bool
-		malicious   bool
-	)
 	for received := 2; received > 0; received-- {
 		select {
 		case response := <-routine:
 			switch response.Origin {
 			case "checkCodeValidity":
 				if response.Err != nil {
-					internalErr = true
+					http.Error(w, "Something went wrong, please try again later", http.StatusInternalServerError)
 				} else {
-					codeValid = response.Exists
+					if !response.Exists {
+						http.Error(w, "Invalid or expired verification code", http.StatusBadRequest)
+					}
 				}
 			case "checkAllowed":
 				msg := ""
@@ -170,36 +166,29 @@ func CheckVerification(w http.ResponseWriter, r *http.Request) {
 				}
 				switch {
 				case msg == "Owner is allowed to sign in", response.Err == nil && response.Exists:
-					permitted = true
+					w.WriteHeader(http.StatusOK)
+					return
 				case msg == "Permission needed from the owner", response.Err == nil && !response.Exists:
 					if err := db.AddToPendingList(payload.Mail, payload.AppName); err != nil {
-						internalErr = true
+						http.Error(w, "Something went wrong, please try again later", http.StatusInternalServerError)
 					} else {
 						if err := mail.SendPermissionRequest(response.Owner, payload.Mail, payload.AppName); err != nil {
-							internalErr = true
+							http.Error(w, "Something went wrong, please try again later", http.StatusInternalServerError)
 						} else {
-							permitted = false
+							http.Error(w, "Permission needed from the owner", http.StatusUnauthorized)
 						}
 					}
 				case msg == "App name verification needed.", response.Err == nil && response.Exists:
-					malicious = !db.VerifyAppName(payload.AppName)
+					malicious := !db.VerifyAppName(payload.AppName)
+					if malicious {
+						http.Error(w, "Invalid app name", http.StatusForbidden)
+					} else {
+						w.WriteHeader(http.StatusOK)
+					}
 				default:
-					internalErr = true
+					http.Error(w, "Something went wrong, please try again later", http.StatusInternalServerError)
 				}
 			}
 		}
-	}
-	switch {
-	case internalErr:
-		http.Error(w, "Something went wrong, please try again later", http.StatusInternalServerError)
-	case !codeValid:
-		http.Error(w, "Invalid or expired verification code", http.StatusBadRequest)
-	case !permitted:
-		http.Error(w, "Permission needed from the owner", http.StatusUnauthorized)
-	case malicious:
-		http.Error(w, "Invalid app name", http.StatusForbidden)
-	default:
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Verification successful"))
 	}
 }

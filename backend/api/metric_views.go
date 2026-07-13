@@ -309,7 +309,7 @@ func GetWorkerUptime(w http.ResponseWriter, r *http.Request) {
 		PollInterval int    `json:"pollInterval"`
 	}
 	var dummy dummyWorker
-	if err := json.NewDecoder(r.Body).Decode(&dummy); err != nil || strings.TrimSpace(dummy.Url) == "" {
+	if err := json.NewDecoder(r.Body).Decode(&dummy); err != nil || strings.TrimSpace(dummy.Url) == "" || dummy.PollInterval < 10 || dummy.PollInterval > 60 {
 		http.Error(w, "Invalid worker URL", http.StatusBadRequest)
 		return
 	}
