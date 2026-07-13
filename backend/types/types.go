@@ -60,10 +60,16 @@ type PendingUsers struct {
 	Mail string `json:"mail"`
 }
 
+type AllowedUsersDb struct {
+	Mail                 string `json:"mail"`
+	ReceiveNotifications bool   `json:"receiveNotifications"`
+}
+
 type AllowedUsers struct {
-	Mail     string `json:"mail"`
-	Initials string `json:"initials"`
-	Status   bool   `json:"status"`
+	Mail                 string `json:"mail"`
+	Initials             string `json:"initials"`
+	Status               bool   `json:"status"`
+	ReceiveNotifications bool   `json:"receiveNotifications"`
 }
 type SendRecoveryUser struct {
 	Mail string `json:"mail"`

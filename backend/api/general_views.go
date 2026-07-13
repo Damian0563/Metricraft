@@ -8,6 +8,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"errors"
+	"github.com/jackc/pgx/v5"
 	"io"
 	"net/http"
 	"os"
@@ -285,6 +286,10 @@ func PendingInvites(w http.ResponseWriter, r *http.Request) {
 	}
 	pendingUsers, err := db.GetPendingUsers(appName)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			w.Write([]byte("{\"users\":[]}"))
+			return
+		}
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

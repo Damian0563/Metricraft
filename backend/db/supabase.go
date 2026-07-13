@@ -39,9 +39,9 @@ func CheckAllowed(routine chan types.ExistsErrResponse, mail string, appName str
 		return
 	}
 	defer conn.Close(context.Background())
-	var allowed_users string
+	var allowedUsers string
 	var owner string
-	err = conn.QueryRow(context.Background(), "SELECT allowed_users,mail FROM users WHERE app_name=$1", appName).Scan(&allowed_users, &owner)
+	err = conn.QueryRow(context.Background(), "SELECT allowed_users,mail FROM users WHERE app_name=$1", appName).Scan(&allowedUsers, &owner)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			routine <- types.ExistsErrResponse{Exists: true, Err: errors.New("App name verification needed."), Origin: origin, Owner: owner}
@@ -50,17 +50,17 @@ func CheckAllowed(routine chan types.ExistsErrResponse, mail string, appName str
 	}
 	if owner == mail {
 		routine <- types.ExistsErrResponse{Exists: true, Err: errors.New("Owner is allowed to sign in"), Origin: origin, Owner: owner}
-	} else if allowed_users == "" && owner == "" {
+	} else if allowedUsers == "" && owner == "" {
 		routine <- types.ExistsErrResponse{Exists: false, Err: nil, Origin: origin, Owner: owner}
-	} else if allowed_users != "" && owner != "" {
-		var allowed []string
-		err = json.Unmarshal([]byte(allowed_users), &allowed)
+	} else if allowedUsers != "" && owner != "" {
+		var allowed []types.AllowedUsersDb
+		err = json.Unmarshal([]byte(allowedUsers), &allowed)
 		if err != nil {
 			routine <- types.ExistsErrResponse{Exists: false, Err: err, Origin: origin, Owner: owner}
 			return
 		}
 		for _, user := range allowed {
-			if user == mail {
+			if user.Mail == mail {
 				routine <- types.ExistsErrResponse{Exists: true, Err: nil, Origin: origin, Owner: owner}
 				return
 			}
@@ -103,31 +103,53 @@ func ChangePassword(userId string, password string) error {
 }
 
 func AllowUsers(mails []string, appName string, errChannel chan error) {
-	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
+	ctx := context.Background()
+	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_USERS"))
 	if err != nil {
 		errChannel <- err
 		return
 	}
-	defer conn.Close(context.Background())
+	defer conn.Close(ctx)
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		errChannel <- err
+		return
+	}
+	defer tx.Rollback(ctx)
 	var allowedUsers string
-	err = conn.QueryRow(context.Background(), "SELECT allowed_users FROM users WHERE app_name=$1 AND owner=true", appName).Scan(&allowedUsers)
+	err = tx.QueryRow(ctx, "SELECT allowed_users FROM users WHERE app_name=$1 AND owner=true", appName).Scan(&allowedUsers)
 	if err != nil {
 		errChannel <- err
 		return
 	}
-	var allowed []string
-	unMarshalUsers(allowedUsers, &allowed)
+	var allowed []types.AllowedUsersDb
+	if err = json.Unmarshal([]byte(allowedUsers), &allowed); err != nil {
+		errChannel <- err
+		return
+	}
 	for _, mail := range mails {
-		if !slices.Contains(allowed, mail) {
-			allowed = append(allowed, mail)
+		found := false
+		for _, user := range allowed {
+			if user.Mail == mail {
+				found = true
+				break
+			}
+		}
+		if !found {
+			allowed = append(allowed, types.AllowedUsersDb{Mail: mail, ReceiveNotifications: false})
 		}
 	}
-	_, err = conn.Exec(context.Background(), "UPDATE users SET allowed_users=$1 WHERE app_name=$2 AND owner=true", allowed, appName)
+	var marshaled []byte
+	if marshaled, err = json.Marshal(allowed); err != nil {
+		errChannel <- err
+		return
+	}
+	_, err = tx.Exec(ctx, "UPDATE users SET allowed_users=$1 WHERE app_name=$2 AND owner=true", string(marshaled), appName)
 	if err != nil {
 		errChannel <- err
 		return
 	}
-	errChannel <- nil
+	errChannel <- tx.Commit(ctx)
 }
 
 func AddToPendingList(mail string, appName string) error {
@@ -162,31 +184,42 @@ func unMarshalUsers(jsonString string, jsonSlice *[]string) {
 }
 
 func HandleInvite(mail string, decision string, appName string) error {
+	ctx := context.Background()
 	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
 	if err != nil {
 		return err
 	}
 	defer conn.Close(context.Background())
+	tx, err := conn.Begin(context.Background())
+	if err != nil {
+		return err
+	}
 	var pendingUsers string
 	var allowedUsers string
-	err = conn.QueryRow(context.Background(), "SELECT allowed_users,pending_users FROM users WHERE app_name=$1 AND owner=true", appName).Scan(&allowedUsers, &pendingUsers)
+	err = tx.QueryRow(ctx, "SELECT allowed_users,pending_users FROM users WHERE app_name=$1 AND owner=true", appName).Scan(&allowedUsers, &pendingUsers)
 	if err != nil {
 		return err
 	}
 	var pending []string
-	var allowed []string
+	var allowed []types.AllowedUsersDb
 	unMarshalUsers(pendingUsers, &pending)
-	unMarshalUsers(allowedUsers, &allowed)
+	if err = json.Unmarshal([]byte(allowedUsers), &allowed); err != nil {
+		return err
+	}
 	idx := slices.Index(pending, mail)
 	if idx == -1 {
 		return errors.New("User not found")
 	}
 	pending = slices.Delete(pending, idx, idx+1)
 	if decision == "true" {
-		allowed = append(allowed, mail)
+		allowed = append(allowed, types.AllowedUsersDb{Mail: mail, ReceiveNotifications: false})
 	}
-	_, err = conn.Exec(context.Background(), "UPDATE users SET pending_users=$1,allowed_users=$2 WHERE app_name=$3 AND owner=true", pending, allowed, appName)
-	return err
+	var marshaled []byte
+	if marshaled, err = json.Marshal(allowed); err != nil {
+		return err
+	}
+	_, err = tx.Exec(ctx, "UPDATE users SET pending_users=$1,allowed_users=$2 WHERE app_name=$3 AND owner=true", pending, marshaled, appName)
+	return tx.Commit(ctx)
 }
 
 func GetTeamUsers(appName string) ([]types.AllowedUsers, error) {
@@ -201,20 +234,19 @@ func GetTeamUsers(appName string) ([]types.AllowedUsers, error) {
 	if err != nil {
 		return nil, err
 	}
-	var users []string
+	var users []types.AllowedUsersDb
 	err = json.Unmarshal([]byte(teamUsers), &users)
 	if err != nil {
 		return nil, err
 	}
-	users = slices.Insert(users, 0, owner)
 	var response []types.AllowedUsers
 	for _, user := range users {
 		var exists bool
-		err = conn.QueryRow(context.Background(), "SELECT EXISTS(SELECT 1 FROM users WHERE mail = $1)", user).Scan(&exists)
+		err = conn.QueryRow(context.Background(), "SELECT EXISTS(SELECT 1 FROM users WHERE mail = $1)", user.Mail).Scan(&exists)
 		if err != nil {
 			return nil, err
 		}
-		response = append(response, types.AllowedUsers{Mail: user, Initials: strings.ToUpper(user[0:2]), Status: exists})
+		response = append(response, types.AllowedUsers{Mail: user.Mail, Initials: strings.ToUpper(user.Mail[0:2]), Status: exists, ReceiveNotifications: user.ReceiveNotifications})
 	}
 	return response, nil
 }
@@ -239,34 +271,43 @@ func GetPendingUsers(appName string) ([]string, error) {
 }
 
 func CreateUser(mail string, secret string, appName string) (string, error) {
-	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
+	ctx := context.Background()
+	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_USERS"))
 	if err != nil {
 		return "", err
 	}
-	defer conn.Close(context.Background())
+	defer conn.Close(ctx)
 	hashedSecret, err := bcrypt.GenerateFromPassword([]byte(secret), bcrypt.DefaultCost)
 	if err != nil {
 		return "", err
 	}
 	uuid := uuid.New().String()
 	owner := checkAppNameExists(appName)
-	if _, err = conn.Exec(context.Background(), "INSERT INTO users (created_at, mail, secret, app_name, uuid,owner) VALUES ($1, $2, $3, $4, $5,$6)", time.Now(), mail, string(hashedSecret), appName, uuid, owner); err != nil {
+	allowedUsers, err := json.Marshal([]types.AllowedUsersDb{{
+		Mail:                 mail,
+		ReceiveNotifications: true,
+	}})
+	if err != nil {
 		return "", err
 	}
-	if _, err = conn.Exec(context.Background(), "INSERT INTO workers (app_name) VALUES ($1)", appName); err != nil {
+	if _, err = conn.Exec(ctx, "INSERT INTO users (created_at, mail, secret, app_name, uuid,owner,allowed_users) VALUES ($1, $2, $3, $4, $5,$6, $7)", time.Now(), mail, string(hashedSecret), appName, uuid, owner, string(allowedUsers)); err != nil {
+		return "", err
+	}
+	if _, err = conn.Exec(ctx, "INSERT INTO workers (app_name) VALUES ($1)", appName); err != nil {
 		return "", err
 	}
 	return uuid, nil
 }
 
 func checkAppNameExists(appName string) bool {
-	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
+	ctx := context.Background()
+	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_USERS"))
 	if err != nil {
 		return false
 	}
-	defer conn.Close(context.Background())
+	defer conn.Close(ctx)
 	var exists bool
-	err = conn.QueryRow(context.Background(), "SELECT EXISTS(SELECT 1 FROM settings WHERE appname = $1)", appName).Scan(&exists)
+	err = conn.QueryRow(ctx, "SELECT NOT EXISTS(SELECT 1 FROM users WHERE app_name = $1)", appName).Scan(&exists)
 	if err != nil {
 		return false
 	}
