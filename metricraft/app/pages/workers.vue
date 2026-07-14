@@ -110,7 +110,7 @@
 								<p class="text-xs text-gray-500 mt-1">
 									Choose who receives an email when a worker returns a status outside 200–299.
 								</p>
-								<div v-if="users.length > 0" class="flex gap-3 mt-3">
+								<div v-if="users.length > 0" class="flex items-center gap-3 mt-3">
 									<button type="button" @click="selectAllRecipients"
 										class="text-xs font-semibold text-[#00A652] hover:text-[#008C45] cursor-pointer">
 										Select all
@@ -118,6 +118,10 @@
 									<button type="button" @click="clearRecipients"
 										class="text-xs font-semibold text-gray-500 hover:text-gray-700 cursor-pointer">
 										Clear
+									</button>
+									<button type="button" @click="saveRecipients"
+										class="ml-auto inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold rounded-md bg-[#00F376] text-gray-900 hover:bg-[#00D96A] transition-colors cursor-pointer shadow-sm">
+										Save
 									</button>
 								</div>
 							</div>
@@ -195,6 +199,22 @@ const selectAllRecipients = () => {
 }
 const clearRecipients = () => {
 	selectedRecipients.value = []
+}
+const saveRecipients = async () => {
+	const emails: { mail: string, receiveNotifications: boolean }[] = users.value.map(user => ({
+		mail: user.mail,
+		receiveNotifications: selectedRecipients.value.includes(user.mail)
+	}));
+	if (emails.length > 0) {
+		saving.value = true
+		try {
+			await saveNotificationRecipients(emails)
+		} catch (e) {
+			errorMessage.value = parseApiError(e, 'Something went wrong while saving the worker. Please try again.')
+		} finally {
+			saving.value = false
+		}
+	}
 }
 const statusCodeClass = (statusCode: number): string => {
 	if (statusCode >= 200 && statusCode < 300) return 'bg-[#00F376]/10 text-[#00B35C] border-[#00F376]'

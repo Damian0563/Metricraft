@@ -101,3 +101,11 @@ export const getWorkerUptime = async (url: string, pollInterval: number): Promis
 		body: { url: url, timezone: userZone, pollInterval: pollInterval },
 	})
 }
+
+
+export const saveNotificationRecipients = async (selectedRecipients: { mail: string, receiveNotifications: boolean }[]): Promise<void> => {
+	await useApi()("/dashboard/worker/notifications", {
+		method: "PATCH",
+		body: selectedRecipients,
+	})
+}

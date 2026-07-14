@@ -183,6 +183,31 @@ func unMarshalUsers(jsonString string, jsonSlice *[]string) {
 	}
 }
 
+func ChangeNotificationRecipients(allowedUsers []types.AllowedUsersDb, appName string) error {
+	ctx := context.Background()
+	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_USERS"))
+	if err != nil {
+		return err
+	}
+	defer conn.Close(ctx)
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+	if _, err = tx.Exec(ctx, "SELECT allowed_users FROM users WHERE app_name=$1 AND owner=true FOR UPDATE", appName); err != nil && err != pgx.ErrNoRows {
+		return err
+	}
+	var marshaled []byte
+	if marshaled, err = json.Marshal(allowedUsers); err != nil {
+		return err
+	}
+	if _, err = tx.Exec(ctx, "UPDATE users SET allowed_users=$1 WHERE app_name=$2 AND owner=true", string(marshaled), appName); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
 func HandleInvite(mail string, decision string, appName string) error {
 	ctx := context.Background()
 	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
