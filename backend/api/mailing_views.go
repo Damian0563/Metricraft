@@ -5,6 +5,7 @@ import (
 	"backend/mail"
 	"backend/redis"
 	"backend/types"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
@@ -184,4 +185,19 @@ func CheckVerification(w http.ResponseWriter, r *http.Request) {
 	default:
 		http.Error(w, "Something went wrong, please try again later", http.StatusInternalServerError)
 	}
+}
+
+func SendErrorNotification(ctx context.Context, appName string, url string, statusCode int, errMsg string, errChan chan error) {
+	teamUsers, err := db.GetTeamUsers(appName)
+	if err != nil {
+		errChan <- err
+		return
+	}
+	var recipients []string
+	for _, user := range teamUsers {
+		if user.ReceiveNotifications {
+			recipients = append(recipients, user.Mail)
+		}
+	}
+	errChan <- mail.SendErrorNotification(recipients, appName, url, statusCode, errMsg)
 }

@@ -178,6 +178,7 @@ GOOGLE_APP_PASSWORD=your-smtp-app-password
 | `MODE` | yes | `local` for host development; Docker images set `standalone` automatically. |
 | `DATABASE_LOGS` | yes | PostgreSQL connection string for writing captured request/response metrics. Must point to the same database as the backend. |
 | `DEST_PORT` | optional | Port the worker proxy forwards captured traffic to (your upstream application). Defaults to the port present in the request `Host` header when unset. |
+| `GOOGLE_APP_PASSWORD` | optional | SMTP/app password used to send verification emails. Required only if email delivery is enabled. |
 
 Example:
 

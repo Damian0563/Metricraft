@@ -1,6 +1,7 @@
 package worker
 
 import (
+	backend "backend/api"
 	supabase "backend/db"
 	"context"
 	"fmt"
@@ -49,6 +50,7 @@ func StartWorker(ctx context.Context, worker *pb.Worker, wg *sync.WaitGroup) {
 		delete(Orchestrator.Registry, worker.Url)
 		Orchestrator.Mutex.Unlock()
 	}()
+	errChan := make(chan error)
 	for {
 		select {
 		case <-ctx.Done():
@@ -58,6 +60,13 @@ func StartWorker(ctx context.Context, worker *pb.Worker, wg *sync.WaitGroup) {
 			if err := db.InsertWorkerLog(ctx, worker.Url, resp.Success); err != nil {
 				fmt.Println(err, worker.Url)
 				return
+			}
+			if !resp.Success {
+				go backend.SendErrorNotification(ctx, worker.AppName, worker.Url, int(resp.StatusCode), resp.Err, errChan)
+			}
+		case err := <-errChan:
+			if err != nil {
+				fmt.Println(err)
 			}
 		}
 	}
@@ -104,7 +113,7 @@ func OrchestrateWorkers(ctx context.Context) {
 		Orchestrator.Registry[w.Url] = cancel
 		Orchestrator.Mutex.Unlock()
 		wg.Add(1)
-		go StartWorker(workerCtx, &pb.Worker{Url: w.Url, PollInterval: int32(w.PollInterval), Headers: w.Headers}, &wg)
+		go StartWorker(workerCtx, &pb.Worker{Url: w.Url, PollInterval: int32(w.PollInterval), Headers: w.Headers, AppName: appName}, &wg)
 	}
 	wg.Wait()
 }

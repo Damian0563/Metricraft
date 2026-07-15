@@ -16,10 +16,8 @@ import (
 )
 
 func loadEnv() {
-	for _, path := range []string{".env", "../.env", "worker/.env"} {
-		if err := godotenv.Load(path); err == nil {
-			return
-		}
+	for _, path := range []string{".env", "../.env", "worker/.env", "backend/.env", "../backend/.env"} {
+		_ = godotenv.Load(path)
 	}
 }
 
