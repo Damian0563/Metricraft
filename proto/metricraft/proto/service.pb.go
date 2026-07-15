@@ -147,6 +147,7 @@ type Worker struct {
 	Url           string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
 	PollInterval  int32                  `protobuf:"varint,2,opt,name=pollInterval,proto3" json:"pollInterval,omitempty"`
 	Headers       map[string]string      `protobuf:"bytes,3,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	AppName       string                 `protobuf:"bytes,4,opt,name=appName,proto3" json:"appName,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -200,6 +201,13 @@ func (x *Worker) GetHeaders() map[string]string {
 		return x.Headers
 	}
 	return nil
+}
+
+func (x *Worker) GetAppName() string {
+	if x != nil {
+		return x.AppName
+	}
+	return ""
 }
 
 type Status struct {
@@ -757,11 +765,12 @@ const file_service_proto_rawDesc = "" +
 	"\tworkerUrl\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12\x1a\n" +
 	"\btimezone\x18\x02 \x01(\tR\btimezone\x12\"\n" +
-	"\fpollInterval\x18\x03 \x01(\x05R\fpollInterval\"\xb5\x01\n" +
+	"\fpollInterval\x18\x03 \x01(\x05R\fpollInterval\"\xcf\x01\n" +
 	"\x06worker\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12\"\n" +
 	"\fpollInterval\x18\x02 \x01(\x05R\fpollInterval\x129\n" +
-	"\aheaders\x18\x03 \x03(\v2\x1f.metricraft.worker.HeadersEntryR\aheaders\x1a:\n" +
+	"\aheaders\x18\x03 \x03(\v2\x1f.metricraft.worker.HeadersEntryR\aheaders\x12\x18\n" +
+	"\aappName\x18\x04 \x01(\tR\aappName\x1a:\n" +
 	"\fHeadersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"T\n" +

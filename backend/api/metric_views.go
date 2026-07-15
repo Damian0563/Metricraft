@@ -149,6 +149,7 @@ func SaveWorker(w http.ResponseWriter, r *http.Request) {
 		Url:          worker.Url,
 		PollInterval: int32(worker.PollInterval),
 		Headers:      worker.Headers,
+		AppName:      appName,
 	})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -279,6 +280,7 @@ func UpdateWorker(w http.ResponseWriter, r *http.Request) {
 		Url:          worker.Url,
 		PollInterval: int32(worker.PollInterval),
 		Headers:      worker.Headers,
+		AppName:      appName,
 	})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

@@ -2,10 +2,12 @@ package mail
 
 import (
 	"errors"
+	"fmt"
 	"html"
 	"net/smtp"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -63,6 +65,18 @@ func ValidateMail(mailInput string) bool {
 	return mailPattern.MatchString(mail)
 }
 
+func SendErrorNotification(recipients []string, appName, url string, statusCode int, errMsg string) error {
+	if len(recipients) == 0 {
+		return nil
+	}
+	body := strings.ReplaceAll(workerFailureEmailTemplate, "{{APP}}", html.EscapeString(appName))
+	body = strings.ReplaceAll(body, "{{URL}}", html.EscapeString(url))
+	body = strings.ReplaceAll(body, "{{STATUS_CODE}}", html.EscapeString(strconv.Itoa(statusCode)))
+	body = strings.ReplaceAll(body, "{{ERROR_MESSAGE}}", html.EscapeString(errMsg))
+	subject := fmt.Sprintf("Worker health check failed for %s", sanitizeHeaderValue(appName))
+	return sendMany(recipients, subject, body)
+}
+
 func SendInvite(to, appName string) error {
 	inviteURL := strings.TrimRight(os.Getenv("frontend"), "/")
 	if inviteURL == "" {
@@ -74,17 +88,31 @@ func SendInvite(to, appName string) error {
 }
 
 func send(to, subject, body string) error {
+	return sendMany([]string{to}, subject, body)
+}
+
+func sendMany(recipients []string, subject, body string) error {
 	apiKey := os.Getenv("GOOGLE_APP_PASSWORD")
 	if apiKey == "" {
 		return errors.New("GOOGLE_APP_PASSWORD")
 	}
-	to = strings.TrimSpace(to)
-	if !ValidateMail(to) {
-		return errors.New("invalid email address")
+	var to []string
+	for _, recipient := range recipients {
+		recipient = strings.TrimSpace(recipient)
+		if recipient == "" {
+			continue
+		}
+		if !ValidateMail(recipient) {
+			return errors.New("invalid email address")
+		}
+		recipient = sanitizeHeaderValue(recipient)
+		to = append(to, recipient)
 	}
-	to = sanitizeHeaderValue(to)
+	if len(to) == 0 {
+		return nil
+	}
 	auth := smtp.PlainAuth("", fromAddress, apiKey, smtpHost)
-	return smtp.SendMail(smtpAddress, auth, fromAddress, []string{to}, buildMessage(to, subject, body))
+	return smtp.SendMail(smtpAddress, auth, fromAddress, to, buildMessage(strings.Join(to, ", "), subject, body))
 }
 
 func buildMessage(to, subject, body string) []byte {
