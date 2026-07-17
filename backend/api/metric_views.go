@@ -100,6 +100,8 @@ func Navigator(w http.ResponseWriter, r *http.Request) {
 		response, err = client.GetUptimeScore(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days, Timezone: timezone})
 	case "Throughput":
 		response, err = client.GetThroughput(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days, Timezone: timezone})
+	case "Geographic performance":
+		response, err = client.GetGeographicalPerformance(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days, Timezone: timezone})
 	default:
 		break
 	}

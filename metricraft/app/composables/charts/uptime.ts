@@ -14,7 +14,7 @@ export const createWorkerUptimeChart = (
 		if (!entries.length) throw new Error('Data is empty');
 		const dates: Date[] = entries.map((entry) => new Date(entry.stamp ?? 0));
 		const labels: string[] = dates.map((date) =>
-			date.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+			date.toLocaleString(undefined, { timeZone: "UTC", month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 		);
 		const statuses: number[] = entries.map((entry) => entry.status!);
 		const colors: string[] = statuses.map((up) => (up === 1 ? upColor : up === 0 ? downColor : noColor));
@@ -81,7 +81,7 @@ export const createWorkerUptimeChart = (
 						callbacks: {
 							title: (items) => {
 								const index = items[0]?.dataIndex ?? 0;
-								return dates[index]?.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) ?? '';
+								return dates[index]?.toLocaleString(undefined, { timeZone: "UTC", month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) ?? '';
 							},
 							label: (item) => (statuses[item.dataIndex] === 1 ? 'Status: Up' : statuses[item.dataIndex] === 0 ? 'Status: Down' : 'Status: No data'),
 							labelColor: (item) => {

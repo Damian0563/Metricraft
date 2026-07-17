@@ -131,7 +131,7 @@ const originalMetrics = ref<Metric[]>([
 	{ id: 2, name: 'P95 Latency', description: '95th percentile response time per endpoint', enabled: true, timeframe: "7d" },
 	{ id: 3, name: 'Traffic congestion trends', description: 'Request volume measured in one hour time intervals over specified time frame.', enabled: false, timeframe: "7d" },
 	{ id: 4, name: 'Uptime Score', description: 'Availability percentage over specified time frame.', enabled: true, timeframe: "7d" },
-	{ id: 5, name: 'Geographic performance', description: 'Average response times rates broken down by client country or region.', enabled: false, timeframe: "7d" },
+	{ id: 5, name: 'Geographic performance', description: 'Median response times broken down by clients\' countries.', enabled: false, timeframe: "7d" },
 	{ id: 6, name: 'Status code distribution', description: 'Breakdown of HTTP response codes grouped by category (2xx, 3xx, 4xx, 5xx) over time.', enabled: false, timeframe: "7d" },
 	{ id: 7, name: 'Median response time', description: 'P50 latency across all requests, providing a representative measure of typical endpoint performance.', enabled: true, timeframe: "7d" },
 	{ id: 8, name: 'Throughput', description: 'Requests per second measured over configurable time intervals to track traffic capacity and trends.', enabled: true, timeframe: "7d" },
