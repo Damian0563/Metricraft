@@ -31,6 +31,10 @@ func (s *Server) GetThroughput(ctx context.Context, req *pb.Timeframe) (*pb.Thro
 	return db.GetThroughput(ctx, req.Start.AsTime(), req.Resolution, req.Timezone)
 }
 
+func (s *Server) GetGeographicalPerformance(ctx context.Context, req *pb.Timeframe) (*pb.FloatDistribution, error) {
+	return db.GetGeographicalPerformance(ctx, req.Start.AsTime(), req.Timezone)
+}
+
 func (s *Server) UpdateWorker(ctx context.Context, req *pb.Worker) (*pb.Status, error) {
 	status := worker.TestWorker(ctx, req)
 	worker.RegisterAndStartWorker(req)

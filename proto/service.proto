@@ -10,6 +10,8 @@ service Metricraft {
   rpc getP95Latency(timeframe) returns (distribution);
   rpc getUptimeScore(timeframe) returns (floatDistribution);
   rpc getThroughput(timeframe) returns (throughput);
+  rpc getGeographicalPerformance(timeframe) returns (floatDistribution);
+
   rpc createWorker(worker) returns (status);
   rpc deleteWorker(workerUrl) returns (status);
   rpc updateWorker(worker) returns (status);

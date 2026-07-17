@@ -8,6 +8,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	pb "metricraft/proto/metricraft/proto"
 	"os"
+	"strconv"
 	"time"
 	"worker/external"
 	"worker/types"
@@ -385,6 +386,37 @@ func GetWorkerUptime(ctx context.Context, url string, timezone string, pollInter
 	//delete old logs, do not throw error if occured
 	_, _ = conn.Exec(ctx, "DELETE FROM worker_logs WHERE url = $1 AND date < $2", url, endDate)
 	return &pb.WorkerUptime{Entries: uptime}, nil
+}
+
+func GetGeographicalPerformance(ctx context.Context, startDate time.Time, timezone string) (*pb.FloatDistribution, error) {
+	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close(ctx)
+	loc := loadLocation(timezone)
+	endDate := time.Now().In(loc).UTC()
+	alignedStart := alignStart(startDate, loc, 0)
+	res, err := conn.Query(ctx, "SELECT country, percentile_cont(0.5) WITHIN GROUP (ORDER BY responsetime) AS median FROM logs WHERE date >= $1 AND date < $2 AND status BETWEEN 200 AND 299 GROUP BY country ORDER BY median DESC", alignedStart, endDate)
+	if err != nil {
+		return nil, err
+	}
+	distribution := make(map[string]float32)
+	for res.Next() {
+		var country string
+		var percentile float64
+		err = res.Scan(&country, &percentile)
+		if err != nil {
+			return nil, err
+		}
+		fortmatted := fmt.Sprintf("%.2f", percentile)
+		finalPercentile, err := strconv.ParseFloat(fortmatted, 32)
+		if err != nil {
+			return nil, err
+		}
+		distribution[country] = float32(finalPercentile)
+	}
+	return &pb.FloatDistribution{Distribution: &pb.StringFloat32Map{Values: distribution}}, nil
 }
 
 func DeleteWorkerlogs(ctx context.Context, url string) error {

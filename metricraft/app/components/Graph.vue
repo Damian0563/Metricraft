@@ -102,6 +102,8 @@ const populateChart = async (data: any): Promise<void> => {
 		const { chart, additionalData }: ChartData = createThroughput(chartRef.value, toRaw(data), props.timeframe)
 		chartInstance = chart;
 		mutateAdditionalData(additionalData);
+	} else if (props.name === "Geographic performance" && chartRef.value) {
+		console.log(toRaw(data))
 	}
 }
 </script>
