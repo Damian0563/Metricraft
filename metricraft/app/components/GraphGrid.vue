@@ -4,7 +4,7 @@
 		<AdditionalData :data="additionalData" :metric="additionalDataName" v-if="viewingDetails"
 			@close="viewingDetails = false" />
 		<div v-for="entry in enabledMetrics" :key="entry.name">
-			<Graph :name="entry.name" :data="entry.metrics" :timeframe="entry.timeframe"
+			<Graph :name="entry.name" :data="entry.metrics" :timeframe="entry.timeframe" :worldData="worldData"
 				@timeframe-change="handleTimeframeChange($event)" @see-details="handleDetails($event)" />
 		</div>
 	</div>
@@ -12,6 +12,8 @@
 
 <script setup lang="ts">
 import { fetchMetric } from "~/calls/dashboard";
+import { topojson } from 'chartjs-chart-geo';
+import type { WorldData } from "~/composables/types";
 const props = defineProps<{
 	metrics: Record<string, { enabled: boolean, timeframe: string }>
 }>();
@@ -29,6 +31,12 @@ const errorMessage = ref<string>('');
 const viewingDetails = ref<boolean>(false);
 const additionalData = ref<HTMLDivElement | null>(null);
 const additionalDataName = ref<string>('');
+const world = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then((r) => r.json());
+const countries = (topojson.feature(world, world.objects.countries) as any).features
+	.filter((feature: any) => feature.properties.name !== 'Antarctica');
+const worldData: WorldData = {
+	countries,
+};
 const fetchAllMetrics = async (enabled: Record<string, { enabled: boolean, timeframe: string }>) => {
 	emit('load')
 	try {

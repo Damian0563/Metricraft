@@ -7,6 +7,10 @@ export type Worker = {
 	headers?: Record<string, string>;
 }
 
+export type WorldData = {
+	countries: any;
+}
+
 export type HeaderRow = { key: string; value: string }
 
 export type signPayload = {

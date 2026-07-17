@@ -1,8 +1,8 @@
 import { Chart } from "chart.js";
-import type { ChartData, TrafficCongestionData, ThroughputData, ThroughputEntry, DistributionData, additionalDataHeaders, CongestionEntry, StringInt32Map } from "~/composables/types";
+import type { ChartData, WorldData, TrafficCongestionData, ThroughputData, ThroughputEntry, DistributionData, additionalDataHeaders, CongestionEntry, StringInt32Map } from "~/composables/types";
 import { ColorPicker } from "~/composables/colorpicker";
 import { truncateUrl } from "~/composables/helpers";
-import { ChoroplethChart, topojson } from 'chartjs-chart-geo';
+import { ChoroplethChart } from 'chartjs-chart-geo';
 import { createAdditionalData } from "@/composables/charts/chartUtils";
 
 export const emptyChart = (canvas: HTMLCanvasElement): Chart => {
@@ -456,12 +456,11 @@ export const createP95Latency = (
 
 export const createGeographicalTraffic = async (
 	canvas: HTMLCanvasElement,
-	data: any
+	data: any,
+	worldData: WorldData
 ): Promise<ChartData> => {
 	try {
-		const world = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then((r) => r.json());
-		const countries = (topojson.feature(world, world.objects.countries) as any).features
-			.filter((feature: any) => feature.properties.name !== 'Antarctica');
+		const countries = worldData.countries;
 		const mapped = data.distribution.values ? new Map<string, number>(Object.entries(data.distribution.values)) : new Map<string, number>();
 		const points: any[] = countries.map((feature: any) => {
 			const value = mapped.get(feature.properties.name) ?? 0;
@@ -550,6 +549,109 @@ export const createGeographicalTraffic = async (
 		return { chart: emptyChoroplethChart(canvas), additionalData: null };
 	}
 }
+
+export const createGeographicPerformance = (
+	canvas: HTMLCanvasElement,
+	data: any,
+	_timeframe: string,
+	worldData: WorldData
+): ChartData => {
+	try {
+		const values = data?.distribution?.values;
+		if (!values || !Object.keys(values).length) throw new Error('Data is empty');
+		const countries = worldData.countries;
+		const mapped = new Map<string, number>(
+			Object.entries(values).map(([country, latency]) => [country, Number(latency)]),
+		);
+		const points: any[] = countries.map((feature: any) => {
+			const value = mapped.get(feature.properties.name);
+			return { feature, value: value != null ? value : null };
+		});
+		canvas.style.backgroundColor = '#0b0f17';
+		canvas.style.borderRadius = '3%';
+		const chart = new ChoroplethChart(canvas, {
+			data: {
+				labels: countries.map((feature: any) => feature.properties.name),
+				datasets: [{
+					label: 'Median Response Time',
+					outline: countries,
+					data: points,
+					borderColor: 'rgba(11,15,23,0.9)',
+					borderWidth: 0.5,
+					borderJoinStyle: 'round',
+					hoverBorderColor: '#00F376',
+					hoverBorderWidth: 1.5,
+				}],
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				devicePixelRatio: Math.ceil(window.devicePixelRatio || 1),
+				animation: { duration: 250 },
+				layout: { padding: { top: 8, right: 8, bottom: 8, left: 8 } },
+				showOutline: true,
+				showGraticule: false,
+				elements: {
+					geoFeature: {
+						outlineBorderColor: 'rgba(255,255,255,0.08)',
+						outlineBorderWidth: 0.75,
+					},
+				},
+				scales: {
+					projection: { axis: 'x', projection: 'mercator' },
+					color: {
+						axis: 'x',
+						quantize: 6,
+						missing: '#2a2f3a',
+						interpolate: (v: number) => {
+							const t = Math.max(0, Math.min(1, v));
+							const r = Math.round(0 + 220 * t);
+							const g = Math.round(243 - 155 * t);
+							const b = Math.round(118 - 84 * t);
+							return `rgb(${r}, ${g}, ${b})`;
+						},
+						legend: {
+							position: 'bottom-right',
+							align: 'right',
+							length: 180,
+							width: 12,
+							margin: 12,
+							indicatorWidth: 12,
+						},
+						ticks: {
+							color: '#e5e7eb',
+							font: { weight: 'bold', size: 11 },
+							callback: (value: string | number) => `${value} ms`,
+						},
+					},
+				},
+				plugins: {
+					legend: { display: false },
+					tooltip: {
+						enabled: true,
+						displayColors: false,
+						padding: 10,
+						titleFont: { weight: 'bold', size: 13 },
+						bodyFont: { size: 12 },
+						callbacks: {
+							title: (items) => (items[0]?.raw as any)?.feature?.properties?.name ?? '',
+							label: (item) => {
+								const value = (item.raw as any)?.value;
+								if (value == null) return 'No data';
+								return `Median: ${Number(value).toLocaleString(undefined, { maximumFractionDigits: 1 })} ms`;
+							},
+						},
+					},
+				},
+			},
+		});
+		const headers: additionalDataHeaders = { h1: 'Country', h2: 'Median Response Time (ms)' };
+		return { chart, additionalData: createAdditionalData(mapped, headers) };
+	} catch (e) {
+		console.error(e);
+		return { chart: emptyChoroplethChart(canvas), additionalData: null };
+	}
+};
 
 export const createTrafficCongestionTrends = (
 	canvas: HTMLCanvasElement,

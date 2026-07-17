@@ -45,12 +45,13 @@ import { ChoroplethController, GeoFeature, ColorScale, ProjectionScale } from 'c
 import { ChoroplethChart } from 'chartjs-chart-geo';
 import { onMounted, toRaw } from "vue";
 import { useColorPicker } from "~/composables/colorpicker";
-import { createTrafficCongestionTrends, createThroughput, createGeographicalTraffic, createP95Latency, createUptimeScore } from "~/composables/charts/charts";
-import type { ChartData } from "~/composables/types";
+import { createTrafficCongestionTrends, createThroughput, createGeographicalTraffic, createGeographicPerformance, createP95Latency, createUptimeScore } from "~/composables/charts/charts";
+import type { ChartData, WorldData } from "~/composables/types";
 const props = defineProps<{
 	name: string;
 	timeframe: string;
 	data: any;
+	worldData: WorldData;
 }>();
 const emit = defineEmits<{
 	timeframeChange: [{ metric: string, timeframe: string }];
@@ -87,7 +88,7 @@ const populateChart = async (data: any): Promise<void> => {
 		chartInstance = chart;
 		mutateAdditionalData(additionalData);
 	} else if (props.name === "Geographical traffic" && chartRef.value) {
-		const { chart, additionalData }: ChartData = await createGeographicalTraffic(chartRef.value, toRaw(data));
+		const { chart, additionalData }: ChartData = await createGeographicalTraffic(chartRef.value, toRaw(data), props.worldData);
 		chartInstance = chart;
 		mutateAdditionalData(additionalData);
 	} else if (props.name === "P95 Latency" && chartRef.value && picker) {
@@ -103,7 +104,9 @@ const populateChart = async (data: any): Promise<void> => {
 		chartInstance = chart;
 		mutateAdditionalData(additionalData);
 	} else if (props.name === "Geographic performance" && chartRef.value) {
-		console.log(toRaw(data))
+		const { chart, additionalData }: ChartData = createGeographicPerformance(chartRef.value, toRaw(data), props.timeframe, props.worldData)
+		chartInstance = chart;
+		mutateAdditionalData(additionalData);
 	}
 }
 </script>
