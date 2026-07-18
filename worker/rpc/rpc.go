@@ -36,7 +36,7 @@ func (s *Server) GetGeographicalPerformance(ctx context.Context, req *pb.Timefra
 }
 
 func (s *Server) GetStatusCodeDistribution(ctx context.Context, req *pb.Timeframe) (*pb.Distribution, error) {
-	return nil, nil
+	return db.GetStatusCodeDistribution(ctx, req.Start.AsTime(), req.Resolution, req.Timezone)
 }
 
 func (s *Server) UpdateWorker(ctx context.Context, req *pb.Worker) (*pb.Status, error) {
