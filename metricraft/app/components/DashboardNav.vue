@@ -47,6 +47,17 @@
 					</svg>
 					<span class="nav-label">Metricraft workers</span>
 				</button>
+				<button type="button" class="nav-item" :class="{ 'nav-collapsed': !options }" title="Overwatch"
+					@click="navigateTo('/overwatch'); options = false">
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24"
+						stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+							d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+							d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+					</svg>
+					<span class="nav-label">Overwatch</span>
+				</button>
 				<button type="button" class="nav-item" :class="{ 'nav-collapsed': !options }" title="Settings"
 					@click="navigateTo('/dashboard?settings'); options = false">
 					<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24"
@@ -102,10 +113,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 	box-shadow:
 		2px 0 6px rgba(0, 0, 0, 0.06),
 		4px 0 18px rgba(0, 0, 0, 0.08);
-	/* Only animate width, and hint the compositor so it isn't recalculated blindly */
 	transition-property: width;
 	will-change: width;
-	/* Prevent the sidebar's internal layout from invalidating on every frame */
 	contain: layout paint;
 }
 
