@@ -102,6 +102,8 @@ func Navigator(w http.ResponseWriter, r *http.Request) {
 		response, err = client.GetThroughput(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days, Timezone: timezone})
 	case "Geographic performance":
 		response, err = client.GetGeographicalPerformance(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days, Timezone: timezone})
+	case "Status code distribution":
+		response, err = client.GetStatusCodeDistribution(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days, Timezone: timezone})
 	default:
 		break
 	}

@@ -31,19 +31,19 @@ const errorMessage = ref<string>('');
 const viewingDetails = ref<boolean>(false);
 const additionalData = ref<HTMLDivElement | null>(null);
 const additionalDataName = ref<string>('');
-const world = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then((r) => r.json());
-const countries = (topojson.feature(world, world.objects.countries) as any).features
-	.filter((feature: any) => feature.properties.name !== 'Antarctica');
-const worldData: WorldData = {
-	countries,
-};
+const { data: worldData } = await useFetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json', {
+	transform: (world: any): WorldData => ({
+		countries: (topojson.feature(world, world.objects.countries) as any).features
+			.filter((feature: any) => feature.properties.name !== 'Antarctica'),
+	}),
+});
 const fetchAllMetrics = async (enabled: Record<string, { enabled: boolean, timeframe: string }>) => {
 	emit('load')
 	try {
 		const enabledEntries = Object.entries(enabled).filter(
 			(entry): entry is [string, { enabled: boolean, timeframe: string }] => entry[1]?.enabled === true
 		)
-		const results = await Promise.all(enabledEntries.map(([name, config]) => fetchMetric(name, config.timeframe)))
+		const results = await Promise.all(enabledEntries.map(([name, config]) => fetchMetric(name, config.timeframe, errorMessage)))
 		emit('load')
 		return enabledEntries.map(([name, config], index) => ({
 			name,
@@ -70,7 +70,7 @@ const handleTimeframeChange = async (obj: { metric: string, timeframe: string })
 	if (!enabledMetrics.value) return;
 	emit('load');
 	try {
-		const metrics = await fetchMetric(metric, timeframe, true);
+		const metrics = await fetchMetric(metric, timeframe, errorMessage, true);
 		enabledMetrics.value = enabledMetrics.value.map((entry) =>
 			entry.name === metric ? { ...entry, metrics, timeframe } : entry
 		);
