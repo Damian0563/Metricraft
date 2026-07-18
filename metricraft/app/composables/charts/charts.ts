@@ -37,6 +37,128 @@ const emptyChoroplethChart = (canvas: HTMLCanvasElement): ChoroplethChart =>
 		data: { labels: [], datasets: [] },
 	}) as ChoroplethChart;
 
+export const createStatusCodeDistribution = (
+	canvas: HTMLCanvasElement,
+	data: DistributionData,
+	detailed: boolean,
+): ChartData => {
+	const statusColor = (label: string): string => {
+		const leading = label.trim().charAt(0);
+		switch (leading) {
+			case '1': return '#38BDF8';
+			case '2': return '#00C962';
+			case '3': return '#A78BFA';
+			case '4': return '#FBBF24';
+			case '5': return '#F87171';
+			default: return '#94A3B8';
+		}
+	};
+	try {
+		if (!data?.distribution?.values || !Object.keys(data.distribution.values).length) throw new Error('Data is empty');
+		let mapped = new Map<string, number>();
+		const breakdown = new Map<string, Array<[string, number]>>();
+		if (detailed) {
+			mapped = new Map<string, number>(
+				Object.entries(data.distribution.values)
+					.map(([status, count]) => [status, Number(count)] as [string, number])
+					.sort(([a], [b]) => Number(a) - Number(b)),
+			);
+		} else {
+			for (const [status, count] of Object.entries(data.distribution.values)) {
+				let currCategory = "";
+				const statusCode = Number(status);
+				if (statusCode >= 100 && statusCode < 200) {
+					currCategory = "1XX (Informational)";
+				} else if (statusCode >= 200 && statusCode < 300) {
+					currCategory = "2XX (Successful)";
+				} else if (statusCode >= 300 && statusCode < 400) {
+					currCategory = "3XX (Redirection)";
+				} else if (statusCode >= 400 && statusCode < 500) {
+					currCategory = "4XX (Client Error)";
+				} else if (statusCode >= 500 && statusCode < 600) {
+					currCategory = "5XX (Server Error)";
+				} else {
+					currCategory = "Other";
+				}
+				mapped.set(currCategory, (mapped.get(currCategory) ?? 0) + Number(count));
+				if (!breakdown.has(currCategory)) breakdown.set(currCategory, []);
+				breakdown.get(currCategory)!.push([status, Number(count)]);
+			}
+			for (const codes of breakdown.values()) {
+				codes.sort(([a], [b]) => Number(a) - Number(b));
+			}
+		}
+		const labels: string[] = Array.from(mapped.keys());
+		const values: number[] = Array.from(mapped.values());
+		const colors: string[] = labels.map(statusColor);
+		const total: number = values.reduce((sum, value) => sum + value, 0);
+		const chart: Chart = new Chart(canvas, {
+			type: 'pie',
+			data: {
+				labels,
+				datasets: [{
+					label: 'Status codes',
+					data: values,
+					backgroundColor: colors,
+					hoverBackgroundColor: colors,
+					borderColor: '#FFFFFF',
+					borderWidth: 2,
+					hoverOffset: 8,
+				}],
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				devicePixelRatio: Math.ceil(window.devicePixelRatio || 1),
+				animation: { duration: 250 },
+				layout: { padding: { top: 8, right: 8, bottom: 8, left: 8 } },
+				plugins: {
+					legend: {
+						display: true,
+						position: 'right',
+						labels: {
+							usePointStyle: true,
+							pointStyle: 'circle',
+							boxWidth: 8,
+							boxHeight: 8,
+							padding: 12,
+							color: '#475569',
+							font: { weight: 'bold', size: 11 },
+						},
+					},
+					tooltip: {
+						enabled: true,
+						displayColors: true,
+						padding: 10,
+						titleFont: { weight: 'bold', size: 13 },
+						bodyFont: { size: 12 },
+						callbacks: {
+							title: (items) => detailed ? `Status Code: ${items[0]?.label}` : items[0]?.label,
+							label: (item) => {
+								const value = Number(item.parsed);
+								const share = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+								return detailed ? `Number of requests: ${value.toLocaleString()} (${share}%)` : '';
+							},
+							afterBody: (items) => {
+								if (detailed) return [];
+								const category = String(items[0]?.label ?? '');
+								const codes = breakdown.get(category);
+								if (!codes?.length) return [];
+								return codes.map(([status, count]) => `${status}: ${count.toLocaleString()
+									}`);
+							},
+						},
+					},
+				},
+			},
+		});
+		const headers: additionalDataHeaders = detailed ? { h1: 'Status Code', h2: 'Number of requests' } : { h1: 'Status Messages', h2: 'Number of requests' };
+		return { chart, additionalData: createAdditionalData(mapped, headers) };
+	} catch (e) {
+		console.error(e)
+		return { chart: emptyChart(canvas), additionalData: null };
+	}
+}
 
 export const createThroughput = (
 	canvas: HTMLCanvasElement,
@@ -162,7 +284,7 @@ export const createThroughput = (
 							title: function (tooltipItems) {
 								return formatTimeRangeTitle(labels, resolveHoveredIndex(tooltipItems, this.chart), timeframe);
 							},
-							label: (item) => `Requests: ${Number(item.parsed.y).toLocaleString()}`,
+							label: (item) => `Requests: ${Number(item.parsed.y).toLocaleString()} `,
 							labelColor: () => ({
 								borderColor: '#00F376',
 								backgroundColor: '#00F376',
@@ -286,7 +408,7 @@ export const createUptimeScore = (
 							padding: 8,
 							stepSize: 20,
 							font: { weight: 'bold' },
-							callback: (value: string | number): string => `${value}%`,
+							callback: (value: string | number): string => `${value}% `,
 						},
 					},
 					y: {
@@ -326,7 +448,7 @@ export const createUptimeScore = (
 							label: (item) => {
 								const score = Number(item.parsed.x);
 								if (score === 0) return 'Status: Down — 0% uptime';
-								return `Uptime: ${score.toFixed(1)}%`;
+								return `Uptime: ${score.toFixed(1)}% `;
 							},
 							labelColor: (item) => {
 								const score = Number(item.parsed.x);
@@ -539,7 +661,7 @@ export const createGeographicalTraffic = async (
 							label: (item) => {
 								const value = (item.raw as any)?.value ?? 0;
 								const share = all > 0 ? ((value / all) * 100).toFixed(1) : '0.0';
-								return [`Traffic: ${value.toLocaleString()}`, `Share of total: ${share}%`];
+								return [`Traffic: ${value.toLocaleString()} `, `Share of total: ${share}% `];
 							},
 						},
 					},
@@ -775,7 +897,7 @@ export const createTrafficCongestionTrends = (
 									(sum, ds) => sum + (Number(ds.data[dataIndex]) || 0),
 									0,
 								);
-								return `Total: ${total.toLocaleString()}`;
+								return `Total: ${total.toLocaleString()} `;
 							},
 							title: function (tooltipItems) {
 								return formatTimeRangeTitle(labels, resolveHoveredIndex(tooltipItems, this.chart), timeframe);

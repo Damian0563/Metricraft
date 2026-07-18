@@ -9,11 +9,16 @@
 			</div>
 			<div ref="additionalDataRef" class="hidden" aria-hidden="true"></div>
 			<div class="flex justify-between shrink-0">
-				<div class="justify-start">
+				<div class="flex justify-start gap-2">
 					<button
 						class="cursor-pointer shadow-sm rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-9 text-xs font-medium text-slate-700 transition-colors hover:border-slate-300 focus:border-[#00F376] focus:outline-none focus:ring-2 focus:ring-[#00F376]/30"
 						@click="seeDetails = !seeDetails; emit('seeDetails', { metric: props.name, additionalData: additionalDataRef })">
 						View details
+					</button>
+					<button v-if="props.name === 'Status code distribution'"
+						class="cursor-pointer shadow-sm rounded-lg border border-slate-200 bg-slate-50 py-1.5 px-3 text-xs font-medium text-slate-700 transition-colors hover:border-slate-300 focus:border-[#00F376] focus:outline-none focus:ring-2 focus:ring-[#00F376]/30"
+						@click="toggleDetailed">
+						{{ detailedMode ? 'Grouped view' : 'Detailed view' }}
 					</button>
 				</div>
 				<div class="justify-end">
@@ -40,12 +45,12 @@
 </template>
 
 <script setup lang="ts">
-import { Chart, CategoryScale, LinearScale, BarController, BarElement, Tooltip, PointElement, LineElement, LineController, TimeScale } from "chart.js";
+import { Chart, CategoryScale, LinearScale, BarController, BarElement, Tooltip, PointElement, LineElement, LineController, TimeScale, PieController, ArcElement, Legend } from "chart.js";
 import { ChoroplethController, GeoFeature, ColorScale, ProjectionScale } from 'chartjs-chart-geo';
 import { ChoroplethChart } from 'chartjs-chart-geo';
 import { onMounted, toRaw } from "vue";
 import { useColorPicker } from "~/composables/colorpicker";
-import { createTrafficCongestionTrends, createThroughput, createGeographicalTraffic, createGeographicPerformance, createP95Latency, createUptimeScore } from "~/composables/charts/charts";
+import { createTrafficCongestionTrends, createThroughput, createStatusCodeDistribution, createGeographicalTraffic, createGeographicPerformance, createP95Latency, createUptimeScore } from "~/composables/charts/charts";
 import type { ChartData, WorldData } from "~/composables/types";
 const props = defineProps<{
 	name: string;
@@ -61,8 +66,9 @@ const chartRef = ref<HTMLCanvasElement | null>(null);
 const additionalDataRef = ref<HTMLDivElement | null>(null);
 const seeDetails = ref<boolean>(false);
 const colorPicker = useColorPicker();
+const detailedMode = ref<boolean>(false);
 let chartInstance: Chart | ChoroplethChart | null = null;
-Chart.register(PointElement, TimeScale, LineController, LineElement, CategoryScale, LinearScale, BarController, BarElement, Tooltip, ChoroplethController, GeoFeature, ColorScale, ProjectionScale);
+Chart.register(PointElement, TimeScale, LineController, LineElement, CategoryScale, LinearScale, BarController, BarElement, Tooltip, Legend, PieController, ArcElement, ChoroplethController, GeoFeature, ColorScale, ProjectionScale);
 onMounted((): void => {
 	if (chartInstance) chartInstance.destroy();
 	populateChart(props.data);
@@ -71,6 +77,12 @@ watch(() => props.data, (newData: any): void => {
 	if (chartInstance) chartInstance.destroy();
 	populateChart(newData);
 });
+
+const toggleDetailed = (): void => {
+	detailedMode.value = !detailedMode.value;
+	if (chartInstance) chartInstance.destroy();
+	populateChart(props.data);
+};
 
 const mutateAdditionalData = (additionalData: HTMLElement | null): void => {
 	if (additionalDataRef.value) {
@@ -105,6 +117,10 @@ const populateChart = async (data: any): Promise<void> => {
 		mutateAdditionalData(additionalData);
 	} else if (props.name === "Geographic performance" && chartRef.value) {
 		const { chart, additionalData }: ChartData = createGeographicPerformance(chartRef.value, toRaw(data), props.timeframe, props.worldData)
+		chartInstance = chart;
+		mutateAdditionalData(additionalData);
+	} else if (props.name === "Status code distribution" && chartRef.value) {
+		const { chart, additionalData }: ChartData = createStatusCodeDistribution(chartRef.value, toRaw(data), detailedMode.value)
 		chartInstance = chart;
 		mutateAdditionalData(additionalData);
 	}

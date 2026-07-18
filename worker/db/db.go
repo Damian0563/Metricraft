@@ -419,6 +419,31 @@ func GetGeographicalPerformance(ctx context.Context, startDate time.Time, timezo
 	return &pb.FloatDistribution{Distribution: &pb.StringFloat32Map{Values: distribution}}, nil
 }
 
+func GetStatusCodeDistribution(ctx context.Context, startDate time.Time, resolution int32, timezone string) (*pb.Distribution, error) {
+	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close(ctx)
+	end := time.Now().In(loadLocation(timezone)).UTC()
+	start := alignStart(startDate, loadLocation(timezone), resolution)
+	res, err := conn.Query(ctx, "SELECT status,COUNT(*) FROM logs WHERE date >= $1 AND date < $2 GROUP BY status ORDER BY COUNT(*) DESC", start, end)
+	if err != nil {
+		return nil, err
+	}
+	result := make(map[string]int32)
+	for res.Next() {
+		var status int
+		var count int
+		err = res.Scan(&status, &count)
+		if err != nil {
+			return nil, err
+		}
+		result[strconv.Itoa(status)] = int32(count)
+	}
+	return &pb.Distribution{Distribution: &pb.StringInt32Map{Values: result}}, nil
+}
+
 func DeleteWorkerlogs(ctx context.Context, url string) error {
 	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
 	if err != nil {
