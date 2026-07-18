@@ -22,10 +22,15 @@ export const getDashboard = async (): Promise<dashboardInitPayload> => {
 }
 
 
-export const fetchMetric = async (metric: string, timeframe: string, persist: boolean = false): Promise<Map<string, number>> => {
+export const fetchMetric = async (metric: string, timeframe: string, errorMessage: Ref<string>, persist: boolean = false): Promise<Map<string, number>> => {
 	const userZone = Intl.DateTimeFormat().resolvedOptions().timeZone
-	return await useApi()<Map<string, number>>(`/dashboard/fetch?persist=${persist}&timezone=${userZone}`, {
-		method: "GET",
-		query: { metric, timeframe },
-	})
+	try {
+		return await useApi()<Map<string, number>>(`/dashboard/fetch?persist=${persist}&timezone=${userZone}`, {
+			method: "GET",
+			query: { metric, timeframe },
+		})
+	} catch (e) {
+		errorMessage.value = `Something went wrong while fetching "${metric}" metrics.`
+		return new Map<string, number>()
+	}
 }

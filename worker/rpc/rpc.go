@@ -35,6 +35,10 @@ func (s *Server) GetGeographicalPerformance(ctx context.Context, req *pb.Timefra
 	return db.GetGeographicalPerformance(ctx, req.Start.AsTime(), req.Timezone)
 }
 
+func (s *Server) GetStatusCodeDistribution(ctx context.Context, req *pb.Timeframe) (*pb.Distribution, error) {
+	return nil, nil
+}
+
 func (s *Server) UpdateWorker(ctx context.Context, req *pb.Worker) (*pb.Status, error) {
 	status := worker.TestWorker(ctx, req)
 	worker.RegisterAndStartWorker(req)

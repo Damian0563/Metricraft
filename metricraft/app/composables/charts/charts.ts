@@ -457,9 +457,12 @@ export const createP95Latency = (
 export const createGeographicalTraffic = async (
 	canvas: HTMLCanvasElement,
 	data: any,
-	worldData: WorldData
+	worldData: WorldData | undefined
 ): Promise<ChartData> => {
 	try {
+		const values = data?.distribution?.values;
+		if (!values || !Object.keys(values).length) throw new Error('Data is empty');
+		if (!worldData) throw new Error('World data is empty');
 		const countries = worldData.countries;
 		const mapped = data.distribution.values ? new Map<string, number>(Object.entries(data.distribution.values)) : new Map<string, number>();
 		const points: any[] = countries.map((feature: any) => {
@@ -554,11 +557,12 @@ export const createGeographicPerformance = (
 	canvas: HTMLCanvasElement,
 	data: any,
 	_timeframe: string,
-	worldData: WorldData
+	worldData: WorldData | undefined
 ): ChartData => {
 	try {
 		const values = data?.distribution?.values;
 		if (!values || !Object.keys(values).length) throw new Error('Data is empty');
+		if (!worldData) throw new Error('World data is empty');
 		const countries = worldData.countries;
 		const mapped = new Map<string, number>(
 			Object.entries(values).map(([country, latency]) => [country, Number(latency)]),

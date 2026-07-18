@@ -51,7 +51,7 @@ const props = defineProps<{
 	name: string;
 	timeframe: string;
 	data: any;
-	worldData: WorldData;
+	worldData: WorldData | undefined;
 }>();
 const emit = defineEmits<{
 	timeframeChange: [{ metric: string, timeframe: string }];
