@@ -13,6 +13,7 @@ service Metricraft {
   rpc getGeographicalPerformance(timeframe) returns (floatDistribution);
   rpc getStatusCodeDistribution(timeframe) returns (distribution);
   rpc getRouteCongestion(timeframe) returns (distribution);
+  rpc getHttpMethodDistribution(timeframe) returns (congestion);
 
   rpc createWorker(worker) returns (status);
   rpc deleteWorker(workerUrl) returns (status);

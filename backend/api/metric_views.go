@@ -106,6 +106,8 @@ func Navigator(w http.ResponseWriter, r *http.Request) {
 		response, err = client.GetStatusCodeDistribution(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days, Timezone: timezone})
 	case "Route congestion":
 		response, err = client.GetRouteCongestion(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days, Timezone: timezone})
+	case "HTTP method distribution":
+		response, err = client.GetHttpMethodDistribution(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days, Timezone: timezone})
 	default:
 		break
 	}

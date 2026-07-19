@@ -27,6 +27,7 @@ const (
 	Metricraft_GetGeographicalPerformance_FullMethodName = "/metricraft.Metricraft/getGeographicalPerformance"
 	Metricraft_GetStatusCodeDistribution_FullMethodName  = "/metricraft.Metricraft/getStatusCodeDistribution"
 	Metricraft_GetRouteCongestion_FullMethodName         = "/metricraft.Metricraft/getRouteCongestion"
+	Metricraft_GetHttpMethodDistribution_FullMethodName  = "/metricraft.Metricraft/getHttpMethodDistribution"
 	Metricraft_CreateWorker_FullMethodName               = "/metricraft.Metricraft/createWorker"
 	Metricraft_DeleteWorker_FullMethodName               = "/metricraft.Metricraft/deleteWorker"
 	Metricraft_UpdateWorker_FullMethodName               = "/metricraft.Metricraft/updateWorker"
@@ -45,6 +46,7 @@ type MetricraftClient interface {
 	GetGeographicalPerformance(ctx context.Context, in *Timeframe, opts ...grpc.CallOption) (*FloatDistribution, error)
 	GetStatusCodeDistribution(ctx context.Context, in *Timeframe, opts ...grpc.CallOption) (*Distribution, error)
 	GetRouteCongestion(ctx context.Context, in *Timeframe, opts ...grpc.CallOption) (*Distribution, error)
+	GetHttpMethodDistribution(ctx context.Context, in *Timeframe, opts ...grpc.CallOption) (*Congestion, error)
 	CreateWorker(ctx context.Context, in *Worker, opts ...grpc.CallOption) (*Status, error)
 	DeleteWorker(ctx context.Context, in *WorkerUrl, opts ...grpc.CallOption) (*Status, error)
 	UpdateWorker(ctx context.Context, in *Worker, opts ...grpc.CallOption) (*Status, error)
@@ -139,6 +141,16 @@ func (c *metricraftClient) GetRouteCongestion(ctx context.Context, in *Timeframe
 	return out, nil
 }
 
+func (c *metricraftClient) GetHttpMethodDistribution(ctx context.Context, in *Timeframe, opts ...grpc.CallOption) (*Congestion, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Congestion)
+	err := c.cc.Invoke(ctx, Metricraft_GetHttpMethodDistribution_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *metricraftClient) CreateWorker(ctx context.Context, in *Worker, opts ...grpc.CallOption) (*Status, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Status)
@@ -191,6 +203,7 @@ type MetricraftServer interface {
 	GetGeographicalPerformance(context.Context, *Timeframe) (*FloatDistribution, error)
 	GetStatusCodeDistribution(context.Context, *Timeframe) (*Distribution, error)
 	GetRouteCongestion(context.Context, *Timeframe) (*Distribution, error)
+	GetHttpMethodDistribution(context.Context, *Timeframe) (*Congestion, error)
 	CreateWorker(context.Context, *Worker) (*Status, error)
 	DeleteWorker(context.Context, *WorkerUrl) (*Status, error)
 	UpdateWorker(context.Context, *Worker) (*Status, error)
@@ -228,6 +241,9 @@ func (UnimplementedMetricraftServer) GetStatusCodeDistribution(context.Context, 
 }
 func (UnimplementedMetricraftServer) GetRouteCongestion(context.Context, *Timeframe) (*Distribution, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetRouteCongestion not implemented")
+}
+func (UnimplementedMetricraftServer) GetHttpMethodDistribution(context.Context, *Timeframe) (*Congestion, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetHttpMethodDistribution not implemented")
 }
 func (UnimplementedMetricraftServer) CreateWorker(context.Context, *Worker) (*Status, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateWorker not implemented")
@@ -406,6 +422,24 @@ func _Metricraft_GetRouteCongestion_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Metricraft_GetHttpMethodDistribution_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Timeframe)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetricraftServer).GetHttpMethodDistribution(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Metricraft_GetHttpMethodDistribution_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetricraftServer).GetHttpMethodDistribution(ctx, req.(*Timeframe))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Metricraft_CreateWorker_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Worker)
 	if err := dec(in); err != nil {
@@ -516,6 +550,10 @@ var Metricraft_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "getRouteCongestion",
 			Handler:    _Metricraft_GetRouteCongestion_Handler,
+		},
+		{
+			MethodName: "getHttpMethodDistribution",
+			Handler:    _Metricraft_GetHttpMethodDistribution_Handler,
 		},
 		{
 			MethodName: "createWorker",
