@@ -15,7 +15,8 @@
 						@click="seeDetails = !seeDetails; emit('seeDetails', { metric: props.name, additionalData: additionalDataRef })">
 						View details
 					</button>
-					<button v-if="props.name === 'Status code distribution'"
+					<button
+						v-if="props.name === 'Status code distribution' || props.name === 'HTTP method distribution' || props.name === 'Traffic congestion trends'"
 						class="cursor-pointer shadow-sm rounded-lg border border-slate-200 bg-slate-50 py-1.5 px-3 text-xs font-medium text-slate-700 transition-colors hover:border-slate-300 focus:border-[#00F376] focus:outline-none focus:ring-2 focus:ring-[#00F376]/30"
 						@click="toggleDetailed">
 						{{ detailedMode ? 'Grouped view' : 'Detailed view' }}
@@ -50,7 +51,7 @@ import { ChoroplethController, GeoFeature, ColorScale, ProjectionScale } from 'c
 import { ChoroplethChart } from 'chartjs-chart-geo';
 import { onMounted, toRaw } from "vue";
 import { useColorPicker } from "~/composables/colorpicker";
-import { createTrafficCongestionTrends, createRouteCongestion, createThroughput, createStatusCodeDistribution, createGeographicalTraffic, createGeographicPerformance, createP95Latency, createUptimeScore } from "~/composables/charts/charts";
+import { createTrafficCongestionTrends, createRouteCongestion, createHttpMethodMix, createThroughput, createStatusCodeDistribution, createGeographicalTraffic, createGeographicPerformance, createP95Latency, createUptimeScore } from "~/composables/charts/charts";
 import type { ChartData, WorldData } from "~/composables/types";
 const props = defineProps<{
 	name: string;
@@ -96,11 +97,11 @@ const mutateAdditionalData = (additionalData: HTMLElement | null): void => {
 const populateChart = async (data: any): Promise<void> => {
 	const picker = colorPicker.value;
 	if (props.name === "Traffic congestion trends" && chartRef.value && picker) {
-		const { chart, additionalData }: ChartData = createTrafficCongestionTrends(chartRef.value, toRaw(data), picker, props.timeframe);
+		const { chart, additionalData }: ChartData = createTrafficCongestionTrends(chartRef.value, toRaw(data), picker, props.timeframe, detailedMode.value);
 		chartInstance = chart;
 		mutateAdditionalData(additionalData);
 	} else if (props.name === "Geographical traffic" && chartRef.value) {
-		const { chart, additionalData }: ChartData = await createGeographicalTraffic(chartRef.value, toRaw(data), props.worldData);
+		const { chart, additionalData }: ChartData = createGeographicalTraffic(chartRef.value, toRaw(data), props.worldData);
 		chartInstance = chart;
 		mutateAdditionalData(additionalData);
 	} else if (props.name === "P95 Latency" && chartRef.value && picker) {
@@ -128,7 +129,9 @@ const populateChart = async (data: any): Promise<void> => {
 		chartInstance = chart;
 		mutateAdditionalData(additionalData);
 	} else if (props.name === "HTTP method distribution" && chartRef.value) {
-		console.log(toRaw(data))
+		const { chart, additionalData }: ChartData = createHttpMethodMix(chartRef.value, toRaw(data), detailedMode.value)
+		chartInstance = chart;
+		mutateAdditionalData(additionalData);
 	}
 }
 </script>
