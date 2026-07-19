@@ -37,6 +37,125 @@ const emptyChoroplethChart = (canvas: HTMLCanvasElement): ChoroplethChart =>
 		data: { labels: [], datasets: [] },
 	}) as ChoroplethChart;
 
+
+export const createRouteCongestion = (
+	canvas: HTMLCanvasElement,
+	data: DistributionData,
+	colorPicker: ColorPicker,
+): ChartData => {
+	try {
+		if (!data?.distribution?.values) throw new Error('Data is empty');
+		const dataVal = data?.distribution?.values;
+		const entries: Array<[string, number]> = Object.entries(dataVal).sort(([, a], [, b]) => a - b);
+		const mapped = new Map<string, number>(entries);
+		const labels: string[] = Array.from(mapped.keys());
+		const values: number[] = Array.from(mapped.values());
+		const colors: string[] = labels.map(url => colorPicker.getColorForUrl(url));
+		type RouteCongestionChart = Chart & { $hoveredIndex?: number | null };
+		const chart: Chart = new Chart(canvas, {
+			type: 'bar',
+			plugins: [
+				{
+					id: 'routeCongestionLabelHover',
+					afterInit(chart) {
+						const routeChart = chart as RouteCongestionChart;
+						routeChart.$hoveredIndex = null;
+					},
+					afterEvent(chart) {
+						const routeChart = chart as RouteCongestionChart;
+						const active = chart.getActiveElements();
+						const nextIndex = active[0]?.index ?? null;
+						if (nextIndex === routeChart.$hoveredIndex) return;
+						routeChart.$hoveredIndex = nextIndex;
+						chart.update('none');
+					},
+				},
+			],
+			data: {
+				labels,
+				datasets: [{
+					label: 'Route congestion',
+					data: values,
+					backgroundColor: colors,
+					hoverBackgroundColor: colors,
+					borderWidth: 0,
+					borderRadius: 4,
+					borderSkipped: false,
+					maxBarThickness: 36,
+				}],
+			},
+			options: {
+				indexAxis: 'y',
+				responsive: true,
+				maintainAspectRatio: false,
+				devicePixelRatio: Math.ceil(window.devicePixelRatio || 1),
+				animation: { duration: 250 },
+				interaction: { mode: 'index', axis: 'y', intersect: false },
+				layout: { padding: { right: 12, left: 4, top: 4, bottom: 4 } },
+				scales: {
+					x: {
+						beginAtZero: true,
+						border: { display: false },
+						grid: { color: 'rgba(0,0,0,0.06)', drawTicks: false },
+						ticks: {
+							padding: 8,
+							color: '#475569',
+							font: { weight: 'bold', size: 11 },
+							precision: 0,
+						},
+						title: {
+							display: true,
+							text: 'Requests',
+							color: '#475569',
+							font: { weight: 'bold', size: 13 },
+						},
+					},
+					y: {
+						grid: { display: false },
+						border: { display: false },
+						ticks: {
+							color: (ctx) => {
+								const hovered = (ctx.chart as RouteCongestionChart).$hoveredIndex;
+								return ctx.index === hovered ? '#0D6EFD' : '#475569';
+							},
+							padding: 6,
+							font: (ctx): any => ({
+								weight: ctx.index === (ctx.chart as RouteCongestionChart).$hoveredIndex ? 'bold' : '600',
+								size: 11,
+							}),
+							autoSkip: labels.length > 30,
+							maxTicksLimit: labels.length > 20 ? 20 : undefined,
+							callback: (_value: string | number, index: number): string => truncateUrl(labels[index] ?? ''),
+						},
+					},
+				},
+				plugins: {
+					legend: { display: false },
+					tooltip: {
+						enabled: true,
+						displayColors: true,
+						padding: 10,
+						titleFont: { weight: 'bold', size: 13 },
+						bodyFont: { size: 12 },
+						callbacks: {
+							title: (items) => labels[items[0]?.dataIndex ?? 0] ?? '',
+							label: (item) => `Requests: ${Number(item.parsed.x).toLocaleString()}`,
+							labelColor: (item) => {
+								const color = colors[item.dataIndex ?? 0] ?? '#475569';
+								return { borderColor: color, backgroundColor: color };
+							},
+						},
+					},
+				},
+			},
+		});
+		const headers: additionalDataHeaders = { h1: 'Endpoint', h2: 'Total' };
+		return { chart: chart, additionalData: createAdditionalData(mapped, headers, colorPicker) };
+	} catch (e) {
+		return { chart: emptyChart(canvas), additionalData: null };
+	}
+}
+
 export const createStatusCodeDistribution = (
 	canvas: HTMLCanvasElement,
 	data: DistributionData,
@@ -407,8 +526,15 @@ export const createUptimeScore = (
 						ticks: {
 							padding: 8,
 							stepSize: 20,
-							font: { weight: 'bold' },
-							callback: (value: string | number): string => `${value}% `,
+							color: '#475569',
+							font: { weight: 'bold', size: 11 },
+							callback: (value: string | number): string => `${value}%`,
+						},
+						title: {
+							display: true,
+							text: 'Uptime (%)',
+							color: '#475569',
+							font: { weight: 'bold', size: 13 },
 						},
 					},
 					y: {
@@ -421,11 +547,16 @@ export const createUptimeScore = (
 								const hovered = (ctx.chart as UptimeChart).$hoveredIndex;
 								return ctx.index === hovered ? '#0D6EFD' : '#475569';
 							},
-							padding: 6,
-							font: (ctx) => ({
-								weight: isDown[ctx.index] ? 'bold' : 'bold',
-								size: 11,
-							}),
+							padding: 8,
+							font: (ctx): any => {
+								const index = ctx.index;
+								const hovered = (ctx.chart as UptimeChart).$hoveredIndex;
+								const isHovered = index === hovered;
+								return {
+									weight: isDown[index] || isHovered ? 'bold' : '600',
+									size: 11,
+								};
+							},
 							autoSkip: labels.length > 30,
 							maxTicksLimit: labels.length > 20 ? 20 : undefined,
 							callback: (_value: string | number, index: number): string => {

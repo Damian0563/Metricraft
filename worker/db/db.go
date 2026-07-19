@@ -444,6 +444,29 @@ func GetStatusCodeDistribution(ctx context.Context, startDate time.Time, resolut
 	return &pb.Distribution{Distribution: &pb.StringInt32Map{Values: result}}, nil
 }
 
+func GetRouteCongestion(ctx context.Context, start time.Time, timezone string) (*pb.Distribution, error) {
+	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close(ctx)
+	loc := loadLocation(timezone)
+	alignedStart := alignStart(start, loc, 0)
+	end := rangeEnd(loc, time.Hour, 0)
+	res, err := conn.Query(ctx, "SELECT url,COUNT(*) FROM logs WHERE date >= $1 AND date < $2 AND status BETWEEN 200 AND 299 GROUP BY url ORDER BY COUNT(*) DESC", alignedStart, end)
+	result := make(map[string]int32)
+	for res.Next() {
+		var url string
+		var count int
+		err = res.Scan(&url, &count)
+		if err != nil {
+			return nil, err
+		}
+		result[url] = int32(count)
+	}
+	return &pb.Distribution{Distribution: &pb.StringInt32Map{Values: result}}, nil
+}
+
 func DeleteWorkerlogs(ctx context.Context, url string) error {
 	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
 	if err != nil {
