@@ -127,6 +127,8 @@ const populateChart = async (data: any): Promise<void> => {
 		const { chart, additionalData }: ChartData = createRouteCongestion(chartRef.value, toRaw(data), picker)
 		chartInstance = chart;
 		mutateAdditionalData(additionalData);
+	} else if (props.name === "HTTP method distribution" && chartRef.value) {
+		console.log(toRaw(data))
 	}
 }
 </script>

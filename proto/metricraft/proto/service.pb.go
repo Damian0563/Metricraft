@@ -812,7 +812,7 @@ const file_service_proto_rawDesc = "" +
 	"\fdistribution\x18\x01 \x01(\v2\x1a.metricraft.StringInt32MapR\fdistribution\"A\n" +
 	"\n" +
 	"congestion\x123\n" +
-	"\x06values\x18\x01 \x03(\v2\x1b.metricraft.CongestionEntryR\x06values2\xc0\x06\n" +
+	"\x06values\x18\x01 \x03(\v2\x1b.metricraft.CongestionEntryR\x06values2\x8c\a\n" +
 	"\n" +
 	"Metricraft\x12I\n" +
 	"\x16getGeographicalTraffic\x12\x15.metricraft.timeframe\x1a\x18.metricraft.distribution\x12E\n" +
@@ -822,7 +822,8 @@ const file_service_proto_rawDesc = "" +
 	"\rgetThroughput\x12\x15.metricraft.timeframe\x1a\x16.metricraft.throughput\x12R\n" +
 	"\x1agetGeographicalPerformance\x12\x15.metricraft.timeframe\x1a\x1d.metricraft.floatDistribution\x12L\n" +
 	"\x19getStatusCodeDistribution\x12\x15.metricraft.timeframe\x1a\x18.metricraft.distribution\x12E\n" +
-	"\x12getRouteCongestion\x12\x15.metricraft.timeframe\x1a\x18.metricraft.distribution\x126\n" +
+	"\x12getRouteCongestion\x12\x15.metricraft.timeframe\x1a\x18.metricraft.distribution\x12J\n" +
+	"\x19getHttpMethodDistribution\x12\x15.metricraft.timeframe\x1a\x16.metricraft.congestion\x126\n" +
 	"\fcreateWorker\x12\x12.metricraft.worker\x1a\x12.metricraft.status\x129\n" +
 	"\fdeleteWorker\x12\x15.metricraft.workerUrl\x1a\x12.metricraft.status\x126\n" +
 	"\fupdateWorker\x12\x12.metricraft.worker\x1a\x12.metricraft.status\x12B\n" +
@@ -881,24 +882,26 @@ var file_service_proto_depIdxs = []int32{
 	0,  // 16: metricraft.Metricraft.getGeographicalPerformance:input_type -> metricraft.timeframe
 	0,  // 17: metricraft.Metricraft.getStatusCodeDistribution:input_type -> metricraft.timeframe
 	0,  // 18: metricraft.Metricraft.getRouteCongestion:input_type -> metricraft.timeframe
-	2,  // 19: metricraft.Metricraft.createWorker:input_type -> metricraft.worker
-	1,  // 20: metricraft.Metricraft.deleteWorker:input_type -> metricraft.workerUrl
-	2,  // 21: metricraft.Metricraft.updateWorker:input_type -> metricraft.worker
-	1,  // 22: metricraft.Metricraft.getWorkerUptime:input_type -> metricraft.workerUrl
-	12, // 23: metricraft.Metricraft.getGeographicalTraffic:output_type -> metricraft.distribution
-	13, // 24: metricraft.Metricraft.getTrafficCongestion:output_type -> metricraft.congestion
-	12, // 25: metricraft.Metricraft.getP95Latency:output_type -> metricraft.distribution
-	8,  // 26: metricraft.Metricraft.getUptimeScore:output_type -> metricraft.floatDistribution
-	9,  // 27: metricraft.Metricraft.getThroughput:output_type -> metricraft.throughput
-	8,  // 28: metricraft.Metricraft.getGeographicalPerformance:output_type -> metricraft.floatDistribution
-	12, // 29: metricraft.Metricraft.getStatusCodeDistribution:output_type -> metricraft.distribution
-	12, // 30: metricraft.Metricraft.getRouteCongestion:output_type -> metricraft.distribution
-	3,  // 31: metricraft.Metricraft.createWorker:output_type -> metricraft.status
-	3,  // 32: metricraft.Metricraft.deleteWorker:output_type -> metricraft.status
-	3,  // 33: metricraft.Metricraft.updateWorker:output_type -> metricraft.status
-	4,  // 34: metricraft.Metricraft.getWorkerUptime:output_type -> metricraft.workerUptime
-	23, // [23:35] is the sub-list for method output_type
-	11, // [11:23] is the sub-list for method input_type
+	0,  // 19: metricraft.Metricraft.getHttpMethodDistribution:input_type -> metricraft.timeframe
+	2,  // 20: metricraft.Metricraft.createWorker:input_type -> metricraft.worker
+	1,  // 21: metricraft.Metricraft.deleteWorker:input_type -> metricraft.workerUrl
+	2,  // 22: metricraft.Metricraft.updateWorker:input_type -> metricraft.worker
+	1,  // 23: metricraft.Metricraft.getWorkerUptime:input_type -> metricraft.workerUrl
+	12, // 24: metricraft.Metricraft.getGeographicalTraffic:output_type -> metricraft.distribution
+	13, // 25: metricraft.Metricraft.getTrafficCongestion:output_type -> metricraft.congestion
+	12, // 26: metricraft.Metricraft.getP95Latency:output_type -> metricraft.distribution
+	8,  // 27: metricraft.Metricraft.getUptimeScore:output_type -> metricraft.floatDistribution
+	9,  // 28: metricraft.Metricraft.getThroughput:output_type -> metricraft.throughput
+	8,  // 29: metricraft.Metricraft.getGeographicalPerformance:output_type -> metricraft.floatDistribution
+	12, // 30: metricraft.Metricraft.getStatusCodeDistribution:output_type -> metricraft.distribution
+	12, // 31: metricraft.Metricraft.getRouteCongestion:output_type -> metricraft.distribution
+	13, // 32: metricraft.Metricraft.getHttpMethodDistribution:output_type -> metricraft.congestion
+	3,  // 33: metricraft.Metricraft.createWorker:output_type -> metricraft.status
+	3,  // 34: metricraft.Metricraft.deleteWorker:output_type -> metricraft.status
+	3,  // 35: metricraft.Metricraft.updateWorker:output_type -> metricraft.status
+	4,  // 36: metricraft.Metricraft.getWorkerUptime:output_type -> metricraft.workerUptime
+	24, // [24:37] is the sub-list for method output_type
+	11, // [11:24] is the sub-list for method input_type
 	11, // [11:11] is the sub-list for extension type_name
 	11, // [11:11] is the sub-list for extension extendee
 	0,  // [0:11] is the sub-list for field type_name
