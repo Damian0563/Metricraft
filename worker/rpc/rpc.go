@@ -39,6 +39,10 @@ func (s *Server) GetStatusCodeDistribution(ctx context.Context, req *pb.Timefram
 	return db.GetStatusCodeDistribution(ctx, req.Start.AsTime(), req.Resolution, req.Timezone)
 }
 
+func (s *Server) GetRouteCongestion(ctx context.Context, req *pb.Timeframe) (*pb.Distribution, error) {
+	return db.GetRouteCongestion(ctx, req.Start.AsTime(), req.Timezone)
+}
+
 func (s *Server) UpdateWorker(ctx context.Context, req *pb.Worker) (*pb.Status, error) {
 	status := worker.TestWorker(ctx, req)
 	worker.RegisterAndStartWorker(req)

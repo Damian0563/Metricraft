@@ -50,7 +50,7 @@ import { ChoroplethController, GeoFeature, ColorScale, ProjectionScale } from 'c
 import { ChoroplethChart } from 'chartjs-chart-geo';
 import { onMounted, toRaw } from "vue";
 import { useColorPicker } from "~/composables/colorpicker";
-import { createTrafficCongestionTrends, createThroughput, createStatusCodeDistribution, createGeographicalTraffic, createGeographicPerformance, createP95Latency, createUptimeScore } from "~/composables/charts/charts";
+import { createTrafficCongestionTrends, createRouteCongestion, createThroughput, createStatusCodeDistribution, createGeographicalTraffic, createGeographicPerformance, createP95Latency, createUptimeScore } from "~/composables/charts/charts";
 import type { ChartData, WorldData } from "~/composables/types";
 const props = defineProps<{
 	name: string;
@@ -121,6 +121,10 @@ const populateChart = async (data: any): Promise<void> => {
 		mutateAdditionalData(additionalData);
 	} else if (props.name === "Status code distribution" && chartRef.value) {
 		const { chart, additionalData }: ChartData = createStatusCodeDistribution(chartRef.value, toRaw(data), detailedMode.value)
+		chartInstance = chart;
+		mutateAdditionalData(additionalData);
+	} else if (props.name === "Route congestion" && chartRef.value && picker) {
+		const { chart, additionalData }: ChartData = createRouteCongestion(chartRef.value, toRaw(data), picker)
 		chartInstance = chart;
 		mutateAdditionalData(additionalData);
 	}

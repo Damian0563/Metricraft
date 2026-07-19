@@ -152,8 +152,8 @@
 								<template v-if="showBody">
 									<div class="whitespace-pre">&nbsp;</div>
 									<div v-for="(line, i) in bodyLines" :key="`b-${i}`" class="whitespace-pre rounded"
-										:class="line.target ? 'bg-[#00F376]/20 ring-1 ring-[#00F376]/50 px-0.5 text-emerald-300' : ''">{{ line.text }}<span
-											v-if="line.target" class="text-[#00F376]/70"> ← inspected</span></div>
+										:class="line.target ? 'bg-[#00F376]/20 ring-1 ring-[#00F376]/50 px-0.5 text-emerald-300' : ''">{{
+											line.text }}<span v-if="line.target" class="text-[#00F376]/70"> ← inspected</span></div>
 								</template>
 							</div>
 							<div class="mt-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
@@ -317,8 +317,8 @@ const buildBodyObject = (segments: string[]): unknown => {
 
 const bodyLines = computed<BodyLine[]>(() => {
 	const selecting = source.value === 'body'
-	const bodyObject = selecting
-		? buildBodyObject(selector.value.trim().replace(/\[(\d+)\]/g, '.$1').split('.').map(s => s.trim()).filter(Boolean))
+	const bodyObject = selecting && selector.value.trim() !== ''
+		? buildBodyObject([selector.value.trim()])
 		: { orderId: 'a1b2c3', total: 42.5, currency: 'USD' }
 
 	return JSON.stringify(bodyObject, null, 2).split('\n').map((line) => {

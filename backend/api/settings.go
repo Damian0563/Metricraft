@@ -4,9 +4,35 @@ import (
 	"backend/types"
 	"context"
 	"encoding/json"
-	"github.com/jackc/pgx/v5"
 	"os"
+	"regexp"
+	"strings"
+
+	"github.com/jackc/pgx/v5"
 )
+
+var trailingCommaRE = regexp.MustCompile(`,(\s*[}\]])`)
+
+func unmarshalEnabledMetrics(raw string) (map[string]types.EnabledMetric, bool, error) {
+	raw = strings.TrimSpace(raw)
+	metrics := make(map[string]types.EnabledMetric)
+	if err := json.Unmarshal([]byte(raw), &metrics); err == nil {
+		return metrics, false, nil
+	}
+	cleaned := trailingCommaRE.ReplaceAllString(raw, "$1")
+	if err := json.Unmarshal([]byte(cleaned), &metrics); err != nil {
+		return nil, false, err
+	}
+	return metrics, true, nil
+}
+
+func repairEnabledMetrics(ctx context.Context, conn *pgx.Conn, metrics map[string]types.EnabledMetric) {
+	fixed, err := json.Marshal(metrics)
+	if err != nil {
+		return
+	}
+	_, _ = conn.Exec(ctx, "UPDATE settings SET enabled = $1 WHERE TRUE", string(fixed))
+}
 
 func ChangeRealtime(enabled bool) error {
 	ctx := context.Background()
@@ -59,10 +85,12 @@ func GetSettings() (types.Settings, error) {
 	if err != nil {
 		return types.Settings{}, err
 	}
-	allSettings := make(map[string]types.EnabledMetric)
-	err = json.Unmarshal([]byte(enabled), &allSettings)
+	allSettings, repaired, err := unmarshalEnabledMetrics(enabled)
 	if err != nil {
 		return types.Settings{}, err
+	}
+	if repaired {
+		repairEnabledMetrics(ctx, conn, allSettings)
 	}
 	settings.Enabled = make(map[string]types.EnabledMetric)
 	for name, metric := range allSettings {
@@ -93,8 +121,8 @@ func persistTimeframeSelection(persistChan chan error, metric string, timeframe 
 		persistChan <- err
 		return
 	}
-	mapMetrics := make(map[string]types.EnabledMetric)
-	if err = json.Unmarshal([]byte(existing), &mapMetrics); err != nil {
+	mapMetrics, _, err := unmarshalEnabledMetrics(existing)
+	if err != nil {
 		persistChan <- err
 		return
 	}
@@ -155,8 +183,8 @@ func ChangeMetrics(metrics []types.Metric) error {
 	if err != nil {
 		return err
 	}
-	mapMetrics := make(map[string]types.EnabledMetric)
-	if err = json.Unmarshal([]byte(existing), &mapMetrics); err != nil {
+	mapMetrics, _, err := unmarshalEnabledMetrics(existing)
+	if err != nil {
 		return err
 	}
 	for _, metric := range metrics {

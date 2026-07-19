@@ -133,8 +133,10 @@ const originalMetrics = ref<Metric[]>([
 	{ id: 4, name: 'Uptime Score', description: 'Availability percentage over specified time frame.', enabled: true, timeframe: "7d" },
 	{ id: 5, name: 'Geographic performance', description: 'Median response times broken down by clients\' countries.', enabled: false, timeframe: "7d" },
 	{ id: 6, name: 'Status code distribution', description: 'Breakdown of HTTP response codes grouped by category (2xx, 3xx, 4xx, 5xx) over time.', enabled: false, timeframe: "7d" },
-	{ id: 7, name: 'Median response time', description: 'P50 latency across all requests, providing a representative measure of typical endpoint performance.', enabled: true, timeframe: "7d" },
+	{ id: 7, name: 'Route congestion', description: 'Mosty congested endpoints over time.', enabled: true, timeframe: "7d" },
 	{ id: 8, name: 'Throughput', description: 'Requests per second measured over configurable time intervals to track traffic capacity and trends.', enabled: true, timeframe: "7d" },
+	{ id: 9, name: 'HTTP method distribution', description: 'Breakdown of HTTP methods used by clients over time.', enabled: true, timeframe: "7d" },
+	{ id: 10, name: 'Unique visitors', description: 'Number of unique visitors over time.', enabled: true, timeframe: "7d" },
 ])
 watch(() => props.derivedMetrics, (metrics) => {
 	const updated = originalMetrics.value.map(metric => {
