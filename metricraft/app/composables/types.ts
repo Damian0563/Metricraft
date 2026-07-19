@@ -11,6 +11,15 @@ export type WorldData = {
 	countries: any;
 }
 
+export type HttpMethodData = {
+	values: Array<HttpMethodEntry>
+}
+
+export type HttpMethodEntry = {
+	timerange: string;
+	pairing?: StringInt32Map;
+};
+
 export type HeaderRow = { key: string; value: string }
 
 export type signPayload = {

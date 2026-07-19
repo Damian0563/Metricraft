@@ -1,5 +1,5 @@
 import { Chart } from "chart.js";
-import type { ChartData, WorldData, TrafficCongestionData, ThroughputData, ThroughputEntry, DistributionData, additionalDataHeaders, CongestionEntry, StringInt32Map } from "~/composables/types";
+import type { ChartData, HttpMethodData, HttpMethodEntry, WorldData, TrafficCongestionData, ThroughputData, ThroughputEntry, DistributionData, additionalDataHeaders, CongestionEntry, StringInt32Map } from "~/composables/types";
 import { ColorPicker } from "~/composables/colorpicker";
 import { truncateUrl } from "~/composables/helpers";
 import { ChoroplethChart } from 'chartjs-chart-geo';
@@ -707,11 +707,11 @@ export const createP95Latency = (
 	}
 };
 
-export const createGeographicalTraffic = async (
+export const createGeographicalTraffic = (
 	canvas: HTMLCanvasElement,
 	data: any,
-	worldData: WorldData | undefined
-): Promise<ChartData> => {
+	worldData: WorldData | undefined,
+): ChartData => {
 	try {
 		const values = data?.distribution?.values;
 		if (!values || !Object.keys(values).length) throw new Error('Data is empty');
@@ -800,7 +800,7 @@ export const createGeographicalTraffic = async (
 			},
 		})
 		const headers: additionalDataHeaders = { h1: 'Country', h2: 'Total Traffic' };
-		return { chart, additionalData: createAdditionalData(mapped, headers) };
+		return { chart: chart, additionalData: createAdditionalData(mapped, headers) };
 	} catch (_) {
 		return { chart: emptyChoroplethChart(canvas), additionalData: null };
 	}
@@ -915,10 +915,12 @@ export const createTrafficCongestionTrends = (
 	data: TrafficCongestionData,
 	colorPicker: ColorPicker,
 	timeframe: string,
+	detailed: boolean,
 ): ChartData => {
 	const getUrlCounts = (pairing: StringInt32Map | undefined): Record<string, number> =>
 		pairing?.values ?? {};
 	try {
+		if (detailed) return { chart: emptyChart(canvas), additionalData: null };
 		if (!data?.values?.length) throw new Error('Data is empty');
 		const labels: string[] = [];
 		const urlDataMap = new Map<string, number[]>();
@@ -1042,6 +1044,105 @@ export const createTrafficCongestionTrends = (
 		return { chart, additionalData: createAdditionalData(cumulativeMap, headers, colorPicker) };
 	} catch (e) {
 		console.error(e)
+		return { chart: emptyChart(canvas), additionalData: null };
+	}
+}
+
+
+export const createHttpMethodMix = (
+	canvas: HTMLCanvasElement,
+	data: HttpMethodData,
+	detailed: boolean,
+): ChartData => {
+	const methodColors = ['#00F376', '#38BDF8', '#A78BFA', '#F87171', '#FB923C'];
+	try {
+		const values = data?.values;
+		if (!values || !values.length) throw new Error('Data is empty');
+		if (detailed) return { chart: emptyChart(canvas), additionalData: null };
+
+		const cumulativeMap = new Map<string, number>([
+			['POST', 0],
+			['GET', 0],
+			['PUT', 0],
+			['DELETE', 0],
+			['PATCH', 0],
+		]);
+		values.forEach((entry: HttpMethodEntry) => {
+			if (!entry.pairing?.values) return;
+			for (const [method, count] of Object.entries(entry.pairing.values)) {
+				const key = method.toUpperCase();
+				if (!cumulativeMap.has(key)) continue;
+				cumulativeMap.set(key, cumulativeMap.get(key)! + Number(count));
+			}
+		});
+
+		const labels: string[] = Array.from(cumulativeMap.keys());
+		const valuesAxis: number[] = Array.from(cumulativeMap.values());
+		const colors: string[] = labels.map((_, index) => methodColors[index] ?? '#94A3B8');
+		const total: number = valuesAxis.reduce((sum, value) => sum + value, 0);
+		if (total <= 0) throw new Error('Data is empty');
+
+		const chart: Chart = new Chart(canvas, {
+			type: 'pie',
+			data: {
+				labels,
+				datasets: [{
+					label: 'HTTP methods',
+					data: valuesAxis,
+					backgroundColor: colors,
+					hoverBackgroundColor: colors,
+					borderColor: '#FFFFFF',
+					borderWidth: 2,
+					hoverOffset: 8,
+				}],
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				devicePixelRatio: Math.ceil(window.devicePixelRatio || 1),
+				animation: { duration: 250 },
+				layout: { padding: { top: 8, right: 8, bottom: 8, left: 8 } },
+				plugins: {
+					legend: {
+						display: true,
+						position: 'right',
+						labels: {
+							usePointStyle: true,
+							pointStyle: 'circle',
+							boxWidth: 8,
+							boxHeight: 8,
+							padding: 12,
+							color: '#475569',
+							font: { weight: 'bold', size: 11 },
+						},
+					},
+					tooltip: {
+						enabled: true,
+						displayColors: true,
+						padding: 10,
+						titleFont: { weight: 'bold', size: 13 },
+						bodyFont: { size: 12 },
+						callbacks: {
+							title: (items) => items[0]?.label ?? '',
+							label: (item) => {
+								const value = Number(item.parsed);
+								const share = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+								return `Requests: ${value.toLocaleString()} (${share}%)`;
+							},
+							labelColor: (item) => {
+								const color = colors[item.dataIndex ?? 0] ?? '#475569';
+								return { borderColor: color, backgroundColor: color };
+							},
+						},
+					},
+				},
+			},
+		});
+
+		const headers: additionalDataHeaders = { h1: 'Method', h2: 'Requests' };
+		return { chart, additionalData: createAdditionalData(cumulativeMap, headers) };
+	} catch (e) {
+		console.error(e);
 		return { chart: emptyChart(canvas), additionalData: null };
 	}
 }
