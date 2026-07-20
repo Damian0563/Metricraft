@@ -129,7 +129,7 @@ const populateChart = async (data: any): Promise<void> => {
 		chartInstance = chart;
 		mutateAdditionalData(additionalData);
 	} else if (props.name === "HTTP method distribution" && chartRef.value) {
-		const { chart, additionalData }: ChartData = createHttpMethodMix(chartRef.value, toRaw(data), detailedMode.value)
+		const { chart, additionalData }: ChartData = createHttpMethodMix(chartRef.value, toRaw(data), props.timeframe, detailedMode.value)
 		chartInstance = chart;
 		mutateAdditionalData(additionalData);
 	}

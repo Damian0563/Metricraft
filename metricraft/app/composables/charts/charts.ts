@@ -1052,14 +1052,17 @@ export const createTrafficCongestionTrends = (
 export const createHttpMethodMix = (
 	canvas: HTMLCanvasElement,
 	data: HttpMethodData,
+	timeframe: string,
 	detailed: boolean,
 ): ChartData => {
+	const methodOrder = ['POST', 'GET', 'PUT', 'DELETE', 'PATCH'];
 	const methodColors = ['#00F376', '#38BDF8', '#A78BFA', '#F87171', '#FB923C'];
+	const methodColor = (method: string): string =>
+		methodColors[methodOrder.indexOf(method.toUpperCase())] ?? '#94A3B8';
 	try {
 		const values = data?.values;
 		if (!values || !values.length) throw new Error('Data is empty');
-		if (detailed) return { chart: emptyChart(canvas), additionalData: null };
-
+		let chart: Chart;
 		const cumulativeMap = new Map<string, number>([
 			['POST', 0],
 			['GET', 0],
@@ -1067,80 +1070,230 @@ export const createHttpMethodMix = (
 			['DELETE', 0],
 			['PATCH', 0],
 		]);
-		values.forEach((entry: HttpMethodEntry) => {
-			if (!entry.pairing?.values) return;
-			for (const [method, count] of Object.entries(entry.pairing.values)) {
-				const key = method.toUpperCase();
-				if (!cumulativeMap.has(key)) continue;
-				cumulativeMap.set(key, cumulativeMap.get(key)! + Number(count));
+		if (detailed) {
+			const mapped = new Map<string, Array<number>>();
+			const labels: string[] = [];
+			const addData: Array<{ timerange: string, value: string }> = [];
+			values.forEach((entry: HttpMethodEntry) => {
+				if (!entry.pairing?.values) return;
+				for (const [method, count] of Object.entries(entry.pairing.values)) {
+					const key = method.toUpperCase();
+					if (!mapped.has(key)) mapped.set(key, new Array<number>());
+					mapped.get(key)!.push(Number(count));
+				}
+				labels.push(entry.timerange);
+				const distribution = Array.from(cumulativeMap.keys())
+					.map((method) => {
+						const count = entry.pairing!.values![method] ?? entry.pairing!.values![method.toLowerCase()];
+						return Number(count ?? 0).toLocaleString();
+					})
+					.join(' | ');
+				addData.push({ timerange: entry.timerange, value: distribution });
+			});
+			let stepSize;
+			switch (timeframe) {
+				case "1d":
+					stepSize = 6;
+					break;
+				case "7d":
+					stepSize = 1;
+					break;
+				case "30d":
+					stepSize = 2;
+					break;
+				default:
+					stepSize = 3;
 			}
-		});
-
-		const labels: string[] = Array.from(cumulativeMap.keys());
-		const valuesAxis: number[] = Array.from(cumulativeMap.values());
-		const colors: string[] = labels.map((_, index) => methodColors[index] ?? '#94A3B8');
-		const total: number = valuesAxis.reduce((sum, value) => sum + value, 0);
-		if (total <= 0) throw new Error('Data is empty');
-
-		const chart: Chart = new Chart(canvas, {
-			type: 'pie',
-			data: {
-				labels,
-				datasets: [{
-					label: 'HTTP methods',
-					data: valuesAxis,
-					backgroundColor: colors,
-					hoverBackgroundColor: colors,
-					borderColor: '#FFFFFF',
-					borderWidth: 2,
-					hoverOffset: 8,
-				}],
-			},
-			options: {
-				responsive: true,
-				maintainAspectRatio: false,
-				devicePixelRatio: Math.ceil(window.devicePixelRatio || 1),
-				animation: { duration: 250 },
-				layout: { padding: { top: 8, right: 8, bottom: 8, left: 8 } },
-				plugins: {
-					legend: {
-						display: true,
-						position: 'right',
-						labels: {
-							usePointStyle: true,
-							pointStyle: 'circle',
-							boxWidth: 8,
-							boxHeight: 8,
-							padding: 12,
-							color: '#475569',
-							font: { weight: 'bold', size: 11 },
+			const datasets = Array.from(mapped.entries()).map(([method, dataArray]: [string, Array<number>]) => {
+				const color = methodColors[Array.from(cumulativeMap.keys()).indexOf(method.toUpperCase())] ?? '#94A3B8';
+				return {
+					label: method,
+					data: dataArray,
+					backgroundColor: color,
+					hoverBackgroundColor: color,
+					borderWidth: 0,
+					borderRadius: 0,
+					borderSkipped: false,
+					categoryPercentage: 0.7,
+					barPercentage: 0.9,
+				};
+			});
+			chart = new Chart(canvas, {
+				type: 'bar',
+				data: {
+					labels,
+					datasets,
+				},
+				options: {
+					responsive: true,
+					maintainAspectRatio: false,
+					devicePixelRatio: Math.ceil(window.devicePixelRatio || 1),
+					animation: { duration: 250 },
+					interaction: { mode: 'index', intersect: false },
+					layout: { padding: { right: 8, left: 2, bottom: 2 } },
+					scales: {
+						x: {
+							stacked: true,
+							grid: { display: false },
+							border: { display: false },
+							ticks: {
+								autoSkip: false,
+								color: '#475569',
+								maxRotation: 0,
+								padding: 6,
+								font: { weight: 'bold', size: 11 },
+								callback: (_value: string | number, index: number): string =>
+									index % stepSize === 0 || index === 0 || (index === labels.length - 1 && (index - 1) % stepSize !== 0)
+										? (labels[index] ?? '')
+										: '',
+							},
+							title: {
+								display: true,
+								text: 'Time',
+								color: '#475569',
+								font: { weight: 'bold', size: 13 },
+								padding: { top: 2 },
+							},
+						},
+						y: {
+							stacked: true,
+							beginAtZero: true,
+							border: { display: false },
+							grid: { color: 'rgba(0,0,0,0.06)', drawTicks: false },
+							ticks: { padding: 8, precision: 0, color: '#475569', font: { weight: 'bold', size: 11 } },
+							title: {
+								display: true,
+								text: 'Requests',
+								color: '#475569',
+								font: { weight: 'bold', size: 13 },
+							},
 						},
 					},
-					tooltip: {
-						enabled: true,
-						displayColors: true,
-						padding: 10,
-						titleFont: { weight: 'bold', size: 13 },
-						bodyFont: { size: 12 },
-						callbacks: {
-							title: (items) => items[0]?.label ?? '',
-							label: (item) => {
-								const value = Number(item.parsed);
-								const share = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
-								return `Requests: ${value.toLocaleString()} (${share}%)`;
+					plugins: {
+						legend: {
+							display: true,
+							position: 'top',
+							align: 'start',
+							labels: {
+								usePointStyle: true,
+								pointStyle: 'circle',
+								boxWidth: 8,
+								boxHeight: 8,
+								padding: 14,
+								color: '#475569',
+								font: { weight: 'bold', size: 11 },
 							},
-							labelColor: (item) => {
-								const color = colors[item.dataIndex ?? 0] ?? '#475569';
-								return { borderColor: color, backgroundColor: color };
+						},
+						tooltip: {
+							enabled: true,
+							mode: 'index',
+							filter: (item) => Number(item.parsed.y) !== 0,
+							intersect: false,
+							itemSort: (a, b) => (b.parsed.y as number) - (a.parsed.y as number),
+							padding: 10,
+							titleFont: { weight: 'bold', size: 13 },
+							bodyFont: { size: 12 },
+							callbacks: {
+								title: function (tooltipItems) {
+									return formatTimeRangeTitle(labels, resolveHoveredIndex(tooltipItems, this.chart), timeframe);
+								},
+								label: (item) => `${item.dataset.label}: ${Number(item.parsed.y).toLocaleString()}`,
+								labelColor: (item) => {
+									const color = methodColor(String(item.dataset.label ?? ''));
+									return { borderColor: color, backgroundColor: color };
+								},
+								footer: function (tooltipItems) {
+									const dataIndex = resolveHoveredIndex(tooltipItems, this.chart);
+									if (dataIndex < 0) return '';
+									const total = datasets.reduce(
+										(sum, ds) => sum + (Number(ds.data[dataIndex]) || 0),
+										0,
+									);
+									return `Total: ${total.toLocaleString()}`;
+								},
 							},
 						},
 					},
 				},
-			},
-		});
-
-		const headers: additionalDataHeaders = { h1: 'Method', h2: 'Requests' };
-		return { chart, additionalData: createAdditionalData(cumulativeMap, headers) };
+			});
+			const headers: additionalDataHeaders = {
+				h1: 'Timerange',
+				h2: 'Number of requests per method (POST | GET | PUT | DELETE | PATCH)',
+			};
+			return { chart, additionalData: createAdditionalData(addData, headers) };
+		} else {
+			values.forEach((entry: HttpMethodEntry) => {
+				if (!entry.pairing?.values) return;
+				for (const [method, count] of Object.entries(entry.pairing.values)) {
+					const key = method.toUpperCase();
+					if (!cumulativeMap.has(key)) continue;
+					cumulativeMap.set(key, cumulativeMap.get(key)! + Number(count));
+				}
+			});
+			const labels: string[] = Array.from(cumulativeMap.keys());
+			const valuesAxis: number[] = Array.from(cumulativeMap.values());
+			const colors: string[] = labels.map((label) => methodColor(label));
+			const total: number = valuesAxis.reduce((sum, value) => sum + value, 0);
+			if (total <= 0) throw new Error('Data is empty');
+			chart = new Chart(canvas, {
+				type: 'pie',
+				data: {
+					labels,
+					datasets: [{
+						label: 'HTTP methods',
+						data: valuesAxis,
+						backgroundColor: colors,
+						hoverBackgroundColor: colors,
+						borderColor: '#FFFFFF',
+						borderWidth: 2,
+						hoverOffset: 8,
+					}],
+				},
+				options: {
+					responsive: true,
+					maintainAspectRatio: false,
+					devicePixelRatio: Math.ceil(window.devicePixelRatio || 1),
+					animation: { duration: 250 },
+					layout: { padding: { top: 8, right: 8, bottom: 8, left: 8 } },
+					plugins: {
+						legend: {
+							display: true,
+							position: 'right',
+							labels: {
+								usePointStyle: true,
+								pointStyle: 'circle',
+								boxWidth: 8,
+								boxHeight: 8,
+								padding: 12,
+								color: '#475569',
+								font: { weight: 'bold', size: 11 },
+							},
+						},
+						tooltip: {
+							enabled: true,
+							displayColors: true,
+							padding: 10,
+							titleFont: { weight: 'bold', size: 13 },
+							bodyFont: { size: 12 },
+							callbacks: {
+								title: (items) => items[0]?.label ?? '',
+								label: (item) => {
+									const value = Number(item.parsed);
+									const share = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+									return `Requests: ${value.toLocaleString()} (${share}%)`;
+								},
+								labelColor: (item) => {
+									const color = colors[item.dataIndex ?? 0] ?? '#475569';
+									return { borderColor: color, backgroundColor: color };
+								},
+							},
+						},
+					},
+				},
+			});
+			const headers: additionalDataHeaders = { h1: 'Method', h2: 'Requests' };
+			return { chart, additionalData: createAdditionalData(cumulativeMap, headers) };
+		}
 	} catch (e) {
 		console.error(e);
 		return { chart: emptyChart(canvas), additionalData: null };

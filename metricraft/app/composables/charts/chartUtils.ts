@@ -3,12 +3,12 @@ import type { ColorPicker } from "~/composables/colorpicker";
 
 type AdditionalDataRow = {
 	utterance: string;
-	value: number;
+	value: number | string;
 	color: string | null;
 };
 
 export const createAdditionalData = (
-	data: Map<string, number> | Array<{ timerange: string, value: number }>,
+	data: Map<string, number> | Array<{ timerange: string, value: number | string }>,
 	headers: additionalDataHeaders,
 	colorPicker: ColorPicker | null = null
 ): HTMLTableElement | null => {
