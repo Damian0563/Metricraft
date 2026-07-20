@@ -920,128 +920,218 @@ export const createTrafficCongestionTrends = (
 	const getUrlCounts = (pairing: StringInt32Map | undefined): Record<string, number> =>
 		pairing?.values ?? {};
 	try {
-		if (detailed) return { chart: emptyChart(canvas), additionalData: null };
 		if (!data?.values?.length) throw new Error('Data is empty');
-		const labels: string[] = [];
-		const urlDataMap = new Map<string, number[]>();
 		const cumulativeMap = new Map<string, number>();
-		const totalPoints = data.values.length;
-		data.values.forEach((entry: CongestionEntry, pointIndex: number) => {
-			labels.push(entry.timerange);
-			for (const [url, count] of Object.entries(getUrlCounts(entry.pairing))) {
-				if (!urlDataMap.has(url)) {
-					urlDataMap.set(url, new Array<number>(totalPoints).fill(0));
-					cumulativeMap.set(url, 0);
+		let chart: Chart;
+		if (!detailed) {
+			data.values.forEach((entry: CongestionEntry): void => {
+				for (const [url, count] of Object.entries(getUrlCounts(entry.pairing))) {
+					if (!cumulativeMap.has(url)) cumulativeMap.set(url, 0);
+					cumulativeMap.set(url, cumulativeMap.get(url)! + count);
 				}
-				urlDataMap.get(url)![pointIndex] = count;
-				cumulativeMap.set(url, cumulativeMap.get(url)! + count);
+			});
+			const entries: Array<[string, number]> = Array.from(cumulativeMap.entries())
+				.sort(([, a], [, b]) => b - a);
+			const sortedMap = new Map<string, number>(entries);
+			const labels: string[] = entries.map(([url]) => url);
+			const values: number[] = entries.map(([, count]) => count);
+			const colors: string[] = labels.map(url => colorPicker.getColorForUrl(url));
+			const total: number = values.reduce((sum, value) => sum + value, 0);
+			chart = new Chart(canvas, {
+				type: 'pie',
+				data: {
+					labels,
+					datasets: [{
+						label: 'Traffic congestion',
+						data: values,
+						backgroundColor: colors,
+						hoverBackgroundColor: colors,
+						borderColor: '#FFFFFF',
+						borderWidth: 2,
+						hoverOffset: 8,
+					}],
+				},
+				options: {
+					responsive: true,
+					maintainAspectRatio: false,
+					devicePixelRatio: Math.ceil(window.devicePixelRatio || 1),
+					animation: { duration: 250 },
+					layout: { padding: { top: 8, right: 8, bottom: 8, left: 8 } },
+					plugins: {
+						legend: {
+							display: true,
+							position: 'right',
+							labels: {
+								usePointStyle: true,
+								pointStyle: 'circle',
+								padding: 12,
+								color: '#475569',
+								font: { weight: 'bold', size: 11 },
+								generateLabels: (chartInstance) => {
+									const dataset = chartInstance.data.datasets[0];
+									return (chartInstance.data.labels ?? []).map((label, index) => {
+										const color = Array.isArray(dataset?.backgroundColor)
+											? dataset.backgroundColor[index]
+											: dataset?.backgroundColor;
+										return {
+											text: truncateUrl(String(label)),
+											fillStyle: color as string,
+											strokeStyle: color as string,
+											lineWidth: 0,
+											hidden: !chartInstance.getDataVisibility(index),
+											index,
+										};
+									});
+								},
+							},
+						},
+						tooltip: {
+							enabled: true,
+							displayColors: true,
+							padding: 10,
+							titleFont: { weight: 'bold', size: 13 },
+							bodyFont: { size: 12 },
+							callbacks: {
+								title: (items) => labels[items[0]?.dataIndex ?? 0] ?? '',
+								label: (item) => {
+									const value = Number(item.parsed);
+									const share = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+									return `Requests: ${value.toLocaleString()} (${share}%)`;
+								},
+								labelColor: (item) => {
+									const color = colors[item.dataIndex ?? 0] ?? '#475569';
+									return { borderColor: color, backgroundColor: color };
+								},
+							},
+						},
+					},
+				},
+			});
+			const headers: additionalDataHeaders = { h1: 'Endpoint', h2: 'Total' };
+			return { chart, additionalData: createAdditionalData(sortedMap, headers, colorPicker) };
+		} else {
+			const urlDataMap = new Map<string, number[]>();
+			const totalPoints = data.values.length;
+			const labels: string[] = [];
+			data.values.forEach((entry: CongestionEntry, pointIndex: number) => {
+				labels.push(entry.timerange);
+				for (const [url, count] of Object.entries(getUrlCounts(entry.pairing))) {
+					if (!urlDataMap.has(url)) {
+						urlDataMap.set(url, new Array<number>(totalPoints).fill(0));
+						cumulativeMap.set(url, 0);
+					}
+					urlDataMap.get(url)![pointIndex] = count;
+					cumulativeMap.set(url, cumulativeMap.get(url)! + count);
+				}
+			});
+			let stepSize;
+			switch (timeframe) {
+				case "1d":
+					stepSize = 6;
+					break;
+				case "7d":
+					stepSize = 1;
+					break;
+				case "30d":
+					stepSize = 2;
+					break;
+				default:
+					stepSize = 3;
 			}
-		});
-		let stepSize;
-		switch (timeframe) {
-			case "1d":
-				stepSize = 6;
-				break;
-			case "7d":
-				stepSize = 1;
-				break;
-			case "30d":
-				stepSize = 2;
-				break;
-			default:
-				stepSize = 3;
+			const datasets = Array.from(urlDataMap.entries()).map(([url, dataArray]) => {
+				const color = colorPicker.getColorForUrl(url);
+				return {
+					label: url,
+					data: dataArray,
+					backgroundColor: color,
+					hoverBackgroundColor: color,
+					borderWidth: 0,
+					borderRadius: 0,
+					borderSkipped: false,
+					categoryPercentage: 0.7,
+					barPercentage: 0.9,
+				};
+			});
+			chart = new Chart(canvas, {
+				type: 'bar',
+				data: {
+					labels,
+					datasets
+				},
+				options: {
+					responsive: true,
+					maintainAspectRatio: false,
+					devicePixelRatio: Math.ceil(window.devicePixelRatio || 1),
+					animation: { duration: 250 },
+					interaction: { mode: 'index', intersect: false },
+					layout: { padding: { right: 8, left: 2, bottom: 2 } },
+					scales: {
+						x: {
+							stacked: true,
+							grid: { display: false },
+							border: { display: false },
+							ticks: {
+								autoSkip: false,
+								color: 'black',
+								maxRotation: 0,
+								padding: 6,
+								font: { weight: 'bold' },
+								callback: (_value: string | number, index: number): string =>
+									index == 0 || index === labels.length - 1 ? (labels[index] ?? '') : '',
+							},
+							title: { display: true, text: 'Time', color: 'black', font: { weight: 'bold', size: 18 }, padding: { top: 2 } },
+						},
+						y: {
+							stacked: true,
+							beginAtZero: true,
+							border: { display: false },
+							grid: { color: 'rgba(0,0,0,0.06)', drawTicks: false },
+							ticks: { padding: 8, precision: 0, font: { weight: 'bold' } },
+							title: { display: true, text: 'Requests', color: 'black', font: { weight: 'bold', size: 18 } },
+						}
+					},
+					plugins: {
+						legend: {
+							display: datasets.length <= 12,
+							position: 'top',
+							align: 'start',
+							labels: {
+								usePointStyle: true,
+								pointStyle: 'circle',
+								boxWidth: 8,
+								boxHeight: 8,
+								padding: 14,
+							},
+						},
+						tooltip: {
+							enabled: true,
+							mode: 'index',
+							filter: (item) => Number(item.parsed.y) !== 0,
+							intersect: false,
+							itemSort: (a, b) => (b.parsed.y as number) - (a.parsed.y as number),
+							callbacks: {
+								footer: function (tooltipItems) {
+									const dataIndex = resolveHoveredIndex(tooltipItems, this.chart);
+									if (dataIndex < 0) return '';
+									const total = datasets.reduce(
+										(sum, ds) => sum + (Number(ds.data[dataIndex]) || 0),
+										0,
+									);
+									return `Total: ${total.toLocaleString()} `;
+								},
+								title: function (tooltipItems) {
+									return formatTimeRangeTitle(labels, resolveHoveredIndex(tooltipItems, this.chart), timeframe);
+								},
+							},
+						}
+					},
+				}
+			});
+			const headers: additionalDataHeaders = { h1: 'Endpoint', h2: 'Total' };
+			return { chart, additionalData: createAdditionalData(cumulativeMap, headers, colorPicker) };
 		}
-		const datasets = Array.from(urlDataMap.entries()).map(([url, dataArray]) => {
-			const color = colorPicker.getColorForUrl(url);
-			return {
-				label: url,
-				data: dataArray,
-				backgroundColor: color,
-				hoverBackgroundColor: color,
-				borderWidth: 0,
-				borderRadius: 0,
-				borderSkipped: false,
-				categoryPercentage: 0.7,
-				barPercentage: 0.9,
-			};
-		});
-		let chart: Chart = new Chart(canvas, {
-			type: 'bar',
-			data: {
-				labels,
-				datasets
-			},
-			options: {
-				responsive: true,
-				maintainAspectRatio: false,
-				devicePixelRatio: Math.ceil(window.devicePixelRatio || 1),
-				animation: { duration: 250 },
-				interaction: { mode: 'index', intersect: false },
-				layout: { padding: { right: 8, left: 2, bottom: 2 } },
-				scales: {
-					x: {
-						stacked: true,
-						grid: { display: false },
-						border: { display: false },
-						ticks: {
-							autoSkip: false,
-							color: 'black',
-							maxRotation: 0,
-							padding: 6,
-							font: { weight: 'bold' },
-							callback: (_value: string | number, index: number): string =>
-								index == 0 || index === labels.length - 1 ? (labels[index] ?? '') : '',
-						},
-						title: { display: true, text: 'Time', color: 'black', font: { weight: 'bold', size: 18 }, padding: { top: 2 } },
-					},
-					y: {
-						stacked: true,
-						beginAtZero: true,
-						border: { display: false },
-						grid: { color: 'rgba(0,0,0,0.06)', drawTicks: false },
-						ticks: { padding: 8, precision: 0, font: { weight: 'bold' } },
-						title: { display: true, text: 'Requests', color: 'black', font: { weight: 'bold', size: 18 } },
-					}
-				},
-				plugins: {
-					legend: {
-						display: datasets.length <= 12,
-						position: 'top',
-						align: 'start',
-						labels: {
-							usePointStyle: true,
-							pointStyle: 'circle',
-							boxWidth: 8,
-							boxHeight: 8,
-							padding: 14,
-						},
-					},
-					tooltip: {
-						enabled: true,
-						mode: 'index',
-						filter: (item) => Number(item.parsed.y) !== 0,
-						intersect: false,
-						itemSort: (a, b) => (b.parsed.y as number) - (a.parsed.y as number),
-						callbacks: {
-							footer: function (tooltipItems) {
-								const dataIndex = resolveHoveredIndex(tooltipItems, this.chart);
-								if (dataIndex < 0) return '';
-								const total = datasets.reduce(
-									(sum, ds) => sum + (Number(ds.data[dataIndex]) || 0),
-									0,
-								);
-								return `Total: ${total.toLocaleString()} `;
-							},
-							title: function (tooltipItems) {
-								return formatTimeRangeTitle(labels, resolveHoveredIndex(tooltipItems, this.chart), timeframe);
-							},
-						},
-					}
-				},
-			}
-		});
-		const headers: additionalDataHeaders = { h1: 'Endpoint', h2: 'Total' };
-		return { chart, additionalData: createAdditionalData(cumulativeMap, headers, colorPicker) };
+
+
 	} catch (e) {
 		console.error(e)
 		return { chart: emptyChart(canvas), additionalData: null };
