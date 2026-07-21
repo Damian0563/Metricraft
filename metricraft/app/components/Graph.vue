@@ -132,6 +132,8 @@ const populateChart = async (data: any): Promise<void> => {
 		const { chart, additionalData }: ChartData = createHttpMethodMix(chartRef.value, toRaw(data), props.timeframe, detailedMode.value)
 		chartInstance = chart;
 		mutateAdditionalData(additionalData);
+	} else if (props.name === "Unique visitors" && chartRef.value) {
+		console.log(toRaw(data));
 	}
 }
 </script>
