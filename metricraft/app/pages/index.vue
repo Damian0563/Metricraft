@@ -22,14 +22,11 @@ const noticeMessage = ref("")
 const mode = ref(true)
 const localLoading = ref(false)
 const { data: oldUserStatus, pending: loading, error } = await useAsyncData('welcome', () => welcome())
-if (oldUserStatus.value) {
-	navigateTo("/dashboard")
-}
 watch(oldUserStatus, (newVal) => {
 	if (newVal) {
 		navigateTo("/dashboard")
 	}
-})
+}, { immediate: true })
 watch(loading, (newVal) => {
 	localLoading.value = newVal
 })

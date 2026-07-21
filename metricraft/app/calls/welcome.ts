@@ -5,8 +5,9 @@ export const welcome = async (): Promise<boolean> => {
 		const response = await useApi()<welcomeResponse>(`/welcome`, {
 			method: "GET",
 		})
-		if (response.err) throw (response.err)
-		return Boolean(response.exists)
+		const result: welcomeResponse = typeof response === 'string' ? JSON.parse(response) : response
+		if (result.err) return false
+		return Boolean(result.exists)
 	} catch (e) {
 		return false
 	}

@@ -60,7 +60,7 @@ func main() {
 	router := chi.NewRouter()
 	router.Use(corsMiddleware)
 	router.Use(httprate.LimitByIP(20, 1*time.Second))
-	router.Get("/", api.Welcome)
+	router.Get("/welcome", api.Welcome)
 	router.Group(func(r chi.Router) {
 		r.Use(httprate.LimitByIP(5, time.Minute))
 		r.Post("/sign", api.Sign)
