@@ -63,27 +63,41 @@ func GetWorkerUptime(ctx context.Context, url string, timezone string, pollInter
 		if err := res.Scan(&date, &status); err != nil {
 			return nil, err
 		}
+		trimmedDate := date.Truncate(time.Minute)
 		if !lastPoll.IsZero() {
-			for date.After(lastPoll.Add(pollInterval)) {
-				lastPoll = lastPoll.Add(pollInterval)
-				uptime = append(uptime, &pb.WorkerUptimeEntry{
-					Status: -1,
-					Stamp:  timestamppb.New(lastPoll),
-				})
+			trimmedLastPoll := lastPoll.Truncate(time.Minute)
+			// Extra padding avoids treating near-duplicate polls (routing/timeouts) as missed intervals; min poll is 5m.
+			for trimmedDate.After(trimmedLastPoll.Add(pollInterval + 2*time.Minute)) {
+				if len(uptime) == 0 || !uptime[len(uptime)-1].Stamp.AsTime().Truncate(time.Minute).Equal(trimmedLastPoll) {
+					uptime = append(uptime, &pb.WorkerUptimeEntry{
+						Status: -1,
+						Stamp:  timestamppb.New(trimmedLastPoll),
+					})
+				}
+				trimmedLastPoll = trimmedLastPoll.Add(pollInterval)
 			}
 		}
-		uptime = append(uptime, &pb.WorkerUptimeEntry{
-			Status: int32(status),
-			Stamp:  timestamppb.New(date),
-		})
+		if len(uptime) > 0 && uptime[len(uptime)-1].Stamp.AsTime().Truncate(time.Minute).Equal(trimmedDate) {
+			uptime[len(uptime)-1].Status = int32(status)
+			uptime[len(uptime)-1].Stamp = timestamppb.New(trimmedDate)
+		} else {
+			uptime = append(uptime, &pb.WorkerUptimeEntry{
+				Status: int32(status),
+				Stamp:  timestamppb.New(trimmedDate),
+			})
+		}
 		lastPoll = date
 	}
 	now := time.Now().In(loc).UTC()
 	for !lastPoll.IsZero() && now.After(lastPoll.Add(pollInterval)) {
 		lastPoll = lastPoll.Add(pollInterval)
+		trimmed := lastPoll.Truncate(time.Minute)
+		if len(uptime) > 0 && uptime[len(uptime)-1].Stamp.AsTime().Truncate(time.Minute).Equal(trimmed) {
+			continue
+		}
 		uptime = append(uptime, &pb.WorkerUptimeEntry{
 			Status: -1,
-			Stamp:  timestamppb.New(lastPoll),
+			Stamp:  timestamppb.New(trimmed),
 		})
 	}
 	//delete old logs, do not throw error if occured
