@@ -352,3 +352,60 @@ func GetHttpMethodDistribution(ctx context.Context, startDate time.Time, resolut
 	}
 	return &pb.Congestion{Values: congestion}, nil
 }
+
+func GetUniqueVisitors(ctx context.Context, start time.Time, resolution int32, timezone string) (*pb.SimpleRepeatedDistribution, error) {
+	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close(ctx)
+	loc := loadLocation(timezone)
+	alignedStart := alignStart(start, loc, resolution)
+	end := rangeEnd(loc, time.Hour, resolution)
+	var increment time.Duration
+	var truncPeriod string
+	tz := validTimezone(timezone)
+	if resolution == 0 {
+		increment = time.Hour
+		truncPeriod = "hour"
+	} else {
+		increment = time.Hour * 24 * time.Duration(resolution)
+		truncPeriod = "day"
+	}
+	var dist []*pb.StringInt32Map
+	for cursor := alignedStart; cursor.Before(end); cursor = cursor.Add(increment) {
+		timerange := timerangeLabel(cursor.In(loc), increment, resolution, "unique visitors")
+		curr := map[string]int32{timerange: 0}
+		dist = append(dist, &pb.StringInt32Map{Values: curr})
+	}
+	res, err := conn.Query(ctx, `
+		SELECT
+			FLOOR(
+				EXTRACT(EPOCH FROM
+					date_trunc($6, (date AT TIME ZONE $4) AT TIME ZONE $5)
+					- date_trunc($6, ($1 AT TIME ZONE $4) AT TIME ZONE $5)
+				) / $3
+			)::int AS bucket,
+			COUNT(DISTINCT "user") AS count
+		FROM logs
+		WHERE date >= $1 AND date < $2
+		GROUP BY bucket`, alignedStart, end, increment.Seconds(), storageTimezone, tz, truncPeriod)
+	if err != nil {
+		return nil, err
+	}
+	for res.Next() {
+		var bucket int
+		var count int
+		if err = res.Scan(&bucket, &count); err != nil {
+			return nil, err
+		}
+		if bucket >= 0 && bucket < len(dist) {
+			curr := dist[bucket].Values
+			for k := range curr {
+				curr[k] = int32(count)
+			}
+			dist[bucket].Values = curr
+		}
+	}
+	return &pb.SimpleRepeatedDistribution{Distribution: dist}, nil
+}

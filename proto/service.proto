@@ -14,11 +14,16 @@ service Metricraft {
   rpc getStatusCodeDistribution(timeframe) returns (distribution);
   rpc getRouteCongestion(timeframe) returns (distribution);
   rpc getHttpMethodDistribution(timeframe) returns (congestion);
+  rpc getUniqueVisitors(timeframe) returns (simpleRepeatedDistribution);
 
   rpc createWorker(worker) returns (status);
   rpc deleteWorker(workerUrl) returns (status);
   rpc updateWorker(worker) returns (status);
   rpc getWorkerUptime(workerUrl) returns (workerUptime);
+}
+
+message simpleRepeatedDistribution {
+  repeated StringInt32Map distribution = 1;
 }
 
 message timeframe{

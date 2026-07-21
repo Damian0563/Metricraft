@@ -47,6 +47,10 @@ func (s *Server) GetHttpMethodDistribution(ctx context.Context, req *pb.Timefram
 	return db.GetHttpMethodDistribution(ctx, req.Start.AsTime(), req.Resolution, req.Timezone)
 }
 
+func (s *Server) GetUniqueVisitors(ctx context.Context, req *pb.Timeframe) (*pb.SimpleRepeatedDistribution, error) {
+	return db.GetUniqueVisitors(ctx, req.Start.AsTime(), req.Resolution, req.Timezone)
+}
+
 func (s *Server) UpdateWorker(ctx context.Context, req *pb.Worker) (*pb.Status, error) {
 	status := worker.TestWorker(ctx, req)
 	worker.RegisterAndStartWorker(req)
