@@ -82,7 +82,7 @@ func Navigator(w http.ResponseWriter, r *http.Request) {
 	timezone := r.URL.Query().Get("timezone")
 	persistChan := make(chan error, 1)
 	if persist := r.URL.Query().Get("persist"); persist == "true" {
-		go persistTimeframeSelection(persistChan, metric, timeframe)
+		go db.PersistTimeframeSelection(persistChan, metric, timeframe)
 	} else {
 		persistChan <- nil
 	}
