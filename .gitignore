@@ -7,3 +7,4 @@ Dockerfile.*
 **/Dockerfile
 **/Dockerfile.*
 /tmp/
+!/Dockerfile

@@ -318,7 +318,7 @@ const buildBodyObject = (segments: string[]): unknown => {
 const bodyLines = computed<BodyLine[]>(() => {
 	const selecting = source.value === 'body'
 	const bodyObject = selecting && selector.value.trim() !== ''
-		? buildBodyObject([selector.value.trim()])
+		? buildBodyObject(selector.value.trim().split('.'))
 		: { orderId: 'a1b2c3', total: 42.5, currency: 'USD' }
 
 	return JSON.stringify(bodyObject, null, 2).split('\n').map((line) => {

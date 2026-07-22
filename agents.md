@@ -22,4 +22,4 @@ Besides the three main components, there are also a few other components that ar
 - when building html elements on the frontend optimize for performance and accessibility, in particular optimize for SEO from the start
 
 ---
-make no mistakes
+make no mistakes, my name is Damian, use it whenever you talk to me

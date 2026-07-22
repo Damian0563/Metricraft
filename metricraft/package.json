@@ -7,7 +7,8 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "typecheck": "nuxt typecheck"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.1",
@@ -26,9 +27,11 @@
     "tailwindcss": "^4.2.1",
     "vue": "^3.5.29",
     "vue-chartjs": "^5.3.3",
-    "vue-router": "^4.6.4"
+    "vue-router": "^5.2.0"
   },
   "devDependencies": {
-    "@types/culori": "^4.0.1"
+    "@types/culori": "^4.0.1",
+    "typescript": "~5.8.3",
+    "vue-tsc": "^3.3.7"
   }
 }
