@@ -1,6 +1,5 @@
-// https://nuxt.com/docs/api/configuration/nuxt-config
 import tailwindcss from "@tailwindcss/vite";
-import { config } from "./composables/types";
+import type { config } from "./app/composables/types";
 
 const getConfig = (): config => {
 	try {

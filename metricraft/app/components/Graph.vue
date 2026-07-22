@@ -51,7 +51,7 @@ import { ChoroplethController, GeoFeature, ColorScale, ProjectionScale } from 'c
 import { ChoroplethChart } from 'chartjs-chart-geo';
 import { onMounted, toRaw } from "vue";
 import { useColorPicker } from "~/composables/colorpicker";
-import { createTrafficCongestionTrends, createRouteCongestion, createHttpMethodMix, createThroughput, createStatusCodeDistribution, createGeographicalTraffic, createGeographicPerformance, createP95Latency, createUptimeScore } from "~/composables/charts/charts";
+import { createTrafficCongestionTrends, createRouteCongestion, createHttpMethodMix, createUniqueVisitors, createThroughput, createStatusCodeDistribution, createGeographicalTraffic, createGeographicPerformance, createP95Latency, createUptimeScore } from "~/composables/charts/charts";
 import type { ChartData, WorldData } from "~/composables/types";
 const props = defineProps<{
 	name: string;
@@ -133,7 +133,9 @@ const populateChart = async (data: any): Promise<void> => {
 		chartInstance = chart;
 		mutateAdditionalData(additionalData);
 	} else if (props.name === "Unique visitors" && chartRef.value) {
-		console.log(toRaw(data));
+		const { chart, additionalData }: ChartData = createUniqueVisitors(chartRef.value, toRaw(data), props.timeframe)
+		chartInstance = chart;
+		mutateAdditionalData(additionalData);
 	}
 }
 </script>

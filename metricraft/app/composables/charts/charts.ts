@@ -806,6 +806,164 @@ export const createGeographicalTraffic = (
 	}
 }
 
+
+export const createUniqueVisitors = (
+	canvas: HTMLCanvasElement,
+	data: any,
+	timeframe: string = '',
+): ChartData => {
+	const barFill = '#00F376';
+	const barHover = '#00C962';
+	const barBorder = '#009E4F';
+	try {
+		const dist = data?.distribution;
+		if (!dist) throw new Error('Data is empty');
+		const mapped = new Map<string, number>();
+		const labels: string[] = [];
+		const values: number[] = [];
+		dist.forEach((entry: StringInt32Map): void => {
+			if (!entry.values) return;
+			Object.entries(entry.values).forEach(([timerange, value]) => {
+				labels.push(timerange);
+				values.push(Number(value));
+				mapped.set(timerange, value);
+			});
+		});
+		if (!labels.length) throw new Error('Data is empty');
+		let stepSize: number;
+		switch (timeframe) {
+			case '1d':
+				stepSize = 6;
+				break;
+			case '7d':
+				stepSize = 1;
+				break;
+			case '30d':
+				stepSize = 2;
+				break;
+			default:
+				stepSize = labels.length <= 8 ? 1 : labels.length <= 16 ? 2 : 3;
+		}
+		type UniqueVisitorsChart = Chart & { $hoveredIndex?: number | null };
+		const chart: Chart = new Chart(canvas, {
+			type: 'bar',
+			plugins: [
+				{
+					id: 'uniqueVisitorsLabelHover',
+					afterInit(chart) {
+						const uvChart = chart as UniqueVisitorsChart;
+						uvChart.$hoveredIndex = null;
+					},
+					afterEvent(chart) {
+						const uvChart = chart as UniqueVisitorsChart;
+						const active = chart.getActiveElements();
+						const nextIndex = active[0]?.index ?? null;
+						if (nextIndex === uvChart.$hoveredIndex) return;
+						uvChart.$hoveredIndex = nextIndex;
+						chart.update('none');
+					},
+				},
+			],
+			data: {
+				labels,
+				datasets: [{
+					label: 'Unique visitors',
+					data: values,
+					backgroundColor: barFill,
+					hoverBackgroundColor: barHover,
+					borderColor: barBorder,
+					borderWidth: 1,
+					borderRadius: 6,
+					borderSkipped: false,
+					maxBarThickness: 40,
+					categoryPercentage: 0.82,
+					barPercentage: 0.9,
+				}],
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				devicePixelRatio: Math.ceil(window.devicePixelRatio || 1),
+				animation: { duration: 250 },
+				interaction: { mode: 'index', intersect: false },
+				layout: { padding: { right: 8, left: 2, bottom: 2, top: 4 } },
+				scales: {
+					x: {
+						grid: { display: false },
+						border: { display: false },
+						ticks: {
+							autoSkip: false,
+							maxRotation: 0,
+							padding: 6,
+							color: (ctx) => {
+								const hovered = (ctx.chart as UniqueVisitorsChart).$hoveredIndex;
+								return ctx.index === hovered ? '#0D6EFD' : '#475569';
+							},
+							font: (ctx): any => ({
+								weight: ctx.index === (ctx.chart as UniqueVisitorsChart).$hoveredIndex ? 'bold' : '600',
+								size: 11,
+							}),
+							callback: (_value: string | number, index: number): string =>
+								index % stepSize === 0 || index === 0 || (index === labels.length - 1 && (index - 1) % stepSize !== 0)
+									? (labels[index] ?? '')
+									: '',
+						},
+						title: {
+							display: true,
+							text: 'Time',
+							color: '#475569',
+							font: { weight: 'bold', size: 13 },
+							padding: { top: 2 },
+						},
+					},
+					y: {
+						beginAtZero: true,
+						border: { display: false },
+						grid: { color: 'rgba(0,0,0,0.06)', drawTicks: false },
+						ticks: {
+							padding: 8,
+							precision: 0,
+							color: '#475569',
+							font: { weight: 'bold', size: 11 },
+						},
+						title: {
+							display: true,
+							text: 'Unique visitors',
+							color: '#475569',
+							font: { weight: 'bold', size: 13 },
+						},
+					},
+				},
+				plugins: {
+					legend: { display: false },
+					tooltip: {
+						enabled: true,
+						displayColors: true,
+						padding: 10,
+						titleFont: { weight: 'bold', size: 13 },
+						bodyFont: { size: 12 },
+						callbacks: {
+							title(tooltipItems) {
+								return formatTimeRangeTitle(labels, resolveHoveredIndex(tooltipItems, this.chart), timeframe || null);
+							},
+							label: (item) => `Unique visitors: ${Number(item.parsed.y).toLocaleString()}`,
+							labelColor: () => ({
+								borderColor: barFill,
+								backgroundColor: barFill,
+							}),
+						},
+					},
+				},
+			},
+		});
+		const headers: additionalDataHeaders = { h1: 'Timerange', h2: 'Number of unique visitors' };
+		return { chart: chart, additionalData: createAdditionalData(mapped, headers) };
+	} catch (e) {
+		console.error(e)
+		return { chart: emptyChart(canvas), additionalData: null };
+	}
+}
+
 export const createGeographicPerformance = (
 	canvas: HTMLCanvasElement,
 	data: any,

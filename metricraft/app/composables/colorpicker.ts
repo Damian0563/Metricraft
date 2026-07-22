@@ -19,7 +19,7 @@ export class ColorPicker {
 		urls.forEach((url: string) => {
 			const slot = hash(url)
 			const hue = (slot * 137.508) % 360;
-			entry.set(url, formatHex(oklch({ l: 0.78, c: 0.14, h: hue })));
+			entry.set(url, formatHex(oklch({ mode: 'oklch', l: 0.78, c: 0.14, h: hue })));
 		});
 		return entry;
 	}

@@ -65,9 +65,9 @@ func GetWorkerUptime(ctx context.Context, url string, timezone string, pollInter
 		}
 		trimmedDate := date.Truncate(time.Minute)
 		if !lastPoll.IsZero() {
-			trimmedLastPoll := lastPoll.Truncate(time.Minute)
+			trimmedLastPoll := lastPoll.Truncate(time.Minute).Add(pollInterval)
 			// Extra padding avoids treating near-duplicate polls (routing/timeouts) as missed intervals; min poll is 5m.
-			for trimmedDate.After(trimmedLastPoll.Add(pollInterval + 2*time.Minute)) {
+			for trimmedDate.After(trimmedLastPoll.Add(2 * time.Minute)) {
 				if len(uptime) == 0 || !uptime[len(uptime)-1].Stamp.AsTime().Truncate(time.Minute).Equal(trimmedLastPoll) {
 					uptime = append(uptime, &pb.WorkerUptimeEntry{
 						Status: -1,
