@@ -6,18 +6,16 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/jackc/pgx/v5"
-	"os"
 	"slices"
 )
 
 func SaveWorker(appName string, worker types.Worker, errChan chan error) {
 	ctx := context.Background()
-	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_USERS"))
+	conn, err := getUsersPool()
 	if err != nil {
 		errChan <- err
 		return
 	}
-	defer conn.Close(ctx)
 	tx, err := conn.Begin(ctx)
 	if err != nil {
 		errChan <- err
@@ -66,7 +64,7 @@ func SaveWorker(appName string, worker types.Worker, errChan chan error) {
 
 func UpdateWorker(appName string, worker types.Worker) error {
 	ctx := context.Background()
-	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_USERS"))
+	conn, err := getUsersPool()
 	if err != nil {
 		return err
 	}
@@ -74,7 +72,6 @@ func UpdateWorker(appName string, worker types.Worker) error {
 	if err != nil {
 		return err
 	}
-	defer conn.Close(ctx)
 	var workers string
 	err = tx.QueryRow(ctx, "SELECT workers FROM workers WHERE app_name=$1 FOR UPDATE", appName).Scan(&workers)
 	if err != nil {
@@ -107,7 +104,7 @@ func UpdateWorker(appName string, worker types.Worker) error {
 
 func DeleteWorker(appName string, url string) error {
 	ctx := context.Background()
-	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_USERS"))
+	conn, err := getUsersPool()
 	if err != nil {
 		return err
 	}
@@ -115,7 +112,6 @@ func DeleteWorker(appName string, url string) error {
 	if err != nil {
 		return err
 	}
-	defer conn.Close(ctx)
 	var workers string
 	err = tx.QueryRow(ctx, "SELECT workers FROM workers WHERE app_name=$1 FOR UPDATE", appName).Scan(&workers)
 	if err != nil {
@@ -148,13 +144,13 @@ func DeleteWorker(appName string, url string) error {
 }
 
 func GetWorkers(appName string) ([]types.Worker, error) {
-	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
+	ctx := context.Background()
+	conn, err := getUsersPool()
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close(context.Background())
 	var workers string
-	err = conn.QueryRow(context.Background(), "SELECT workers FROM workers WHERE app_name=$1", appName).Scan(&workers)
+	err = conn.QueryRow(ctx, "SELECT workers FROM workers WHERE app_name=$1", appName).Scan(&workers)
 	if err != nil {
 		if err == pgx.ErrNoRows || workers == "" {
 			return []types.Worker{}, nil

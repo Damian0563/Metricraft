@@ -8,22 +8,21 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
-	"os"
 	"slices"
 	"strings"
 	"time"
 )
 
 func CheckUserExists(routine chan types.ExistsErrResponse, mail string) {
-	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
+	ctx := context.Background()
+	conn, err := getUsersPool()
 	var origin string = "checkUserExists"
 	if err != nil {
 		routine <- types.ExistsErrResponse{Exists: false, Err: err, Origin: origin, Owner: ""}
 		return
 	}
-	defer conn.Close(context.Background())
 	var exists bool
-	err = conn.QueryRow(context.Background(), "SELECT EXISTS(SELECT 1 FROM users WHERE mail = $1)", mail).Scan(&exists)
+	err = conn.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM users WHERE mail = $1)", mail).Scan(&exists)
 	if err != nil {
 		routine <- types.ExistsErrResponse{Exists: false, Err: err, Origin: origin, Owner: ""}
 		return
@@ -32,16 +31,16 @@ func CheckUserExists(routine chan types.ExistsErrResponse, mail string) {
 }
 
 func CheckAllowed(routine chan types.ExistsErrResponse, mail string, appName string) {
-	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
+	ctx := context.Background()
+	conn, err := getUsersPool()
 	var origin string = "checkAllowed"
 	if err != nil {
 		routine <- types.ExistsErrResponse{Exists: false, Err: err, Origin: origin, Owner: ""}
 		return
 	}
-	defer conn.Close(context.Background())
 	var allowedUsers string
 	var owner string
-	err = conn.QueryRow(context.Background(), "SELECT allowed_users,mail FROM users WHERE app_name=$1", appName).Scan(&allowedUsers, &owner)
+	err = conn.QueryRow(ctx, "SELECT allowed_users,mail FROM users WHERE app_name=$1", appName).Scan(&allowedUsers, &owner)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			routine <- types.ExistsErrResponse{Exists: true, Err: errors.New("App name verification needed."), Origin: origin, Owner: owner}
@@ -72,14 +71,14 @@ func CheckAllowed(routine chan types.ExistsErrResponse, mail string, appName str
 }
 
 func GetRecoveryUser(recoveryMail string) (types.SendRecoveryUser, error) {
-	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
+	ctx := context.Background()
+	conn, err := getUsersPool()
 	if err != nil {
 		return types.SendRecoveryUser{}, err
 	}
-	defer conn.Close(context.Background())
 	var id string
 	var mail string
-	err = conn.QueryRow(context.Background(), "SELECT uuid,mail FROM users WHERE mail=$1", recoveryMail).Scan(&id, &mail)
+	err = conn.QueryRow(ctx, "SELECT uuid,mail FROM users WHERE mail=$1", recoveryMail).Scan(&id, &mail)
 	if err != nil {
 		return types.SendRecoveryUser{}, err
 	} else if id == "" {
@@ -89,27 +88,26 @@ func GetRecoveryUser(recoveryMail string) (types.SendRecoveryUser, error) {
 }
 
 func ChangePassword(userId string, password string) error {
-	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
+	ctx := context.Background()
+	conn, err := getUsersPool()
 	if err != nil {
 		return err
 	}
-	defer conn.Close(context.Background())
 	hashedSecret, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
-	_, err = conn.Exec(context.Background(), "UPDATE users SET secret=$1 WHERE uuid=$2", string(hashedSecret), userId)
+	_, err = conn.Exec(ctx, "UPDATE users SET secret=$1 WHERE uuid=$2", string(hashedSecret), userId)
 	return err
 }
 
 func AllowUsers(mails []string, appName string, errChannel chan error) {
 	ctx := context.Background()
-	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_USERS"))
+	conn, err := getUsersPool()
 	if err != nil {
 		errChannel <- err
 		return
 	}
-	defer conn.Close(ctx)
 	tx, err := conn.Begin(ctx)
 	if err != nil {
 		errChannel <- err
@@ -153,13 +151,13 @@ func AllowUsers(mails []string, appName string, errChannel chan error) {
 }
 
 func AddToPendingList(mail string, appName string) error {
-	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
+	ctx := context.Background()
+	conn, err := getUsersPool()
 	if err != nil {
 		return err
 	}
-	defer conn.Close(context.Background())
 	var pendingUsers string
-	err = conn.QueryRow(context.Background(), "SELECT pending_users FROM users WHERE app_name=$1 AND owner=true", appName).Scan(&pendingUsers)
+	err = conn.QueryRow(ctx, "SELECT pending_users FROM users WHERE app_name=$1 AND owner=true", appName).Scan(&pendingUsers)
 	if err != nil {
 		return err
 	}
@@ -172,7 +170,7 @@ func AddToPendingList(mail string, appName string) error {
 	if err != nil {
 		return err
 	}
-	_, err = conn.Exec(context.Background(), "UPDATE users SET pending_users=$1 WHERE app_name=$2 AND owner=true", pending, appName)
+	_, err = conn.Exec(ctx, "UPDATE users SET pending_users=$1 WHERE app_name=$2 AND owner=true", pending, appName)
 	return err
 }
 
@@ -185,11 +183,10 @@ func unMarshalUsers(jsonString string, jsonSlice *[]string) {
 
 func ChangeNotificationRecipients(allowedUsers []types.AllowedUsersDb, appName string) error {
 	ctx := context.Background()
-	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_USERS"))
+	conn, err := getUsersPool()
 	if err != nil {
 		return err
 	}
-	defer conn.Close(ctx)
 	tx, err := conn.Begin(ctx)
 	if err != nil {
 		return err
@@ -210,12 +207,11 @@ func ChangeNotificationRecipients(allowedUsers []types.AllowedUsersDb, appName s
 
 func HandleInvite(mail string, decision string, appName string) error {
 	ctx := context.Background()
-	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
+	conn, err := getUsersPool()
 	if err != nil {
 		return err
 	}
-	defer conn.Close(context.Background())
-	tx, err := conn.Begin(context.Background())
+	tx, err := conn.Begin(ctx)
 	if err != nil {
 		return err
 	}
@@ -248,14 +244,14 @@ func HandleInvite(mail string, decision string, appName string) error {
 }
 
 func GetTeamUsers(appName string) ([]types.AllowedUsers, error) {
-	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
+	ctx := context.Background()
+	conn, err := getUsersPool()
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close(context.Background())
 	var teamUsers string
 	var owner string
-	err = conn.QueryRow(context.Background(), "SELECT mail,allowed_users FROM users WHERE app_name=$1 AND owner=true", appName).Scan(&owner, &teamUsers)
+	err = conn.QueryRow(ctx, "SELECT mail,allowed_users FROM users WHERE app_name=$1 AND owner=true", appName).Scan(&owner, &teamUsers)
 	if err != nil {
 		return nil, err
 	}
@@ -267,7 +263,7 @@ func GetTeamUsers(appName string) ([]types.AllowedUsers, error) {
 	var response []types.AllowedUsers
 	for _, user := range users {
 		var exists bool
-		err = conn.QueryRow(context.Background(), "SELECT EXISTS(SELECT 1 FROM users WHERE mail = $1)", user.Mail).Scan(&exists)
+		err = conn.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM users WHERE mail = $1)", user.Mail).Scan(&exists)
 		if err != nil {
 			return nil, err
 		}
@@ -277,13 +273,13 @@ func GetTeamUsers(appName string) ([]types.AllowedUsers, error) {
 }
 
 func GetPendingUsers(appName string) ([]string, error) {
-	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
+	ctx := context.Background()
+	conn, err := getUsersPool()
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close(context.Background())
 	var pendingUsers string
-	err = conn.QueryRow(context.Background(), "SELECT pending_users FROM users WHERE app_name=$1 AND owner=true", appName).Scan(&pendingUsers)
+	err = conn.QueryRow(ctx, "SELECT pending_users FROM users WHERE app_name=$1 AND owner=true", appName).Scan(&pendingUsers)
 	if err != nil {
 		return nil, err
 	}
@@ -297,11 +293,10 @@ func GetPendingUsers(appName string) ([]string, error) {
 
 func CreateUser(mail string, secret string, appName string) (string, error) {
 	ctx := context.Background()
-	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_USERS"))
+	conn, err := getUsersPool()
 	if err != nil {
 		return "", err
 	}
-	defer conn.Close(ctx)
 	hashedSecret, err := bcrypt.GenerateFromPassword([]byte(secret), bcrypt.DefaultCost)
 	if err != nil {
 		return "", err
@@ -326,11 +321,10 @@ func CreateUser(mail string, secret string, appName string) (string, error) {
 
 func checkAppNameExists(appName string) bool {
 	ctx := context.Background()
-	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_USERS"))
+	conn, err := getUsersPool()
 	if err != nil {
 		return false
 	}
-	defer conn.Close(ctx)
 	var exists bool
 	err = conn.QueryRow(ctx, "SELECT NOT EXISTS(SELECT 1 FROM users WHERE app_name = $1)", appName).Scan(&exists)
 	if err != nil {
@@ -340,14 +334,14 @@ func checkAppNameExists(appName string) bool {
 }
 
 func SignIn(mail string, secret string) (string, bool) {
-	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
+	ctx := context.Background()
+	conn, err := getUsersPool()
 	if err != nil {
-		panic(err)
+		return "", false
 	}
-	defer conn.Close(context.Background())
 	var hashedSecret string
 	var uuid string
-	err = conn.QueryRow(context.Background(), "SELECT uuid, secret FROM users WHERE mail = $1", mail).Scan(&uuid, &hashedSecret)
+	err = conn.QueryRow(ctx, "SELECT uuid, secret FROM users WHERE mail = $1", mail).Scan(&uuid, &hashedSecret)
 	if err != nil {
 		return "", false
 	}
@@ -356,13 +350,13 @@ func SignIn(mail string, secret string) (string, bool) {
 }
 
 func GetAppNameByToken(token string) (string, error) {
-	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_USERS"))
+	ctx := context.Background()
+	conn, err := getUsersPool()
 	if err != nil {
 		return "", err
 	}
-	defer conn.Close(context.Background())
 	var appName string
-	err = conn.QueryRow(context.Background(), "SELECT app_name FROM users WHERE uuid = $1", token).Scan(&appName)
+	err = conn.QueryRow(ctx, "SELECT app_name FROM users WHERE uuid = $1", token).Scan(&appName)
 	if err != nil {
 		return "", err
 	}

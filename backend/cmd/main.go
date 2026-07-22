@@ -2,10 +2,13 @@ package main
 
 import (
 	"backend/api"
+	"backend/db"
 	"backend/redis"
+	"context"
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/httprate"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -23,6 +26,19 @@ func loadEnv() {
 			return
 		}
 	}
+}
+
+func initPool(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
+	config, err := pgxpool.ParseConfig(databaseURL)
+	if err != nil {
+		return nil, err
+	}
+	config.MinConns = 3
+	config.MaxConns = 20
+	config.MaxConnLifetime = 30 * time.Minute
+	config.HealthCheckPeriod = 5 * time.Minute
+	config.ConnConfig.ConnectTimeout = 15 * time.Second
+	return pgxpool.NewWithConfig(ctx, config)
 }
 
 func corsMiddleware(next http.Handler) http.Handler {
@@ -57,6 +73,20 @@ func main() {
 		os.Setenv("grpc", "127.0.0.1:50051")
 	}
 	redis.InitClient()
+	usersPool, err := initPool(context.Background(), os.Getenv("DATABASE_USERS"))
+	if err != nil {
+		fmt.Println("failed to initialize users database pool:", err)
+		return
+	}
+	defer usersPool.Close()
+	logsPool, err := initPool(context.Background(), os.Getenv("DATABASE_LOGS"))
+	if err != nil {
+		fmt.Println("failed to initialize logs database pool:", err)
+		return
+	}
+	defer logsPool.Close()
+	db.SetUsersPool(usersPool)
+	db.SetLogsPool(logsPool)
 	router := chi.NewRouter()
 	router.Use(corsMiddleware)
 	router.Use(httprate.LimitByIP(20, 1*time.Second))

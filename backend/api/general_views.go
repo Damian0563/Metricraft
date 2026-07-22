@@ -58,7 +58,7 @@ func ToggleRealtime(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if err := ChangeRealtime(payload.Enabled); err != nil {
+	if err := db.ChangeRealtime(payload.Enabled); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -80,7 +80,7 @@ func ChangeMetricsHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if err := ChangeMetrics(payload); err != nil {
+	if err := db.ChangeMetrics(payload); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -105,7 +105,7 @@ func ChangeRetention(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if err := ChangeLogsRetention(payload.Retention); err != nil {
+	if err := db.ChangeLogsRetention(payload.Retention); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -333,11 +333,11 @@ func DashboardInit(w http.ResponseWriter, r *http.Request) {
 		} else {
 			status := http.StatusOK
 			Response.SignedSecret = signed
-			if Response.Settings, err = GetSettings(); err != nil {
+			if Response.Settings, err = db.GetSettings(); err != nil {
 				Response.Error = "Error occured during fetching settings. Please try again later."
 				status = http.StatusInternalServerError
 			}
-			if Response.Urls, err = GetUrls(); err != nil {
+			if Response.Urls, err = db.GetUrls(); err != nil {
 				Response.Error = "Error occured during fetching urls. Please try again later."
 				status = http.StatusInternalServerError
 			}
