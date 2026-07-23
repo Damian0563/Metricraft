@@ -7,6 +7,13 @@ export type Worker = {
 	headers?: Record<string, string>;
 }
 
+export type Rule = {
+	rule: string,
+	matches: string[],
+	mode: string, // "blacklist" | "grouping"
+}
+
+
 export type WorldData = {
 	countries: any;
 }

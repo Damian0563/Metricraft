@@ -1,14 +1,17 @@
 package main
 
 import (
+	backenddb "backend/db"
 	"context"
 	"fmt"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	pb "metricraft/proto/metricraft/proto"
 	"net"
 	"net/http"
 	"os"
+	"time"
 	"worker/db"
 	"worker/enter"
 	"worker/rpc"
@@ -21,11 +24,24 @@ func loadEnv() {
 	}
 }
 
+func initPool(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
+	config, err := pgxpool.ParseConfig(databaseURL)
+	if err != nil {
+		return nil, err
+	}
+	config.MinConns = 3
+	config.MaxConns = 20
+	config.MaxConnLifetime = 30 * time.Minute
+	config.HealthCheckPeriod = 5 * time.Minute
+	config.ConnConfig.ConnectTimeout = 15 * time.Second
+	return pgxpool.NewWithConfig(ctx, config)
+}
+
 func main() {
 	loadEnv()
 	MODE := os.Getenv("MODE")
-	if os.Getenv("SECRET") == "" || os.Getenv("DATABASE_LOGS") == "" {
-		panic("Secret must be set")
+	if os.Getenv("SECRET") == "" || os.Getenv("DATABASE_LOGS") == "" || os.Getenv("DATABASE_USERS") == "" {
+		panic("SECRET, DATABASE_LOGS, and DATABASE_USERS must be set")
 	}
 	if MODE == "local" {
 		os.Setenv("backend", "http://localhost")
@@ -39,6 +55,18 @@ func main() {
 	router := http.NewServeMux()
 	router.HandleFunc("/", enter.Enter)
 	ctx := context.Background()
+	logsPool, err := initPool(ctx, os.Getenv("DATABASE_LOGS"))
+	if err != nil {
+		panic(err)
+	}
+	defer logsPool.Close()
+	db.SetLogsPool(logsPool)
+	usersPool, err := initPool(ctx, os.Getenv("DATABASE_USERS"))
+	if err != nil {
+		panic(err)
+	}
+	defer usersPool.Close()
+	backenddb.SetUsersPool(usersPool)
 	initErr := make(chan error, 1)
 	go db.InitDB(ctx, initErr)
 	if err := <-initErr; err != nil {

@@ -3,19 +3,16 @@ package db
 import (
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v4"
 	pb "metricraft/proto/metricraft/proto"
-	"os"
 	"strconv"
 	"time"
 )
 
 func GetTrafficCongestion(ctx context.Context, startDate time.Time, resolution int32, timezone string) (*pb.Congestion, error) {
-	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
+	conn, err := getLogsPool()
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close(ctx)
 	tz := validTimezone(timezone)
 	loc := loadLocation(tz)
 	alignedStart := alignStart(startDate, loc, resolution)
@@ -75,11 +72,10 @@ func GetTrafficCongestion(ctx context.Context, startDate time.Time, resolution i
 }
 
 func GetGeographicalTraffic(ctx context.Context, startDate time.Time, timezone string) (*pb.Distribution, error) {
-	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
+	conn, err := getLogsPool()
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close(ctx)
 	loc := loadLocation(timezone)
 	endDate := time.Now().In(loc).UTC()
 	distribution := make(map[string]int32)
@@ -87,6 +83,7 @@ func GetGeographicalTraffic(ctx context.Context, startDate time.Time, timezone s
 	if err != nil {
 		return nil, err
 	}
+	defer res.Close()
 	for res.Next() {
 		var country string
 		var count int
@@ -100,11 +97,10 @@ func GetGeographicalTraffic(ctx context.Context, startDate time.Time, timezone s
 }
 
 func GetP95Latency(ctx context.Context, startDate time.Time, timezone string) (*pb.Distribution, error) {
-	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
+	conn, err := getLogsPool()
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close(ctx)
 	loc := loadLocation(timezone)
 	endDate := time.Now().In(loc).UTC()
 	distribution := make(map[string]int32)
@@ -112,6 +108,7 @@ func GetP95Latency(ctx context.Context, startDate time.Time, timezone string) (*
 	if err != nil {
 		return nil, err
 	}
+	defer res.Close()
 	for res.Next() {
 		var url string
 		var percentile float64
@@ -125,11 +122,10 @@ func GetP95Latency(ctx context.Context, startDate time.Time, timezone string) (*
 }
 
 func GetUptimeScore(ctx context.Context, startDate time.Time, timezone string) (*pb.FloatDistribution, error) {
-	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
+	conn, err := getLogsPool()
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close(ctx)
 	loc := loadLocation(timezone)
 	endDate := time.Now().In(loc).UTC()
 	distribution := make(map[string]float32)
@@ -137,6 +133,7 @@ func GetUptimeScore(ctx context.Context, startDate time.Time, timezone string) (
 	if err != nil {
 		return nil, err
 	}
+	defer res.Close()
 	for res.Next() {
 		var url string
 		var availability float64
@@ -150,11 +147,10 @@ func GetUptimeScore(ctx context.Context, startDate time.Time, timezone string) (
 }
 
 func GetThroughput(ctx context.Context, start time.Time, resolution int32, timezone string) (*pb.Throughput, error) {
-	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
+	conn, err := getLogsPool()
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close(ctx)
 	tz := validTimezone(timezone)
 	loc := loadLocation(tz)
 	alignedStart := alignStart(start, loc, resolution)
@@ -219,11 +215,10 @@ func GetThroughput(ctx context.Context, start time.Time, resolution int32, timez
 }
 
 func GetGeographicalPerformance(ctx context.Context, startDate time.Time, timezone string) (*pb.FloatDistribution, error) {
-	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
+	conn, err := getLogsPool()
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close(ctx)
 	loc := loadLocation(timezone)
 	endDate := time.Now().In(loc).UTC()
 	alignedStart := alignStart(startDate, loc, 0)
@@ -231,6 +226,7 @@ func GetGeographicalPerformance(ctx context.Context, startDate time.Time, timezo
 	if err != nil {
 		return nil, err
 	}
+	defer res.Close()
 	distribution := make(map[string]float32)
 	for res.Next() {
 		var country string
@@ -250,17 +246,17 @@ func GetGeographicalPerformance(ctx context.Context, startDate time.Time, timezo
 }
 
 func GetStatusCodeDistribution(ctx context.Context, startDate time.Time, resolution int32, timezone string) (*pb.Distribution, error) {
-	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
+	conn, err := getLogsPool()
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close(ctx)
 	end := time.Now().In(loadLocation(timezone)).UTC()
 	start := alignStart(startDate, loadLocation(timezone), resolution)
 	res, err := conn.Query(ctx, "SELECT status,COUNT(*) FROM logs WHERE date >= $1 AND date < $2 GROUP BY status ORDER BY COUNT(*) DESC", start, end)
 	if err != nil {
 		return nil, err
 	}
+	defer res.Close()
 	result := make(map[string]int32)
 	for res.Next() {
 		var status int
@@ -275,15 +271,18 @@ func GetStatusCodeDistribution(ctx context.Context, startDate time.Time, resolut
 }
 
 func GetRouteCongestion(ctx context.Context, start time.Time, timezone string) (*pb.Distribution, error) {
-	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
+	conn, err := getLogsPool()
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close(ctx)
 	loc := loadLocation(timezone)
 	alignedStart := alignStart(start, loc, 0)
 	end := rangeEnd(loc, time.Hour, 0)
 	res, err := conn.Query(ctx, "SELECT url,COUNT(*) FROM logs WHERE date >= $1 AND date < $2 AND status BETWEEN 200 AND 299 GROUP BY url ORDER BY COUNT(*) DESC", alignedStart, end)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
 	result := make(map[string]int32)
 	for res.Next() {
 		var url string
@@ -298,11 +297,10 @@ func GetRouteCongestion(ctx context.Context, start time.Time, timezone string) (
 }
 
 func GetHttpMethodDistribution(ctx context.Context, startDate time.Time, resolution int32, timezone string) (*pb.Congestion, error) {
-	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
+	conn, err := getLogsPool()
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close(ctx)
 	loc := loadLocation(timezone)
 	alignedStart := alignStart(startDate, loc, resolution)
 	end := rangeEnd(loc, time.Hour, resolution)
@@ -339,6 +337,7 @@ func GetHttpMethodDistribution(ctx context.Context, startDate time.Time, resolut
 	if err != nil {
 		return nil, err
 	}
+	defer res.Close()
 	for res.Next() {
 		var bucket int
 		var method string
@@ -354,11 +353,10 @@ func GetHttpMethodDistribution(ctx context.Context, startDate time.Time, resolut
 }
 
 func GetUniqueVisitors(ctx context.Context, start time.Time, resolution int32, timezone string) (*pb.SimpleRepeatedDistribution, error) {
-	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
+	conn, err := getLogsPool()
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close(ctx)
 	loc := loadLocation(timezone)
 	alignedStart := alignStart(start, loc, resolution)
 	end := rangeEnd(loc, time.Hour, resolution)
@@ -393,6 +391,7 @@ func GetUniqueVisitors(ctx context.Context, start time.Time, resolution int32, t
 	if err != nil {
 		return nil, err
 	}
+	defer res.Close()
 	for res.Next() {
 		var bucket int
 		var count int
