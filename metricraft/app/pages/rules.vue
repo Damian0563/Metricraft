@@ -1,13 +1,11 @@
 <template>
-	<div class="min-h-screen pl-20">
-		<DashboardNav />
+	<div>
 		<ClientOnly>
 			<Spinner :loading="saving" />
 		</ClientOnly>
 		<Notice :message="errorMessage ?? ''" @close="errorMessage = null" />
 		<Popup :message="cleanMessage" @close="cleanMessage = ''" />
-		<div class="min-w-0 px-8 py-2">
-			<div class="relative flex items-center justify-center mb-6">
+		<div class="relative flex items-center justify-center mb-6">
 				<h1 class="text-3xl font-bold text-center" style="color: #00F376;">Rules</h1>
 			</div>
 			<div class="justify-between mb-2">
@@ -205,12 +203,14 @@
 					</div>
 				</div>
 			</div>
-		</div>
 	</div>
 </template>
 
 
 <script setup lang="ts">
+definePageMeta({
+	layout: 'dashboard',
+})
 import { getRules, addRule, deleteRule } from '@/calls/rules'
 import { parseApiError } from '@/composables/helpers'
 import type { Rule } from '@/composables/types'

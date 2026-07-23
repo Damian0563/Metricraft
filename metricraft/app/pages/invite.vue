@@ -1,10 +1,8 @@
 <template>
-	<div class="min-h-screen pl-20">
-		<DashboardNav />
+	<div>
 		<Popup :message="errorMessage" @close="errorMessage = ''" />
 		<Spinner :loading="loading" />
-		<div class="min-w-0 px-8 py-2">
-			<div class="relative flex items-center justify-center mb-6">
+		<div class="relative flex items-center justify-center mb-6">
 				<h1 class="text-3xl font-bold text-center" style="color: #00F376;">Invite Team Members</h1>
 			</div>
 			<div class="max-w-7xl mx-auto">
@@ -159,11 +157,13 @@
 					<p v-else class="text-sm text-gray-500">No users are pending verification.</p>
 				</div>
 			</div>
-		</div>
 	</div>
 </template>
 
 <script setup lang="ts">
+definePageMeta({
+	layout: 'dashboard',
+})
 import type { pendingUsersPayload, TeamUser } from "@/composables/types";
 import { getCookie, validateEmail } from "@/composables/helpers";
 import { getPendingUsers, uploadUsersFromCSV, handlePermissionDecision, getTeamUsers, sendManualInvitesToUsers, getTeamMemberStatusInfo } from "@/calls/invite";
