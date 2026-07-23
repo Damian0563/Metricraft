@@ -348,6 +348,29 @@ func DashboardInit(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func DashboardUrls(w http.ResponseWriter, r *http.Request) {
+	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	token := auth.NewToken(r.Header.Get("Session-Token"))
+	if authed := token.ValidateRequest(&w, false); !authed {
+		return
+	}
+	urls, err := db.GetUrls()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	response, err := json.Marshal(urls)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(response)
+}
+
 func SaveNotificationRecipients(w http.ResponseWriter, r *http.Request) {
 	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
