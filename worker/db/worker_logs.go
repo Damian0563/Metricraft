@@ -2,19 +2,16 @@ package db
 
 import (
 	"context"
-	"github.com/jackc/pgx/v4"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	pb "metricraft/proto/metricraft/proto"
-	"os"
 	"time"
 )
 
 func InsertWorkerLog(ctx context.Context, url string, success bool) error {
-	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
+	conn, err := getLogsPool()
 	if err != nil {
 		return err
 	}
-	defer conn.Close(ctx)
 	status := 0
 	if success {
 		status = 1
@@ -24,11 +21,10 @@ func InsertWorkerLog(ctx context.Context, url string, success bool) error {
 }
 
 func DeleteWorkerlogs(ctx context.Context, url string) error {
-	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
+	conn, err := getLogsPool()
 	if err != nil {
 		return err
 	}
-	defer conn.Close(ctx)
 	tx, err := conn.Begin(ctx)
 	if err != nil {
 		return err
@@ -43,11 +39,10 @@ func DeleteWorkerlogs(ctx context.Context, url string) error {
 }
 
 func GetWorkerUptime(ctx context.Context, url string, timezone string, pollIntervalSetting int32) (*pb.WorkerUptime, error) {
-	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_LOGS"))
+	conn, err := getLogsPool()
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close(ctx)
 	loc := loadLocation(timezone)
 	uptime := make([]*pb.WorkerUptimeEntry, 0)
 	endDate := time.Now().In(loc).UTC().Add(-time.Hour * 24 * 31)
@@ -55,6 +50,7 @@ func GetWorkerUptime(ctx context.Context, url string, timezone string, pollInter
 	if err != nil {
 		return nil, err
 	}
+	defer res.Close()
 	pollInterval := time.Minute * time.Duration(pollIntervalSetting)
 	var lastPoll time.Time
 	for res.Next() {

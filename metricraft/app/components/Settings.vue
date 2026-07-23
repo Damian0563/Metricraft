@@ -80,7 +80,7 @@
 				<div class="bg-white rounded-xl shadow-xl p-8 border border-gray-100">
 					<h2 class="text-xl font-semibold text-gray-800 mb-4">Customization</h2>
 					<button @click="emit('customizeView', !customizeDashboard)"
-						class="w-full text-left px-4 py-3 rounded-xl border border-gray-200 hover:border-[#00F376] hover:shadow-md transition-all duration-300 text-gray-700 font-medium">
+						class="w-full cursor-pointer text-left px-4 py-3 rounded-xl border border-gray-200 hover:border-[#00F376] hover:shadow-md transition-all duration-300 text-gray-700 font-medium">
 						Customize Dashboard View
 					</button>
 				</div>
@@ -100,6 +100,14 @@
 							memory usage. The data of the derived metrics will be compacted and still available, but raw http
 							traffic logs will be deleted, you can export them at any time.</p>
 					</div>
+				</div>
+				<div class="bg-white rounded-xl shadow-xl p-8 border border-gray-100">
+					<h4 class="text-xl font-semibold text-gray-800 mb-4">Configure Rules</h4>
+					<button type="button"
+						class="w-full cursor-pointer text-left px-4 py-3 rounded-xl border border-gray-200 hover:border-[#00F376] hover:shadow-md transition-all duration-300 text-gray-700 font-medium"
+						@click="navigateTo('/rules?type=grouping')">
+						Go to Rules
+					</button>
 				</div>
 			</div>
 		</div>
