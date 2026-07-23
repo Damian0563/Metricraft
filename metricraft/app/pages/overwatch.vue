@@ -1,12 +1,10 @@
 <template>
-	<div class="min-h-screen pl-20">
-		<DashboardNav />
+	<div>
 		<ClientOnly>
 			<Spinner :loading="loading" />
 		</ClientOnly>
 		<Popup :message="errorMessage" @close="errorMessage = ''" />
-		<div class="min-w-0 px-8 py-2">
-			<div class="relative flex items-center justify-center mb-6">
+		<div class="relative flex items-center justify-center mb-6">
 				<h1 class="text-3xl font-bold text-center" style="color: #00F376;">Overwatch</h1>
 			</div>
 			<div class="max-w-8xl mx-auto grid gap-4 lg:grid-cols-[minmax(0,1fr)_40rem] lg:items-stretch">
@@ -189,12 +187,14 @@
 					</section>
 				</div>
 			</div>
-		</div>
 	</div>
 </template>
 
 
 <script setup lang="ts">
+definePageMeta({
+	layout: 'dashboard',
+})
 type MetricSource = 'body' | 'header' | 'query'
 interface CustomMetric {
 	name: string
