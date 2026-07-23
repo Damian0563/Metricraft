@@ -96,6 +96,7 @@ func main() {
 		r.Post("/sign", api.Sign)
 	})
 	router.Get("/dashboard/init", api.DashboardInit)
+	router.Get("/dashboard/urls", api.DashboardUrls)
 	router.Post("/settings/realtime", api.ToggleRealtime)
 	router.Post("/settings/retention", api.ChangeRetention)
 	router.Post("/settings/metrics", api.ChangeMetricsHandler)

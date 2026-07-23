@@ -6,27 +6,27 @@
 		<Notice :message="errorMessage ?? ''" @close="errorMessage = null" />
 		<Popup :message="cleanMessage" @close="cleanMessage = ''" />
 		<div class="relative flex items-center justify-center mb-6">
-				<h1 class="text-3xl font-bold text-center" style="color: #00F376;">Rules</h1>
-			</div>
-			<div class="justify-between mb-2">
-				<button type="button" @click="router.replace({ query: { type: 'grouping' } })"
-					class="px-2 py-2 text-gray-700 font-semibold rounded-lg hover:opacity-80 transition-colors cursor-pointer"
-					:class="groupingMode ? 'bg-[#00F376]' : 'bg-gray-100'">
-					Grouping
-				</button>
-				<button type="button" @click="router.replace({ query: { type: 'blacklisting' } })"
-					class="px-2 py-2 mx-2 text-gray-700 font-semibold rounded-lg hover:opacity-80 transition-colors cursor-pointer"
-					:class="!groupingMode ? 'bg-[#00F376]' : 'bg-gray-100'">
-					Blacklisting
-				</button>
-			</div>
-			<div class="max-w-8xl mx-auto grid gap-4 lg:grid-cols-[minmax(0,1fr)_40rem] lg:items-stretch">
-				<div class="flex flex-col gap-4 min-w-0">
-					<div class="bg-white rounded-xl shadow-xl p-8 border border-gray-100">
-						<h2 class="text-xl font-semibold text-gray-800 mb-4">
-							What are {{ groupingMode ? 'Grouping' : 'Blacklisting' }} rules?
-						</h2>
-						<p class="text-sm text-gray-600 leading-relaxed mb-4">
+			<h1 class="text-3xl font-bold text-center" style="color: #00F376;">Rules</h1>
+		</div>
+		<div class="justify-between mb-2">
+			<button type="button" @click="router.replace({ query: { type: 'grouping' } })"
+				class="px-2 py-2 text-gray-700 font-semibold rounded-lg hover:opacity-80 transition-colors cursor-pointer"
+				:class="groupingMode ? 'bg-[#00F376]' : 'bg-gray-100'">
+				Grouping
+			</button>
+			<button type="button" @click="router.replace({ query: { type: 'blacklisting' } })"
+				class="px-2 py-2 mx-2 text-gray-700 font-semibold rounded-lg hover:opacity-80 transition-colors cursor-pointer"
+				:class="!groupingMode ? 'bg-[#00F376]' : 'bg-gray-100'">
+				Blacklisting
+			</button>
+		</div>
+		<div class="max-w-8xl mx-auto grid gap-4 lg:grid-cols-[minmax(0,1fr)_40rem] lg:items-stretch">
+			<div class="flex flex-col gap-4 min-w-0">
+				<div class="bg-white rounded-xl shadow-xl p-8 border border-gray-100">
+					<h2 class="text-xl font-semibold text-gray-800 mb-4">
+						What are {{ groupingMode ? 'Grouping' : 'Blacklisting' }} rules?
+					</h2>
+					<div class="text-sm text-gray-600 leading-relaxed mb-4">
 						<div v-if="groupingMode">
 							Rules group routes that share a common path but differ only by a trailing
 							identifier. Instead of charting <span class="font-mono text-gray-800">/users/id/1</span>,
@@ -47,8 +47,8 @@
 							is blacklisted then <span class="font-mono text-gray-800">/users/id/1</span> and subsequent child routes
 							are not included in your dashboard.
 						</div>
-						</p>
-						<p class="text-sm text-gray-600 leading-relaxed">
+					</div>
+					<div class="text-sm text-gray-600 leading-relaxed">
 						<div v-if="groupingMode">
 							Point a rule at a base path and every deeper route will collapses into it. Your metrics stay
 							readable even when a route explodes into thousands of unique URLs. When adding a rule remember about
@@ -62,147 +62,163 @@
 								the
 								full prefix, in the above examples it could be https://api.service. </strong>
 						</div>
-						</p>
-					</div>
-
-					<div class="bg-white rounded-xl shadow-xl p-8 border border-gray-100">
-						<div class="flex items-start gap-3 mb-6">
-							<div
-								class="h-10 w-10 shrink-0 rounded-full bg-[#00F376]/10 flex items-center justify-center text-[#00B35C]">
-								<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"
-									aria-hidden="true">
-									<path fill-rule="evenodd"
-										d="M3 4a1 1 0 011-1h3a1 1 0 010 2H5v10h10v-2a1 1 0 112 0v3a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm9.293-.707a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-6 6A1 1 0 0110 14H8a1 1 0 01-1-1v-2a1 1 0 01.293-.707l6-6z"
-										clip-rule="evenodd" />
-								</svg>
-							</div>
-							<div class="min-w-0">
-								<h2 class="text-xl font-semibold text-gray-800">Create a {{ groupingMode ? 'grouping' : 'blacklisting'
-								}} rule</h2>
-								<p class="text-sm text-gray-500 mt-1">
-									{{ groupingMode ? 'Enter the base path to keep. Everything below it collapses into one endpoint.'
-										: 'Enter the base path to hide. Everything below it will be omitted from your dashboards.'
-									}}
-								</p>
-							</div>
-						</div>
-
-						<div class="space-y-6">
-							<div>
-								<label for="rule-pattern" class="block text-sm font-medium text-gray-700 mb-2">Base path</label>
-								<input id="rule-pattern" v-model="pattern" type="text" placeholder="https://api.service/users/id"
-									autocomplete="off" spellcheck="false" @keyup.enter="addRuleEntry"
-									class="w-full px-4 py-2 rounded-lg border border-gray-200 text-gray-800 font-mono text-sm focus:outline-none focus:border-[#00F376] transition-colors" />
-								<p class="mt-2 text-xs" :class="patternError ? 'text-red-500' : 'text-gray-500'">
-									{{ patternError || (groupingMode ? 'Routes are matched by prefix. Deeper ' +
-										'segments become the collapsed tail.' : 'Routes are matched by prefix. Deeper segments become' +
-									' blacklisted too.') }}
-								</p>
-							</div>
-
-							<div v-if="groupingMode">
-								<p class="text-sm font-medium text-gray-700 mb-2">How it collapses</p>
-								<div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
-									<div class="grid items-center gap-3 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
-										<div class="space-y-1.5">
-											<p class="text-[0.65rem] font-semibold uppercase tracking-wider text-gray-400 mb-1">
-												{{ samplePaths.length }} distinct routes
-											</p>
-											<div v-for="path in samplePaths" :key="path.full"
-												class="whitespace-nowrap overflow-x-auto rounded-md bg-white border border-gray-200 px-2.5 py-1.5 font-mono text-xs text-gray-500">
-												<span class="text-gray-700">{{ path.base }}</span><span class="text-gray-300">/</span><span
-													class="rounded bg-gray-100 px-1 text-gray-600">{{ path.tail }}</span>
-											</div>
-										</div>
-
-										<div class="flex items-center justify-center text-[#00B35C]" aria-hidden="true">
-											<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 rotate-90 sm:rotate-0" viewBox="0 0 20 20"
-												fill="currentColor">
-												<path fill-rule="evenodd"
-													d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
-													clip-rule="evenodd" />
-											</svg>
-										</div>
-
-										<div class="space-y-1.5">
-											<p class="text-[0.65rem] font-semibold uppercase tracking-wider text-gray-400 mb-1">
-												1 grouped endpoint
-											</p>
-											<div
-												class="whitespace-nowrap overflow-x-auto rounded-md bg-white px-2.5 py-1.5 font-mono text-xs ring-1 ring-[#00F376]/50 border border-[#00F376]">
-												<span class="text-gray-800 font-semibold">{{ normalizedBase || 'https://api.service/users/id'
-												}}</span>
-											</div>
-											<p class="text-xs text-gray-500 pt-1">
-												Charted once, with the request counts of every child summed together.
-											</p>
-										</div>
-									</div>
-								</div>
-							</div>
-
-							<div class="pt-6 border-t border-gray-100 flex justify-end gap-3">
-								<button type="button" @click="resetForm"
-									class="px-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition-colors cursor-pointer">
-									Reset
-								</button>
-								<button type="button" @click="addRuleEntry" :disabled="!canSave || saving"
-									class="px-8 py-3 bg-[#00F376] text-gray-900 font-bold rounded-lg hover:bg-[#00D96A] transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider text-sm cursor-pointer">
-									Create rule
-								</button>
-							</div>
-						</div>
 					</div>
 				</div>
 
-				<div
-					class="bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden lg:sticky lg:top-8 flex flex-col">
-					<div class="shrink-0 px-6 py-5 border-b border-gray-100">
-						<div class="flex items-center justify-between gap-3">
-							<h2 class="text-xl font-semibold text-gray-800">Active rules</h2>
-							<span class="shrink-0 text-xs font-medium text-gray-500">
-								{{ rulesList.length }} rule{{ rulesList.length === 1 ? '' : 's' }}
-							</span>
-						</div>
-						<p class="text-sm text-gray-500 mt-1">
-							Every rule below is applied to your traffic before it reaches your charts.
-						</p>
-					</div>
-
-					<div v-if="rulesList.length > 0" class="min-h-0 flex-1 overflow-y-auto">
-						<div v-for="entry in rulesList" :key="entry.rule"
-							class="flex items-center gap-3 px-6 py-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors">
-							<div class="min-w-0 flex-1">
-								<p class="font-mono text-sm text-gray-900 break-all leading-snug">
-									{{ entry.rule }}<span class="text-gray-300">/</span><span
-										class="text-[#00B35C] font-semibold">*</span>
-								</p>
-								<p class="mt-1 text-xs" :class="entry.matches.length > 0 ? 'text-gray-500' : 'text-gray-400 italic'">
-									{{ entry.matches.length > 0
-										? `Collapses ${entry.matches} route${entry.matches.length === 1 ? '' : 's'}`
-										: 'Waiting for matching traffic' }}
-								</p>
-							</div>
-							<button type="button" @click="removeRule(entry)" :disabled="saving"
-								class="shrink-0 px-4 py-2 text-sm font-semibold rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-								Delete
-							</button>
-						</div>
-					</div>
-
-					<div v-else class="min-h-0 flex-1 px-6 py-10 text-center">
-						<div class="mx-auto mb-3 h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
-							<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+				<div class="bg-white rounded-xl shadow-xl p-8 border border-gray-100">
+					<div class="flex items-start gap-3 mb-6">
+						<div
+							class="h-10 w-10 shrink-0 rounded-full bg-[#00F376]/10 flex items-center justify-center text-[#00B35C]">
+							<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"
+								aria-hidden="true">
 								<path fill-rule="evenodd"
-									d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"
+									d="M3 4a1 1 0 011-1h3a1 1 0 010 2H5v10h10v-2a1 1 0 112 0v3a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm9.293-.707a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-6 6A1 1 0 0110 14H8a1 1 0 01-1-1v-2a1 1 0 01.293-.707l6-6z"
 									clip-rule="evenodd" />
 							</svg>
 						</div>
-						<p class="text-sm text-gray-500">No rules yet.</p>
-						<p class="text-xs text-gray-400 mt-1">Create a rule to start grouping routes.</p>
+						<div class="min-w-0">
+							<h2 class="text-xl font-semibold text-gray-800">Create a {{ groupingMode ? 'grouping' : 'blacklisting'
+							}} rule</h2>
+							<p class="text-sm text-gray-500 mt-1">
+								{{ groupingMode ? 'Enter the base path to keep. Everything below it collapses into one endpoint.'
+									: 'Enter the base path to hide. Everything below it will be omitted from your dashboards.'
+								}}
+							</p>
+						</div>
+					</div>
+
+					<div class="space-y-6">
+						<div>
+							<label for="rule-pattern" class="block text-sm font-medium text-gray-700 mb-2">Base path</label>
+							<div class="relative">
+								<input id="rule-pattern" v-model="pattern" type="text" placeholder="https://api.service/users/id"
+									autocomplete="off" spellcheck="false" @focus="onBaseFocus" @blur="onBaseBlur"
+									@keyup="showSuggestedUrls" @keyup.enter="addRuleEntry"
+									class="w-full px-4 py-2 rounded-lg border border-gray-200 text-gray-800 font-mono text-sm focus:outline-none focus:border-[#00F376] transition-colors" />
+								<ul v-if="inputActive && suggestedUrls.length > 0"
+									class="absolute left-0 right-0 top-full z-20 mt-1 max-h-56 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-xl">
+									<li v-for="url in suggestedUrls" :key="url">
+										<button type="button" @mousedown.prevent="selectSuggestion(url)"
+											class="block w-full truncate px-4 py-2 text-left font-mono text-sm text-gray-700 hover:bg-[#00F376]/10 hover:text-[#00B35C] transition-colors cursor-pointer">
+											{{ url }}
+										</button>
+									</li>
+								</ul>
+							</div>
+							<p class="mt-2 text-xs" :class="patternError ? 'text-red-500' : 'text-gray-500'">
+								{{ patternError || (groupingMode ? 'Routes are matched by prefix. Deeper ' +
+									'segments become the collapsed tail.' : 'Routes are matched by prefix. Deeper segments become' +
+								' blacklisted too.') }}
+							</p>
+						</div>
+
+						<div v-if="groupingMode">
+							<p class="text-sm font-medium text-gray-700 mb-2">How it collapses</p>
+							<div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
+								<div class="grid items-center gap-3 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+									<div class="space-y-1.5">
+										<p class="text-[0.65rem] font-semibold uppercase tracking-wider text-gray-400 mb-1"
+											v-if="samplePaths.length > 1">
+											{{ samplePaths.length }} distinct routes
+										</p>
+										<p class="text-[0.65rem] font-semibold uppercase tracking-wider text-red-500 mb-1" v-else>
+											No routes fall under this rule, thus far no such traffic has been observed. If this is intended
+											you can add such rule anyway- it will be populated after traffic starts flowing.
+										</p>
+										<div v-for="path in samplePaths" :key="path.full"
+											class="whitespace-nowrap overflow-x-auto rounded-md bg-white border border-gray-200 px-2.5 py-1.5 font-mono text-xs text-gray-500">
+											<span class="text-gray-700">{{ path.base }}</span><span class="text-gray-300">/</span><span
+												class="rounded bg-gray-100 px-1 text-gray-600">{{ path.tail }}</span>
+										</div>
+									</div>
+
+									<div class="flex items-center justify-center text-[#00B35C]" aria-hidden="true">
+										<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 rotate-90 sm:rotate-0" viewBox="0 0 20 20"
+											fill="currentColor">
+											<path fill-rule="evenodd"
+												d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
+												clip-rule="evenodd" />
+										</svg>
+									</div>
+
+									<div class="space-y-1.5">
+										<p class="text-[0.65rem] font-semibold uppercase tracking-wider text-gray-400 mb-1">
+											1 grouped endpoint
+										</p>
+										<div
+											class="whitespace-nowrap overflow-x-auto rounded-md bg-white px-2.5 py-1.5 font-mono text-xs ring-1 ring-[#00F376]/50 border border-[#00F376]">
+											<span class="text-gray-800 font-semibold">{{ normalizedBase || 'https://api.service/users/id'
+											}}</span>
+										</div>
+										<p class="text-xs text-gray-500 pt-1">
+											Charted once, with the request counts of every child summed together.
+										</p>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<div class="pt-6 border-t border-gray-100 flex justify-end gap-3">
+							<button type="button" @click="resetForm"
+								class="px-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition-colors cursor-pointer">
+								Reset
+							</button>
+							<button type="button" @click="addRuleEntry" :disabled="!canSave || saving"
+								class="px-8 py-3 bg-[#00F376] text-gray-900 font-bold rounded-lg hover:bg-[#00D96A] transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider text-sm cursor-pointer">
+								Create rule
+							</button>
+						</div>
 					</div>
 				</div>
 			</div>
+
+			<div
+				class="bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden lg:sticky lg:top-8 flex flex-col">
+				<div class="shrink-0 px-6 py-5 border-b border-gray-100">
+					<div class="flex items-center justify-between gap-3">
+						<h2 class="text-xl font-semibold text-gray-800">Active rules</h2>
+						<span class="shrink-0 text-xs font-medium text-gray-500">
+							{{ rulesList.length }} rule{{ rulesList.length === 1 ? '' : 's' }}
+						</span>
+					</div>
+					<p class="text-sm text-gray-500 mt-1">
+						Every rule below is applied to your traffic before it reaches your charts.
+					</p>
+				</div>
+
+				<div v-if="rulesList.length > 0" class="min-h-0 flex-1 overflow-y-auto">
+					<div v-for="entry in rulesList" :key="entry.rule"
+						class="flex items-center gap-3 px-6 py-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors">
+						<div class="min-w-0 flex-1">
+							<p class="font-mono text-sm text-gray-900 break-all leading-snug">
+								{{ entry.rule }}<span class="text-gray-300">/</span><span class="text-[#00B35C] font-semibold">*</span>
+							</p>
+							<p class="mt-1 text-xs" :class="entry.matches.length > 0 ? 'text-gray-500' : 'text-gray-400 italic'">
+								{{ entry.matches.length > 0
+									? `Collapses ${entry.matches} route${entry.matches.length === 1 ? '' : 's'}`
+									: 'Waiting for matching traffic' }}
+							</p>
+						</div>
+						<button type="button" @click="removeRule(entry)" :disabled="saving"
+							class="shrink-0 px-4 py-2 text-sm font-semibold rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+							Delete
+						</button>
+					</div>
+				</div>
+
+				<div v-else class="min-h-0 flex-1 px-6 py-10 text-center">
+					<div class="mx-auto mb-3 h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
+						<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+							<path fill-rule="evenodd"
+								d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"
+								clip-rule="evenodd" />
+						</svg>
+					</div>
+					<p class="text-sm text-gray-500">No rules yet.</p>
+					<p class="text-xs text-gray-400 mt-1">Create a rule to start grouping routes.</p>
+				</div>
+			</div>
+		</div>
 	</div>
 </template>
 
@@ -212,6 +228,7 @@ definePageMeta({
 	layout: 'dashboard',
 })
 import { getRules, addRule, deleteRule } from '@/calls/rules'
+import { getUrls } from '@/calls/dashboard'
 import { parseApiError } from '@/composables/helpers'
 import type { Rule } from '@/composables/types'
 
@@ -233,19 +250,42 @@ if (fetchError.value) {
 	errorMessage.value = 'Failed to load rules.'
 }
 
+const urls = useState<string[]>('urls', () => [])
+if (urls.value.length === 0) {
+	const { data: fetchedUrls } = await useAsyncData('dashboardUrls', () => getUrls())
+	if (fetchedUrls.value) urls.value = fetchedUrls.value
+}
+const suggestedUrls = ref<string[]>([])
+const inputActive = ref(false)
+const showSuggestedUrls = () => {
+	const query = pattern.value.trim()
+	suggestedUrls.value = urls.value.filter((url) => url.startsWith(query)).slice(0, 6)
+}
+const onBaseFocus = () => {
+	inputActive.value = true
+	showSuggestedUrls()
+}
+const onBaseBlur = () => {
+	inputActive.value = false
+}
+const selectSuggestion = (url: string) => {
+	pattern.value = url
+	inputActive.value = false
+}
+
 const normalizedBase = computed(() => {
 	const trimmed = pattern.value.trim()
 	if (!trimmed) return ''
-	const moved = trimmed.slice(trimmed.indexOf('://') + 3)
-	return moved.split('/').length >= 2 ? moved : ''
+	return trimmed
 })
 
 const patternError = computed(() => {
 	const trimmed = pattern.value.trim()
 	if (!trimmed) return ''
-	if (!trimmed.startsWith('http')) return 'A path must start with a valid URL scheme, e.g. https://api.service/users/id.'
-	if (normalizedBase.value.length <= 1) return 'Add at least one path segment, e.g. https://api.service/users/more.'
+	if (normalizedBase.value.includes('http') && normalizedBase.value.split('/').length <= 3) return `Add at least one path segment, e.g. ${normalizedBase.value}/more.`
+	if (normalizedBase.value[normalizedBase.value.length - 1] === '/') return `Remove the trailing slash, e.g. ${normalizedBase.value} <-.`
 	if (rulesList.value.some((rule) => rule.rule === normalizedBase.value)) return 'A rule for this path already exists.'
+	if (!suggestedUrls.value.includes(normalizedBase.value)) return 'The base path is not in the list of URLs.'
 	return ''
 })
 
@@ -254,6 +294,10 @@ const canSave = computed(() =>
 
 const samplePaths = computed(() => {
 	const base = normalizedBase.value || 'https://api.service/users/id'
+	if (base === normalizedBase.value) {
+		const actualMatched = urls.value.filter((url) => url.startsWith(base))
+		return actualMatched.map((url) => ({ full: url, base, tail: url.replace(base, '') }))
+	}
 	return ['1', '2', '87'].map((tail) => ({ full: `${base}/${tail}`, base, tail }))
 })
 

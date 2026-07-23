@@ -22,6 +22,19 @@ export const getDashboard = async (): Promise<dashboardInitPayload> => {
 }
 
 
+export const getUrls = async (): Promise<string[]> => {
+	try {
+		return await useApi()<string[]>("/dashboard/urls", {
+			method: "GET",
+			responseType: "json",
+		})
+	} catch (e) {
+		console.error(e)
+		return []
+	}
+}
+
+
 export const fetchMetric = async (metric: string, timeframe: string, errorMessage: Ref<string>, persist: boolean = false): Promise<Map<string, number>> => {
 	const userZone = Intl.DateTimeFormat().resolvedOptions().timeZone
 	try {
