@@ -121,13 +121,18 @@
 											v-if="samplePaths.length > 1">
 											{{ samplePaths.length }} distinct routes
 										</p>
+										<p class="text-[0.65rem] font-semibold uppercase tracking-wider text-orange-500 mb-1"
+											v-else-if="samplePaths.length === 1">
+											Only one route falls under this rule in traffic observed thus far. Before more routes are matched
+											this route will serve merely as a rename of the grouped route.
+										</p>
 										<p class="text-[0.65rem] font-semibold uppercase tracking-wider text-red-500 mb-1" v-else>
 											No routes fall under this rule, thus far no such traffic has been observed. If this is intended
 											you can add such rule anyway- it will be populated after traffic starts flowing.
 										</p>
 										<div v-for="path in samplePaths" :key="path.full"
 											class="whitespace-nowrap overflow-x-auto rounded-md bg-white border border-gray-200 px-2.5 py-1.5 font-mono text-xs text-gray-500">
-											<span class="text-gray-700">{{ path.base }}</span><span class="text-gray-300">/</span><span
+											<span class="text-gray-700">{{ path.base }}</span><span class="text-gray-300"></span><span
 												class="rounded bg-gray-100 px-1 text-gray-600">{{ path.tail }}</span>
 										</div>
 									</div>
@@ -187,23 +192,26 @@
 				</div>
 
 				<div v-if="rulesList.length > 0" class="min-h-0 flex-1 overflow-y-auto">
-					<div v-for="entry in rulesList" :key="entry.rule"
-						class="flex items-center gap-3 px-6 py-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors">
-						<div class="min-w-0 flex-1">
-							<p class="font-mono text-sm text-gray-900 break-all leading-snug">
-								{{ entry.rule }}<span class="text-gray-300">/</span><span class="text-[#00B35C] font-semibold">*</span>
-							</p>
-							<p class="mt-1 text-xs" :class="entry.matches.length > 0 ? 'text-gray-500' : 'text-gray-400 italic'">
-								{{ entry.matches.length > 0
-									? `Collapses ${entry.matches} route${entry.matches.length === 1 ? '' : 's'}`
-									: 'Waiting for matching traffic' }}
-							</p>
+					<template v-for="entry in rulesList" :key="entry.rule">
+						<div v-if="groupingMode ? entry.mode === 'grouping' : entry.mode === 'blacklisting'"
+							class="flex items-center gap-3 px-6 py-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors">
+							<div class="min-w-0 flex-1">
+								<p class="font-mono text-sm text-gray-900 break-all leading-snug">
+									{{ entry.rule }}<span class="text-gray-300">/</span><span
+										class="text-[#00B35C] font-semibold">*</span>
+								</p>
+								<p class="mt-1 text-xs" :class="entry.matches.length > 0 ? 'text-gray-500' : 'text-gray-400 italic'">
+									{{ entry.matches.length > 0
+										? `Collapses ${entry.matches} route${entry.matches.length === 1 ? '' : 's'}`
+										: 'Waiting for matching traffic' }}
+								</p>
+							</div>
+							<button type="button" @click="removeRule(entry)" :disabled="saving"
+								class="shrink-0 px-4 py-2 text-sm font-semibold rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+								Delete
+							</button>
 						</div>
-						<button type="button" @click="removeRule(entry)" :disabled="saving"
-							class="shrink-0 px-4 py-2 text-sm font-semibold rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-							Delete
-						</button>
-					</div>
+					</template>
 				</div>
 
 				<div v-else class="min-h-0 flex-1 px-6 py-10 text-center">
@@ -285,9 +293,13 @@ const patternError = computed(() => {
 	if (normalizedBase.value.includes('http') && normalizedBase.value.split('/').length <= 3) return `Add at least one path segment, e.g. ${normalizedBase.value}/more.`
 	if (normalizedBase.value[normalizedBase.value.length - 1] === '/') return `Remove the trailing slash, e.g. ${normalizedBase.value} <-.`
 	if (rulesList.value.some((rule) => rule.rule === normalizedBase.value)) return 'A rule for this path already exists.'
-	if (!suggestedUrls.value.includes(normalizedBase.value)) return 'The base path is not in the list of URLs.'
+	if (!prefixExists(normalizedBase.value)) return 'The base path is not in the list of URLs.'
 	return ''
 })
+
+const prefixExists = (path: string): boolean => {
+	return suggestedUrls.value.some((url) => url.startsWith(path))
+}
 
 const canSave = computed(() =>
 	normalizedBase.value.length > 1 && patternError.value === '')
@@ -306,12 +318,8 @@ const addRuleEntry = async () => {
 	const rule = normalizedBase.value
 	saving.value = true
 	try {
-		const res = await addRule({ rule, mode: groupingMode.value ? 'grouping' : 'blacklisting', matches: [] })
-		if (!res.success) {
-			errorMessage.value = res.err
-			return
-		}
-		rulesList.value.push({ rule, matches: [], mode: groupingMode.value ? 'grouping' : 'blacklisting' })
+		await addRule({ rule, mode: groupingMode.value ? 'grouping' : 'blacklisting', matches: samplePaths.value.map((path) => path.full) })
+		rulesList.value.push({ rule, matches: samplePaths.value.map((path) => path.full), mode: groupingMode.value ? 'grouping' : 'blacklisting' })
 		cleanMessage.value = 'Rule created successfully.'
 		resetForm()
 	} catch (e: unknown) {
@@ -324,11 +332,7 @@ const addRuleEntry = async () => {
 const removeRule = async (rule: Rule) => {
 	saving.value = true
 	try {
-		const res = await deleteRule(rule)
-		if (!res.success) {
-			errorMessage.value = res.err
-			return
-		}
+		await deleteRule(rule)
 		rulesList.value = rulesList.value.filter((entry) => entry.rule !== rule.rule)
 		cleanMessage.value = 'Rule deleted successfully.'
 	} catch (e: unknown) {

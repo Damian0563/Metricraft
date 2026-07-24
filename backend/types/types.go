@@ -18,6 +18,12 @@ type User struct {
 	Settings Settings `json:"settings,omitempty"`
 }
 
+type Rule struct {
+	Rule    string   `json:"rule"`
+	Matches []string `json:"matches"`
+	Mode    string   `json:"mode"`
+}
+
 type Worker struct {
 	Url          string            `json:"url"`
 	PollInterval int               `json:"pollInterval"`
