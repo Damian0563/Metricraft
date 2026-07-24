@@ -13,16 +13,16 @@ export const getRules = async (): Promise<Rule[]> => {
 	}
 }
 
-export const addRule = async (rule: Rule): Promise<{ success: boolean; err: string }> => {
-	return await useApi()(`/rules`, {
+export const addRule = async (rule: Rule): Promise<void> => {
+	return await useApi()(`/rules/add`, {
 		method: "POST",
-		body: { rule },
+		body: rule,
 	})
 }
 
-export const deleteRule = async (rule: Rule): Promise<{ success: boolean; err: string }> => {
-	return await useApi()(`/rules`, {
+export const deleteRule = async (rule: Rule): Promise<void> => {
+	return await useApi()(`/rules/delete`, {
 		method: "DELETE",
-		body: { rule },
+		body: rule,
 	})
 }

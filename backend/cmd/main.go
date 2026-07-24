@@ -112,6 +112,9 @@ func main() {
 	router.Post("/invites/handle", api.HandleInvite) //?user=string&action=boolean
 	router.Post("/invites/manual", api.SendInvites)
 	router.Post("/invites/batch", api.UploadUsersFromCSV)
+	router.Post("/rules/add", api.AddRule)
+	router.Get("/rules", api.GetRules)
+	router.Delete("/rules/delete", api.DeleteRule)
 	router.Group(func(r chi.Router) {
 		r.Use(httprate.LimitByIP(6, time.Minute))
 		r.Post("/verify/send", api.SendVerification)
