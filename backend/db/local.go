@@ -5,7 +5,6 @@ import (
 	"context"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"slices"
-	"strings"
 )
 
 func VerifyAppName(appName string) bool {
@@ -47,16 +46,6 @@ func AddRule(ctx context.Context, rule types.Rule) error {
 		return err
 	}
 	return tx.Commit(ctx)
-}
-
-func urlMatchesRulePrefix(url, rule string) bool {
-	if !strings.HasPrefix(url, rule) {
-		return false
-	}
-	if len(url) == len(rule) {
-		return true
-	}
-	return url[len(rule)] == '/'
 }
 
 func reComputeMatches(conn *pgxpool.Pool, ctx context.Context, rules []types.Rule) ([]types.Rule, error) {

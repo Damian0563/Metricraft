@@ -3,6 +3,7 @@ package db
 import (
 	"errors"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"strings"
 )
 
 var usersPool *pgxpool.Pool
@@ -28,4 +29,14 @@ func GetLogsPool() (*pgxpool.Pool, error) {
 		return nil, errors.New("logs database pool is not initialized")
 	}
 	return logsPool, nil
+}
+
+func urlMatchesRulePrefix(url, rule string) bool {
+	if !strings.HasPrefix(url, rule) {
+		return false
+	}
+	if len(url) == len(rule) {
+		return true
+	}
+	return url[len(rule)] == '/'
 }

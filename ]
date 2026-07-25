@@ -1,0 +1,74 @@
+package db
+
+import (
+	"encoding/json"
+	"fmt"
+	"github.com/jackc/pgx/v5/pgxpool"
+	pb "metricraft/proto/metricraft/proto"
+	"strings"
+	"time"
+)
+
+func timerangeLabel(rangeStart time.Time, increment time.Duration, resolution int32, mode string) string {
+	if resolution == 0 {
+		if mode == "congestion" {
+			return fmt.Sprintf("%02d:00", rangeStart.Hour())
+		} else {
+			return fmt.Sprintf("%02d:%02d", rangeStart.Hour(), rangeStart.Minute())
+		}
+	} else if resolution != 1 {
+		rangeEnd := rangeStart.Add(increment)
+		return fmt.Sprintf("%v-%v", rangeStart.Format("02.01"), rangeEnd.Add(-time.Hour*24).Format("02.01"))
+	}
+	return rangeStart.Format("02.01")
+}
+
+var logsPool *pgxpool.Pool
+
+func SetLogsPool(pool *pgxpool.Pool) {
+	logsPool = pool
+}
+
+func getLogsPool() (*pgxpool.Pool, error) {
+	if logsPool == nil {
+		return nil, fmt.Errorf("logs database pool is not initialized")
+	}
+	return logsPool, nil
+}
+
+func urlMatchesRulePrefix(url, rule string) bool {
+	if !strings.HasPrefix(url, rule) {
+		return false
+	}
+	if len(url) == len(rule) {
+		return true
+	}
+	return url[len(rule)] == '/'
+}
+
+func checkUrl(url string, rules []*pb.Rule) string {
+	for _, rule := range rules {
+		if urlMatchesRulePrefix(url, rule.Rule) {
+			if rule.Mode == "blacklisting" {
+				return ""
+			} else if rule.Mode == "grouping" {
+				url = rule.Rule
+			}
+		}
+	}
+	return url
+}
+
+func returnBlacklistedString(rules []*pb.Rule) string {
+	var blacklisted []string
+	for _, rule := range rules {
+		if rule.Mode == "blacklisting" {
+			blacklisted = append(blacklisted, rule.Rule)
+		}
+	}
+	res, err := json.Marshal(blacklisted)
+	if err != nil {
+		return ""
+	}
+	return string(res)
+}
