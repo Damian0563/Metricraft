@@ -56,10 +56,9 @@
 								</select>
 							</div>
 							<div class="flex-1 min-w-0">
-								<label for="metric-path" class="block text-sm font-medium text-gray-700 mb-2">Endpoint path</label>
-								<input id="metric-path" v-model="path" type="text" placeholder="/api/v1/checkout"
-									class="w-full px-4 py-2 rounded-lg border border-gray-200 text-gray-800 focus:outline-none focus:border-[#00F376] transition-colors" />
-								<p class="mt-2 text-xs text-gray-500">Overwatch inspects requests matching this route.</p>
+								<AutoSuggestedUrlInput v-model="path" input-id="metric-path" label="Endpoint path"
+									help-text="Overwatch inspects requests matching this route."
+									@pattern-error="pathError = $event" @submit-event="addMetric" />
 							</div>
 						</div>
 
@@ -109,16 +108,33 @@
 									<option v-for="tf in timeframes" :key="tf" :value="tf">{{ tf }}</option>
 								</select>
 							</div>
+							<div class="flex-1 min-w-0 ">
+								<label for="metric-chart-type" class="block text-sm font-medium text-gray-700 mb-2">Chart type</label>
+								<select id="metric-chart-type" v-model="chartType"
+									class="w-full px-4 py-2 rounded-lg border border-gray-200 text-gray-800 focus:outline-none focus:border-[#00F376] transition-colors cursor-pointer">
+									<option v-for="ct in chartTypes" :key="ct" :value="ct">{{ ct }}</option>
+								</select>
+							</div>
 						</div>
-
-						<div class="pt-6 border-t border-gray-100 flex justify-end gap-3">
+						<div class="pt-6 border-t border-gray-100 flex justify-between gap-3">
+							<div>
+								<button type="button" @click="addMetric" :disabled="!canSave"
+									class="px-8 py-3 bg-[#00F376] text-gray-900 font-bold rounded-lg hover:bg-[#00D96A] transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider text-sm cursor-pointer">
+									Create metric
+								</button>
+								<label for="apply-rules" class="inline-flex items-center gap-3 cursor-pointer shrink-0 mx-5">
+									<span class="select-none text-sm font-medium text-gray-700">Apply rules</span>
+									<div class="relative">
+										<input type="checkbox" id="apply-rules" v-model="applyRules" class="sr-only peer" />
+										<div
+											class="w-9 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#00F376]">
+										</div>
+									</div>
+								</label>
+							</div>
 							<button type="button" @click="resetForm"
 								class="px-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition-colors cursor-pointer">
 								Reset
-							</button>
-							<button type="button" @click="addMetric" :disabled="!canSave"
-								class="px-8 py-3 bg-[#00F376] text-gray-900 font-bold rounded-lg hover:bg-[#00D96A] transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider text-sm cursor-pointer">
-								Create metric
 							</button>
 						</div>
 					</div>
@@ -173,6 +189,13 @@
 								<span class="font-medium text-gray-700">{{ valueType }}</span>
 								<span class="text-gray-500">over</span>
 								<span class="font-medium text-gray-700">{{ timeframe.toLowerCase() }}</span>
+								<span class="text-gray-500">as a</span>
+								<span class="font-medium text-gray-700">{{ chartType }}</span>
+								<span class="text-gray-500">chart</span>
+								<template v-if="applyRules">
+									<span class="text-gray-500">with</span>
+									<span class="font-medium text-gray-700">rules applied</span>
+								</template>
 							</div>
 						</div>
 					</div>
@@ -196,6 +219,7 @@ definePageMeta({
 	layout: 'dashboard',
 })
 type MetricSource = 'body' | 'header' | 'query'
+type ChartType = 'line' | 'bar' | 'pie'
 interface CustomMetric {
 	name: string
 	method: string
@@ -205,12 +229,18 @@ interface CustomMetric {
 	aggregation: string
 	timeframe: string
 	valueType: string
+	applyRules: boolean
+	chartType: ChartType
 }
 const loading = ref(false)
 const errorMessage = ref('')
 const metricName = ref('')
+const applyRules = ref(false)
+const chartType = ref<ChartType>('line')
+const chartTypes = ['line', 'bar', 'pie'] as const
 const method = ref<string>('POST')
 const path = ref('')
+const pathError = ref('')
 const source = ref<MetricSource>('body')
 const selector = ref('')
 const aggregation = ref<string>('avg')
@@ -331,7 +361,7 @@ const bodyLines = computed<BodyLine[]>(() => {
 })
 
 const canSave = computed(() =>
-	metricName.value.trim() !== '' && path.value.trim() !== '' && selector.value.trim() !== '')
+	metricName.value.trim() !== '' && path.value.trim() !== '' && pathError.value === '' && selector.value.trim() !== '')
 const addMetric = () => {
 	if (!canSave.value) return
 	metrics.value.push({
@@ -343,6 +373,8 @@ const addMetric = () => {
 		timeframe: timeframe.value,
 		aggregation: aggregation.value,
 		valueType: valueType.value,
+		applyRules: applyRules.value,
+		chartType: chartType.value,
 	})
 	resetForm()
 }
@@ -355,5 +387,7 @@ const resetForm = () => {
 	selector.value = ''
 	aggregation.value = 'avg'
 	valueType.value = 'number'
+	applyRules.value = false
+	chartType.value = 'line'
 }
 </script>

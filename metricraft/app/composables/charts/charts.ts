@@ -967,7 +967,6 @@ export const createUniqueVisitors = (
 export const createGeographicPerformance = (
 	canvas: HTMLCanvasElement,
 	data: any,
-	_timeframe: string,
 	worldData: WorldData | undefined
 ): ChartData => {
 	try {

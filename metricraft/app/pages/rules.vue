@@ -88,30 +88,9 @@
 					</div>
 
 					<div class="space-y-6">
-						<div>
-							<label for="rule-pattern" class="block text-sm font-medium text-gray-700 mb-2">Base path</label>
-							<div class="relative">
-								<input id="rule-pattern" v-model="pattern" type="text" placeholder="https://api.service/users/id"
-									autocomplete="off" spellcheck="false" @focus="onBaseFocus" @blur="onBaseBlur"
-									@keyup="showSuggestedUrls" @keyup.enter="addRuleEntry"
-									class="w-full px-4 py-2 rounded-lg border border-gray-200 text-gray-800 font-mono text-sm focus:outline-none focus:border-[#00F376] transition-colors" />
-								<ul v-if="inputActive && suggestedUrls.length > 0"
-									class="absolute left-0 right-0 top-full z-20 mt-1 max-h-56 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-xl">
-									<li v-for="url in suggestedUrls" :key="url">
-										<button type="button" @mousedown.prevent="selectSuggestion(url)"
-											class="block w-full truncate px-4 py-2 text-left font-mono text-sm text-gray-700 hover:bg-[#00F376]/10 hover:text-[#00B35C] transition-colors cursor-pointer">
-											{{ url }}
-										</button>
-									</li>
-								</ul>
-							</div>
-							<p class="mt-2 text-xs" :class="patternError ? 'text-red-500' : 'text-gray-500'">
-								{{ patternError || (groupingMode ? 'Routes are matched by prefix. Deeper ' +
-									'segments become the collapsed tail.' : 'Routes are matched by prefix. Deeper segments become' +
-								' blacklisted too.') }}
-							</p>
-						</div>
-
+						<AutoSuggestedUrlInput v-model="pattern" :grouping-mode="groupingMode"
+							:existing-rules="rulesList.map((rule) => rule.rule)" @submit-event="addRuleEntry"
+							@pattern-error="patternError = $event" @fetched-urls="urls = $event" />
 						<div v-if="groupingMode">
 							<p class="text-sm font-medium text-gray-700 mb-2">How it collapses</p>
 							<div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
@@ -183,7 +162,11 @@
 					<div class="flex items-center justify-between gap-3">
 						<h2 class="text-xl font-semibold text-gray-800">Active rules</h2>
 						<span class="shrink-0 text-xs font-medium text-gray-500">
-							{{ rulesList.length }} rule{{ rulesList.length === 1 ? '' : 's' }}
+							{{rulesList.filter(rule => groupingMode ? rule.mode === 'grouping' : rule.mode ===
+								'blacklisting').length}} rule{{
+								rulesList.filter(rule => groupingMode ? rule.mode === 'grouping' : rule.mode === 'blacklisting').length
+									=== 1 ? '' :
+									's'}}
 						</span>
 					</div>
 					<p class="text-sm text-gray-500 mt-1">
@@ -201,9 +184,10 @@
 										class="text-[#00B35C] font-semibold">*</span>
 								</p>
 								<p class="mt-1 text-xs" :class="entry.matches.length > 0 ? 'text-gray-500' : 'text-gray-400 italic'">
-									{{ entry.matches.length > 0
-										? `Collapses ${entry.matches} route${entry.matches.length === 1 ? '' : 's'}`
-										: 'Waiting for matching traffic' }}
+									{{ entry.matches.length > 5
+										? `Collapses ${entry.matches.slice(0, 5)} routes and ${entry.matches.length - 5} more`
+										: entry.matches.length > 0 ? `Collapses ${entry.matches} route${entry.matches.length === 1 ? '' :
+											's'}` : 'Waiting for matching traffic' }}
 								</p>
 							</div>
 							<button type="button" @click="removeRule(entry)" :disabled="saving"
@@ -236,7 +220,6 @@ definePageMeta({
 	layout: 'dashboard',
 })
 import { getRules, addRule, deleteRule } from '@/calls/rules'
-import { getUrls } from '@/calls/dashboard'
 import { parseApiError } from '@/composables/helpers'
 import type { Rule } from '@/composables/types'
 
@@ -248,7 +231,8 @@ const errorMessage = ref<string | null>(null)
 const cleanMessage = ref<string>('')
 const saving = ref(false)
 const pattern = ref('')
-
+const patternError = ref('')
+const urls = ref<string[]>([])
 const { data: fetchedRules, error: fetchError } = await useAsyncData<Rule[]>('rules', () => getRules(), { default: () => [] })
 const rulesList = ref<Rule[]>([])
 watch(fetchedRules, (rules) => {
@@ -258,48 +242,11 @@ if (fetchError.value) {
 	errorMessage.value = 'Failed to load rules.'
 }
 
-const urls = useState<string[]>('urls', () => [])
-if (urls.value.length === 0) {
-	const { data: fetchedUrls } = await useAsyncData('dashboardUrls', () => getUrls())
-	if (fetchedUrls.value) urls.value = fetchedUrls.value
-}
-const suggestedUrls = ref<string[]>([])
-const inputActive = ref(false)
-const showSuggestedUrls = () => {
-	const query = pattern.value.trim()
-	suggestedUrls.value = urls.value.filter((url) => url.startsWith(query)).slice(0, 6)
-}
-const onBaseFocus = () => {
-	inputActive.value = true
-	showSuggestedUrls()
-}
-const onBaseBlur = () => {
-	inputActive.value = false
-}
-const selectSuggestion = (url: string) => {
-	pattern.value = url
-	inputActive.value = false
-}
-
 const normalizedBase = computed(() => {
 	const trimmed = pattern.value.trim()
 	if (!trimmed) return ''
 	return trimmed
 })
-
-const patternError = computed(() => {
-	const trimmed = pattern.value.trim()
-	if (!trimmed) return ''
-	if (normalizedBase.value.includes('http') && normalizedBase.value.split('/').length <= 3) return `Add at least one path segment, e.g. ${normalizedBase.value}/more.`
-	if (normalizedBase.value[normalizedBase.value.length - 1] === '/') return `Remove the trailing slash, e.g. ${normalizedBase.value} <-.`
-	if (rulesList.value.some((rule) => rule.rule === normalizedBase.value)) return 'A rule for this path already exists.'
-	if (!prefixExists(normalizedBase.value)) return 'The base path is not in the list of URLs.'
-	return ''
-})
-
-const prefixExists = (path: string): boolean => {
-	return suggestedUrls.value.some((url) => url.startsWith(path))
-}
 
 const canSave = computed(() =>
 	normalizedBase.value.length > 1 && patternError.value === '')
@@ -310,7 +257,7 @@ const samplePaths = computed(() => {
 		const actualMatched = urls.value.filter((url) => url.startsWith(base))
 		return actualMatched.map((url) => ({ full: url, base, tail: url.replace(base, '') }))
 	}
-	return ['1', '2', '87'].map((tail) => ({ full: `${base}/${tail}`, base, tail }))
+	return ['/1', '/2', '/87'].map((tail) => ({ full: `${base}/${tail}`, base, tail }))
 })
 
 const addRuleEntry = async () => {
