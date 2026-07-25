@@ -117,7 +117,7 @@ const populateChart = async (data: any): Promise<void> => {
 		chartInstance = chart;
 		mutateAdditionalData(additionalData);
 	} else if (props.name === "Geographic performance" && chartRef.value) {
-		const { chart, additionalData }: ChartData = createGeographicPerformance(chartRef.value, toRaw(data), props.timeframe, props.worldData)
+		const { chart, additionalData }: ChartData = createGeographicPerformance(chartRef.value, toRaw(data), props.worldData)
 		chartInstance = chart;
 		mutateAdditionalData(additionalData);
 	} else if (props.name === "Status code distribution" && chartRef.value) {

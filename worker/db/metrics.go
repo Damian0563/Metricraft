@@ -276,7 +276,7 @@ func GetGeographicalPerformance(ctx context.Context, rules []*pb.Rule, startDate
 		FROM (
 			SELECT country, responsetime
 			FROM logs
-			WHERE date >= $1 AND date < $2 AND status BETWEEN 200 AND 299
+			WHERE date >= $1 AND date < $2
 				AND %s
 		) filtered
 		GROUP BY country
