@@ -89,27 +89,38 @@ func Navigator(w http.ResponseWriter, r *http.Request) {
 	convertedTimeframe, resolution := convertTimeframe(timeframe, timezone)
 	var response any
 	var err error
+	ctx := context.Background()
+	rules, err := db.GetRules(ctx)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	var ruleInput []*pb.Rule
+	for _, rule := range rules {
+		ruleInput = append(ruleInput, &pb.Rule{Rule: rule.Rule, Mode: rule.Mode})
+	}
+	timeframeEntry := &pb.Timeframe{Rules: ruleInput, Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days, Timezone: timezone}
 	switch metric {
 	case "Traffic congestion trends":
-		response, err = client.GetTrafficCongestion(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days, Timezone: timezone})
+		response, err = client.GetTrafficCongestion(ctx, timeframeEntry)
 	case "Geographical traffic":
-		response, err = client.GetGeographicalTraffic(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days, Timezone: timezone})
+		response, err = client.GetGeographicalTraffic(ctx, timeframeEntry)
 	case "P95 Latency":
-		response, err = client.GetP95Latency(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days, Timezone: timezone})
+		response, err = client.GetP95Latency(ctx, timeframeEntry)
 	case "Uptime Score":
-		response, err = client.GetUptimeScore(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days, Timezone: timezone})
+		response, err = client.GetUptimeScore(ctx, timeframeEntry)
 	case "Throughput":
-		response, err = client.GetThroughput(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days, Timezone: timezone})
+		response, err = client.GetThroughput(ctx, timeframeEntry)
 	case "Geographic performance":
-		response, err = client.GetGeographicalPerformance(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days, Timezone: timezone})
+		response, err = client.GetGeographicalPerformance(ctx, timeframeEntry)
 	case "Status code distribution":
-		response, err = client.GetStatusCodeDistribution(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days, Timezone: timezone})
+		response, err = client.GetStatusCodeDistribution(ctx, timeframeEntry)
 	case "Route congestion":
-		response, err = client.GetRouteCongestion(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days, Timezone: timezone})
+		response, err = client.GetRouteCongestion(ctx, timeframeEntry)
 	case "HTTP method distribution":
-		response, err = client.GetHttpMethodDistribution(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days, Timezone: timezone})
+		response, err = client.GetHttpMethodDistribution(ctx, timeframeEntry)
 	case "Unique visitors":
-		response, err = client.GetUniqueVisitors(context.Background(), &pb.Timeframe{Start: timestamppb.New(convertedTimeframe), Resolution: resolution.Days, Timezone: timezone})
+		response, err = client.GetUniqueVisitors(ctx, timeframeEntry)
 	default:
 		break
 	}

@@ -1,42 +1,5 @@
 package types
 
-import (
-	"github.com/gorilla/websocket"
-	"sync"
-)
-
-type Session struct {
-	frontend *websocket.Conn
-	worker   *websocket.Conn
-	mu       sync.Mutex
-}
-
-type User struct {
-	Mail     string   `json:"mail"`
-	AppName  string   `json:"appName"`
-	UUID     string   `json:"uuid"`
-	Settings Settings `json:"settings,omitempty"`
-}
-
-type Rule struct {
-	Rule    string   `json:"rule"`
-	Matches []string `json:"matches"`
-	Mode    string   `json:"mode"`
-}
-
-type Worker struct {
-	Url          string            `json:"url"`
-	PollInterval int               `json:"pollInterval"`
-	Headers      map[string]string `json:"headers,omitempty"`
-}
-
-type ExistsErrResponse struct {
-	Exists bool
-	Err    error
-	Origin string
-	Owner  string
-}
-
 type DashboardInitPayload struct {
 	AppName      string   `json:"appName"`
 	SignedSecret string   `json:"signedSecret"`
@@ -49,17 +12,6 @@ type Settings struct {
 	Realtime  bool                     `json:"realtime"`
 	Enabled   map[string]EnabledMetric `json:"enabled"`
 	Retention int                      `json:"retention"`
-}
-
-type EnabledMetric struct {
-	Enabled   bool   `json:"enabled"`
-	Timeframe string `json:"timeframe"`
-}
-
-type Metric struct {
-	Name      string `json:"name"`
-	Enabled   bool   `json:"enabled"`
-	Timeframe string `json:"timeframe"`
 }
 
 type PendingUsers struct {
@@ -87,4 +39,11 @@ type RecoveryCheckPayload struct {
 }
 type Invite struct {
 	Invitees []string `json:"invitees"`
+}
+
+type ExistsErrResponse struct {
+	Exists bool
+	Err    error
+	Origin string
+	Owner  string
 }

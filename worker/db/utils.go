@@ -3,6 +3,7 @@ package db
 import (
 	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
+	pb "metricraft/proto/metricraft/proto"
 	"time"
 )
 
@@ -31,4 +32,49 @@ func getLogsPool() (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("logs database pool is not initialized")
 	}
 	return logsPool, nil
+}
+
+func blacklistedRules(rules []*pb.Rule) []string {
+	var blacklisted []string
+	for _, rule := range rules {
+		if rule.Mode == "blacklisting" {
+			blacklisted = append(blacklisted, rule.Rule)
+		}
+	}
+	return blacklisted
+}
+
+func groupingRules(rules []*pb.Rule) []string {
+	var grouping []string
+	for _, rule := range rules {
+		if rule.Mode == "grouping" {
+			grouping = append(grouping, rule.Rule)
+		}
+	}
+	return grouping
+}
+
+func urlPrefixMatchSQL(urlCol, ruleCol string) string {
+	return fmt.Sprintf(`(%s = %s OR (starts_with(%s, %s) AND length(%s) > length(%s) AND substring(%s, length(%s) + 1, 1) = '/'))`,
+		urlCol, ruleCol, urlCol, ruleCol, urlCol, ruleCol, urlCol, ruleCol)
+}
+
+func blacklistFilterSQL(urlCol, param string) string {
+	return fmt.Sprintf(`NOT EXISTS (
+		SELECT 1 FROM unnest(%s::text[]) AS bl(rule)
+		WHERE %s
+	)`, param, urlPrefixMatchSQL(urlCol, "bl.rule"))
+}
+
+func groupedUrlSQL(urlCol, groupingParam string) string {
+	return fmt.Sprintf(`COALESCE(
+		(
+			SELECT g.rule
+			FROM unnest(%s::text[]) WITH ORDINALITY AS g(rule, ord)
+			WHERE %s
+			ORDER BY ord
+			LIMIT 1
+		),
+		%s
+	)`, groupingParam, urlPrefixMatchSQL(urlCol, "g.rule"), urlCol)
 }

@@ -30,6 +30,12 @@ message timeframe{
   google.protobuf.Timestamp start = 1;
   int32 resolution = 2;
   string timezone = 3;
+  repeated rule rules = 4;
+}
+
+message rule{
+  string rule=1;
+  string mode=2;
 }
 
 message workerUrl{

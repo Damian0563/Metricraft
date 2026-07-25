@@ -71,6 +71,7 @@ type Timeframe struct {
 	Start         *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=start,proto3" json:"start,omitempty"`
 	Resolution    int32                  `protobuf:"varint,2,opt,name=resolution,proto3" json:"resolution,omitempty"`
 	Timezone      string                 `protobuf:"bytes,3,opt,name=timezone,proto3" json:"timezone,omitempty"`
+	Rules         []*Rule                `protobuf:"bytes,4,rep,name=rules,proto3" json:"rules,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -126,6 +127,65 @@ func (x *Timeframe) GetTimezone() string {
 	return ""
 }
 
+func (x *Timeframe) GetRules() []*Rule {
+	if x != nil {
+		return x.Rules
+	}
+	return nil
+}
+
+type Rule struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Rule          string                 `protobuf:"bytes,1,opt,name=rule,proto3" json:"rule,omitempty"`
+	Mode          string                 `protobuf:"bytes,2,opt,name=mode,proto3" json:"mode,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Rule) Reset() {
+	*x = Rule{}
+	mi := &file_service_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Rule) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Rule) ProtoMessage() {}
+
+func (x *Rule) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Rule.ProtoReflect.Descriptor instead.
+func (*Rule) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *Rule) GetRule() string {
+	if x != nil {
+		return x.Rule
+	}
+	return ""
+}
+
+func (x *Rule) GetMode() string {
+	if x != nil {
+		return x.Mode
+	}
+	return ""
+}
+
 type WorkerUrl struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Url           string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
@@ -137,7 +197,7 @@ type WorkerUrl struct {
 
 func (x *WorkerUrl) Reset() {
 	*x = WorkerUrl{}
-	mi := &file_service_proto_msgTypes[2]
+	mi := &file_service_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -149,7 +209,7 @@ func (x *WorkerUrl) String() string {
 func (*WorkerUrl) ProtoMessage() {}
 
 func (x *WorkerUrl) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[2]
+	mi := &file_service_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -162,7 +222,7 @@ func (x *WorkerUrl) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkerUrl.ProtoReflect.Descriptor instead.
 func (*WorkerUrl) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{2}
+	return file_service_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *WorkerUrl) GetUrl() string {
@@ -198,7 +258,7 @@ type Worker struct {
 
 func (x *Worker) Reset() {
 	*x = Worker{}
-	mi := &file_service_proto_msgTypes[3]
+	mi := &file_service_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -210,7 +270,7 @@ func (x *Worker) String() string {
 func (*Worker) ProtoMessage() {}
 
 func (x *Worker) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[3]
+	mi := &file_service_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -223,7 +283,7 @@ func (x *Worker) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Worker.ProtoReflect.Descriptor instead.
 func (*Worker) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{3}
+	return file_service_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *Worker) GetUrl() string {
@@ -265,7 +325,7 @@ type Status struct {
 
 func (x *Status) Reset() {
 	*x = Status{}
-	mi := &file_service_proto_msgTypes[4]
+	mi := &file_service_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -277,7 +337,7 @@ func (x *Status) String() string {
 func (*Status) ProtoMessage() {}
 
 func (x *Status) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[4]
+	mi := &file_service_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -290,7 +350,7 @@ func (x *Status) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Status.ProtoReflect.Descriptor instead.
 func (*Status) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{4}
+	return file_service_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *Status) GetSuccess() bool {
@@ -323,7 +383,7 @@ type WorkerUptime struct {
 
 func (x *WorkerUptime) Reset() {
 	*x = WorkerUptime{}
-	mi := &file_service_proto_msgTypes[5]
+	mi := &file_service_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -335,7 +395,7 @@ func (x *WorkerUptime) String() string {
 func (*WorkerUptime) ProtoMessage() {}
 
 func (x *WorkerUptime) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[5]
+	mi := &file_service_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -348,7 +408,7 @@ func (x *WorkerUptime) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkerUptime.ProtoReflect.Descriptor instead.
 func (*WorkerUptime) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{5}
+	return file_service_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *WorkerUptime) GetEntries() []*WorkerUptimeEntry {
@@ -368,7 +428,7 @@ type WorkerUptimeEntry struct {
 
 func (x *WorkerUptimeEntry) Reset() {
 	*x = WorkerUptimeEntry{}
-	mi := &file_service_proto_msgTypes[6]
+	mi := &file_service_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -380,7 +440,7 @@ func (x *WorkerUptimeEntry) String() string {
 func (*WorkerUptimeEntry) ProtoMessage() {}
 
 func (x *WorkerUptimeEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[6]
+	mi := &file_service_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -393,7 +453,7 @@ func (x *WorkerUptimeEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkerUptimeEntry.ProtoReflect.Descriptor instead.
 func (*WorkerUptimeEntry) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{6}
+	return file_service_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *WorkerUptimeEntry) GetStamp() *timestamppb.Timestamp {
@@ -419,7 +479,7 @@ type StringInt32Map struct {
 
 func (x *StringInt32Map) Reset() {
 	*x = StringInt32Map{}
-	mi := &file_service_proto_msgTypes[7]
+	mi := &file_service_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -431,7 +491,7 @@ func (x *StringInt32Map) String() string {
 func (*StringInt32Map) ProtoMessage() {}
 
 func (x *StringInt32Map) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[7]
+	mi := &file_service_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -444,7 +504,7 @@ func (x *StringInt32Map) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StringInt32Map.ProtoReflect.Descriptor instead.
 func (*StringInt32Map) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{7}
+	return file_service_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *StringInt32Map) GetValues() map[string]int32 {
@@ -463,7 +523,7 @@ type StringFloat32Map struct {
 
 func (x *StringFloat32Map) Reset() {
 	*x = StringFloat32Map{}
-	mi := &file_service_proto_msgTypes[8]
+	mi := &file_service_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -475,7 +535,7 @@ func (x *StringFloat32Map) String() string {
 func (*StringFloat32Map) ProtoMessage() {}
 
 func (x *StringFloat32Map) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[8]
+	mi := &file_service_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -488,7 +548,7 @@ func (x *StringFloat32Map) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StringFloat32Map.ProtoReflect.Descriptor instead.
 func (*StringFloat32Map) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{8}
+	return file_service_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *StringFloat32Map) GetValues() map[string]float32 {
@@ -507,7 +567,7 @@ type FloatDistribution struct {
 
 func (x *FloatDistribution) Reset() {
 	*x = FloatDistribution{}
-	mi := &file_service_proto_msgTypes[9]
+	mi := &file_service_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -519,7 +579,7 @@ func (x *FloatDistribution) String() string {
 func (*FloatDistribution) ProtoMessage() {}
 
 func (x *FloatDistribution) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[9]
+	mi := &file_service_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -532,7 +592,7 @@ func (x *FloatDistribution) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FloatDistribution.ProtoReflect.Descriptor instead.
 func (*FloatDistribution) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{9}
+	return file_service_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *FloatDistribution) GetDistribution() *StringFloat32Map {
@@ -553,7 +613,7 @@ type Throughput struct {
 
 func (x *Throughput) Reset() {
 	*x = Throughput{}
-	mi := &file_service_proto_msgTypes[10]
+	mi := &file_service_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -565,7 +625,7 @@ func (x *Throughput) String() string {
 func (*Throughput) ProtoMessage() {}
 
 func (x *Throughput) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[10]
+	mi := &file_service_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -578,7 +638,7 @@ func (x *Throughput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Throughput.ProtoReflect.Descriptor instead.
 func (*Throughput) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{10}
+	return file_service_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *Throughput) GetValues() []*ThroughputEntry {
@@ -612,7 +672,7 @@ type ThroughputEntry struct {
 
 func (x *ThroughputEntry) Reset() {
 	*x = ThroughputEntry{}
-	mi := &file_service_proto_msgTypes[11]
+	mi := &file_service_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -624,7 +684,7 @@ func (x *ThroughputEntry) String() string {
 func (*ThroughputEntry) ProtoMessage() {}
 
 func (x *ThroughputEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[11]
+	mi := &file_service_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -637,7 +697,7 @@ func (x *ThroughputEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ThroughputEntry.ProtoReflect.Descriptor instead.
 func (*ThroughputEntry) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{11}
+	return file_service_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *ThroughputEntry) GetTimerange() string {
@@ -664,7 +724,7 @@ type CongestionEntry struct {
 
 func (x *CongestionEntry) Reset() {
 	*x = CongestionEntry{}
-	mi := &file_service_proto_msgTypes[12]
+	mi := &file_service_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -676,7 +736,7 @@ func (x *CongestionEntry) String() string {
 func (*CongestionEntry) ProtoMessage() {}
 
 func (x *CongestionEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[12]
+	mi := &file_service_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -689,7 +749,7 @@ func (x *CongestionEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CongestionEntry.ProtoReflect.Descriptor instead.
 func (*CongestionEntry) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{12}
+	return file_service_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *CongestionEntry) GetTimerange() string {
@@ -715,7 +775,7 @@ type Distribution struct {
 
 func (x *Distribution) Reset() {
 	*x = Distribution{}
-	mi := &file_service_proto_msgTypes[13]
+	mi := &file_service_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -727,7 +787,7 @@ func (x *Distribution) String() string {
 func (*Distribution) ProtoMessage() {}
 
 func (x *Distribution) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[13]
+	mi := &file_service_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -740,7 +800,7 @@ func (x *Distribution) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Distribution.ProtoReflect.Descriptor instead.
 func (*Distribution) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{13}
+	return file_service_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *Distribution) GetDistribution() *StringInt32Map {
@@ -759,7 +819,7 @@ type Congestion struct {
 
 func (x *Congestion) Reset() {
 	*x = Congestion{}
-	mi := &file_service_proto_msgTypes[14]
+	mi := &file_service_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -771,7 +831,7 @@ func (x *Congestion) String() string {
 func (*Congestion) ProtoMessage() {}
 
 func (x *Congestion) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[14]
+	mi := &file_service_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -784,7 +844,7 @@ func (x *Congestion) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Congestion.ProtoReflect.Descriptor instead.
 func (*Congestion) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{14}
+	return file_service_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *Congestion) GetValues() []*CongestionEntry {
@@ -801,13 +861,17 @@ const file_service_proto_rawDesc = "" +
 	"\rservice.proto\x12\n" +
 	"metricraft\x1a\x1fgoogle/protobuf/timestamp.proto\"\\\n" +
 	"\x1asimpleRepeatedDistribution\x12>\n" +
-	"\fdistribution\x18\x01 \x03(\v2\x1a.metricraft.StringInt32MapR\fdistribution\"y\n" +
+	"\fdistribution\x18\x01 \x03(\v2\x1a.metricraft.StringInt32MapR\fdistribution\"\xa1\x01\n" +
 	"\ttimeframe\x120\n" +
 	"\x05start\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\x05start\x12\x1e\n" +
 	"\n" +
 	"resolution\x18\x02 \x01(\x05R\n" +
 	"resolution\x12\x1a\n" +
-	"\btimezone\x18\x03 \x01(\tR\btimezone\"]\n" +
+	"\btimezone\x18\x03 \x01(\tR\btimezone\x12&\n" +
+	"\x05rules\x18\x04 \x03(\v2\x10.metricraft.ruleR\x05rules\".\n" +
+	"\x04rule\x12\x12\n" +
+	"\x04rule\x18\x01 \x01(\tR\x04rule\x12\x12\n" +
+	"\x04mode\x18\x02 \x01(\tR\x04mode\"]\n" +
 	"\tworkerUrl\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12\x1a\n" +
 	"\btimezone\x18\x02 \x01(\tR\btimezone\x12\"\n" +
@@ -888,74 +952,76 @@ func file_service_proto_rawDescGZIP() []byte {
 	return file_service_proto_rawDescData
 }
 
-var file_service_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
+var file_service_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_service_proto_goTypes = []any{
 	(*SimpleRepeatedDistribution)(nil), // 0: metricraft.simpleRepeatedDistribution
 	(*Timeframe)(nil),                  // 1: metricraft.timeframe
-	(*WorkerUrl)(nil),                  // 2: metricraft.workerUrl
-	(*Worker)(nil),                     // 3: metricraft.worker
-	(*Status)(nil),                     // 4: metricraft.status
-	(*WorkerUptime)(nil),               // 5: metricraft.workerUptime
-	(*WorkerUptimeEntry)(nil),          // 6: metricraft.workerUptimeEntry
-	(*StringInt32Map)(nil),             // 7: metricraft.StringInt32Map
-	(*StringFloat32Map)(nil),           // 8: metricraft.StringFloat32Map
-	(*FloatDistribution)(nil),          // 9: metricraft.floatDistribution
-	(*Throughput)(nil),                 // 10: metricraft.throughput
-	(*ThroughputEntry)(nil),            // 11: metricraft.ThroughputEntry
-	(*CongestionEntry)(nil),            // 12: metricraft.CongestionEntry
-	(*Distribution)(nil),               // 13: metricraft.distribution
-	(*Congestion)(nil),                 // 14: metricraft.congestion
-	nil,                                // 15: metricraft.worker.HeadersEntry
-	nil,                                // 16: metricraft.StringInt32Map.ValuesEntry
-	nil,                                // 17: metricraft.StringFloat32Map.ValuesEntry
-	(*timestamppb.Timestamp)(nil),      // 18: google.protobuf.Timestamp
+	(*Rule)(nil),                       // 2: metricraft.rule
+	(*WorkerUrl)(nil),                  // 3: metricraft.workerUrl
+	(*Worker)(nil),                     // 4: metricraft.worker
+	(*Status)(nil),                     // 5: metricraft.status
+	(*WorkerUptime)(nil),               // 6: metricraft.workerUptime
+	(*WorkerUptimeEntry)(nil),          // 7: metricraft.workerUptimeEntry
+	(*StringInt32Map)(nil),             // 8: metricraft.StringInt32Map
+	(*StringFloat32Map)(nil),           // 9: metricraft.StringFloat32Map
+	(*FloatDistribution)(nil),          // 10: metricraft.floatDistribution
+	(*Throughput)(nil),                 // 11: metricraft.throughput
+	(*ThroughputEntry)(nil),            // 12: metricraft.ThroughputEntry
+	(*CongestionEntry)(nil),            // 13: metricraft.CongestionEntry
+	(*Distribution)(nil),               // 14: metricraft.distribution
+	(*Congestion)(nil),                 // 15: metricraft.congestion
+	nil,                                // 16: metricraft.worker.HeadersEntry
+	nil,                                // 17: metricraft.StringInt32Map.ValuesEntry
+	nil,                                // 18: metricraft.StringFloat32Map.ValuesEntry
+	(*timestamppb.Timestamp)(nil),      // 19: google.protobuf.Timestamp
 }
 var file_service_proto_depIdxs = []int32{
-	7,  // 0: metricraft.simpleRepeatedDistribution.distribution:type_name -> metricraft.StringInt32Map
-	18, // 1: metricraft.timeframe.start:type_name -> google.protobuf.Timestamp
-	15, // 2: metricraft.worker.headers:type_name -> metricraft.worker.HeadersEntry
-	6,  // 3: metricraft.workerUptime.entries:type_name -> metricraft.workerUptimeEntry
-	18, // 4: metricraft.workerUptimeEntry.stamp:type_name -> google.protobuf.Timestamp
-	16, // 5: metricraft.StringInt32Map.values:type_name -> metricraft.StringInt32Map.ValuesEntry
-	17, // 6: metricraft.StringFloat32Map.values:type_name -> metricraft.StringFloat32Map.ValuesEntry
-	8,  // 7: metricraft.floatDistribution.distribution:type_name -> metricraft.StringFloat32Map
-	11, // 8: metricraft.throughput.values:type_name -> metricraft.ThroughputEntry
-	7,  // 9: metricraft.CongestionEntry.pairing:type_name -> metricraft.StringInt32Map
-	7,  // 10: metricraft.distribution.distribution:type_name -> metricraft.StringInt32Map
-	12, // 11: metricraft.congestion.values:type_name -> metricraft.CongestionEntry
-	1,  // 12: metricraft.Metricraft.getGeographicalTraffic:input_type -> metricraft.timeframe
-	1,  // 13: metricraft.Metricraft.getTrafficCongestion:input_type -> metricraft.timeframe
-	1,  // 14: metricraft.Metricraft.getP95Latency:input_type -> metricraft.timeframe
-	1,  // 15: metricraft.Metricraft.getUptimeScore:input_type -> metricraft.timeframe
-	1,  // 16: metricraft.Metricraft.getThroughput:input_type -> metricraft.timeframe
-	1,  // 17: metricraft.Metricraft.getGeographicalPerformance:input_type -> metricraft.timeframe
-	1,  // 18: metricraft.Metricraft.getStatusCodeDistribution:input_type -> metricraft.timeframe
-	1,  // 19: metricraft.Metricraft.getRouteCongestion:input_type -> metricraft.timeframe
-	1,  // 20: metricraft.Metricraft.getHttpMethodDistribution:input_type -> metricraft.timeframe
-	1,  // 21: metricraft.Metricraft.getUniqueVisitors:input_type -> metricraft.timeframe
-	3,  // 22: metricraft.Metricraft.createWorker:input_type -> metricraft.worker
-	2,  // 23: metricraft.Metricraft.deleteWorker:input_type -> metricraft.workerUrl
-	3,  // 24: metricraft.Metricraft.updateWorker:input_type -> metricraft.worker
-	2,  // 25: metricraft.Metricraft.getWorkerUptime:input_type -> metricraft.workerUrl
-	13, // 26: metricraft.Metricraft.getGeographicalTraffic:output_type -> metricraft.distribution
-	14, // 27: metricraft.Metricraft.getTrafficCongestion:output_type -> metricraft.congestion
-	13, // 28: metricraft.Metricraft.getP95Latency:output_type -> metricraft.distribution
-	9,  // 29: metricraft.Metricraft.getUptimeScore:output_type -> metricraft.floatDistribution
-	10, // 30: metricraft.Metricraft.getThroughput:output_type -> metricraft.throughput
-	9,  // 31: metricraft.Metricraft.getGeographicalPerformance:output_type -> metricraft.floatDistribution
-	13, // 32: metricraft.Metricraft.getStatusCodeDistribution:output_type -> metricraft.distribution
-	13, // 33: metricraft.Metricraft.getRouteCongestion:output_type -> metricraft.distribution
-	14, // 34: metricraft.Metricraft.getHttpMethodDistribution:output_type -> metricraft.congestion
-	0,  // 35: metricraft.Metricraft.getUniqueVisitors:output_type -> metricraft.simpleRepeatedDistribution
-	4,  // 36: metricraft.Metricraft.createWorker:output_type -> metricraft.status
-	4,  // 37: metricraft.Metricraft.deleteWorker:output_type -> metricraft.status
-	4,  // 38: metricraft.Metricraft.updateWorker:output_type -> metricraft.status
-	5,  // 39: metricraft.Metricraft.getWorkerUptime:output_type -> metricraft.workerUptime
-	26, // [26:40] is the sub-list for method output_type
-	12, // [12:26] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	8,  // 0: metricraft.simpleRepeatedDistribution.distribution:type_name -> metricraft.StringInt32Map
+	19, // 1: metricraft.timeframe.start:type_name -> google.protobuf.Timestamp
+	2,  // 2: metricraft.timeframe.rules:type_name -> metricraft.rule
+	16, // 3: metricraft.worker.headers:type_name -> metricraft.worker.HeadersEntry
+	7,  // 4: metricraft.workerUptime.entries:type_name -> metricraft.workerUptimeEntry
+	19, // 5: metricraft.workerUptimeEntry.stamp:type_name -> google.protobuf.Timestamp
+	17, // 6: metricraft.StringInt32Map.values:type_name -> metricraft.StringInt32Map.ValuesEntry
+	18, // 7: metricraft.StringFloat32Map.values:type_name -> metricraft.StringFloat32Map.ValuesEntry
+	9,  // 8: metricraft.floatDistribution.distribution:type_name -> metricraft.StringFloat32Map
+	12, // 9: metricraft.throughput.values:type_name -> metricraft.ThroughputEntry
+	8,  // 10: metricraft.CongestionEntry.pairing:type_name -> metricraft.StringInt32Map
+	8,  // 11: metricraft.distribution.distribution:type_name -> metricraft.StringInt32Map
+	13, // 12: metricraft.congestion.values:type_name -> metricraft.CongestionEntry
+	1,  // 13: metricraft.Metricraft.getGeographicalTraffic:input_type -> metricraft.timeframe
+	1,  // 14: metricraft.Metricraft.getTrafficCongestion:input_type -> metricraft.timeframe
+	1,  // 15: metricraft.Metricraft.getP95Latency:input_type -> metricraft.timeframe
+	1,  // 16: metricraft.Metricraft.getUptimeScore:input_type -> metricraft.timeframe
+	1,  // 17: metricraft.Metricraft.getThroughput:input_type -> metricraft.timeframe
+	1,  // 18: metricraft.Metricraft.getGeographicalPerformance:input_type -> metricraft.timeframe
+	1,  // 19: metricraft.Metricraft.getStatusCodeDistribution:input_type -> metricraft.timeframe
+	1,  // 20: metricraft.Metricraft.getRouteCongestion:input_type -> metricraft.timeframe
+	1,  // 21: metricraft.Metricraft.getHttpMethodDistribution:input_type -> metricraft.timeframe
+	1,  // 22: metricraft.Metricraft.getUniqueVisitors:input_type -> metricraft.timeframe
+	4,  // 23: metricraft.Metricraft.createWorker:input_type -> metricraft.worker
+	3,  // 24: metricraft.Metricraft.deleteWorker:input_type -> metricraft.workerUrl
+	4,  // 25: metricraft.Metricraft.updateWorker:input_type -> metricraft.worker
+	3,  // 26: metricraft.Metricraft.getWorkerUptime:input_type -> metricraft.workerUrl
+	14, // 27: metricraft.Metricraft.getGeographicalTraffic:output_type -> metricraft.distribution
+	15, // 28: metricraft.Metricraft.getTrafficCongestion:output_type -> metricraft.congestion
+	14, // 29: metricraft.Metricraft.getP95Latency:output_type -> metricraft.distribution
+	10, // 30: metricraft.Metricraft.getUptimeScore:output_type -> metricraft.floatDistribution
+	11, // 31: metricraft.Metricraft.getThroughput:output_type -> metricraft.throughput
+	10, // 32: metricraft.Metricraft.getGeographicalPerformance:output_type -> metricraft.floatDistribution
+	14, // 33: metricraft.Metricraft.getStatusCodeDistribution:output_type -> metricraft.distribution
+	14, // 34: metricraft.Metricraft.getRouteCongestion:output_type -> metricraft.distribution
+	15, // 35: metricraft.Metricraft.getHttpMethodDistribution:output_type -> metricraft.congestion
+	0,  // 36: metricraft.Metricraft.getUniqueVisitors:output_type -> metricraft.simpleRepeatedDistribution
+	5,  // 37: metricraft.Metricraft.createWorker:output_type -> metricraft.status
+	5,  // 38: metricraft.Metricraft.deleteWorker:output_type -> metricraft.status
+	5,  // 39: metricraft.Metricraft.updateWorker:output_type -> metricraft.status
+	6,  // 40: metricraft.Metricraft.getWorkerUptime:output_type -> metricraft.workerUptime
+	27, // [27:41] is the sub-list for method output_type
+	13, // [13:27] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_service_proto_init() }
@@ -969,7 +1035,7 @@ func file_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_service_proto_rawDesc), len(file_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   18,
+			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
