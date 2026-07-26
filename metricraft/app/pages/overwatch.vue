@@ -57,8 +57,8 @@
 							</div>
 							<div class="flex-1 min-w-0">
 								<AutoSuggestedUrlInput v-model="path" input-id="metric-path" label="Endpoint path"
-									help-text="Overwatch inspects requests matching this route."
-									@pattern-error="pathError = $event" @submit-event="addMetric" />
+									help-text="Overwatch inspects requests matching this route." @pattern-error="pathError = $event"
+									@submit-event="addMetric" />
 							</div>
 						</div>
 
@@ -122,11 +122,27 @@
 									class="px-8 py-3 bg-[#00F376] text-gray-900 font-bold rounded-lg hover:bg-[#00D96A] transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider text-sm cursor-pointer">
 									Create metric
 								</button>
-								<label for="apply-rules" class="inline-flex items-center gap-3 cursor-pointer shrink-0 mx-5">
-									<span class="select-none text-sm font-medium text-gray-700">Apply rules</span>
+								<label for="apply-rules" class="inline-flex items-center gap-2 cursor-pointer shrink-0 mx-5">
+									<span class="select-none text-sm font-medium text-gray-700">Apply grouping rules</span>
+									<div class="group relative mb-4">
+										<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#00F376"
+											class="w-5 h-5 text-gray-400">
+											<path fill-rule="evenodd"
+												d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm8.706-1.442c1.146-.573 2.437.463 2.126 1.706l-.709 2.836.042-.02a.75.75 0 01.67 1.34l-.04.022c-1.147.573-2.438-.463-2.127-1.706l.71-2.836-.042.02a.75.75 0 11-.671-1.34l.041-.022ZM12 9a.75.75 0 100-1.5.75.75 0 000 1.5Z"
+												clip-rule="evenodd" />
+										</svg>
+										<div v-if="source !== 'query'"
+											class="absolute right-0 bottom-full mb-2 hidden group-hover:block w-96 p-3 bg-[#00F376] text-black text-s rounded-lg shadow-lg z-10">
+											Toggle this on if the above {{ path }} is a grouping metric. For example if the path is a subpath
+											and you want to inspect traffic on all of the subpaths of the request i.e <span
+												class="font-semibold text-gray-800">{{ path }}/id</span> then you should enable this option.
+											custom metrics. This does not apply to query params.
+										</div>
+									</div>
 									<div class="relative">
-										<input type="checkbox" id="apply-rules" v-model="applyRules" class="sr-only peer" />
-										<div
+										<input type="checkbox" id="apply-rules" v-model="applyRules" class="sr-only peer"
+											:disabled="source === 'query'" />
+										<div :style="{ cursor: source === 'query' ? 'not-allowed' : 'default' }"
 											class="w-9 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#00F376]">
 										</div>
 									</div>
@@ -194,7 +210,7 @@
 								<span class="text-gray-500">chart</span>
 								<template v-if="applyRules">
 									<span class="text-gray-500">with</span>
-									<span class="font-medium text-gray-700">rules applied</span>
+									<span class="font-medium text-gray-700">grouping rules applied</span>
 								</template>
 							</div>
 						</div>
@@ -215,23 +231,12 @@
 
 
 <script setup lang="ts">
+import type { ChartType, CustomMetric, MetricSource } from '@/composables/types/additional'
+import { addCustomMetric } from '@/calls/overwatch'
 definePageMeta({
 	layout: 'dashboard',
 })
-type MetricSource = 'body' | 'header' | 'query'
-type ChartType = 'line' | 'bar' | 'pie'
-interface CustomMetric {
-	name: string
-	method: string
-	path: string
-	source: MetricSource
-	selector: string
-	aggregation: string
-	timeframe: string
-	valueType: string
-	applyRules: boolean
-	chartType: ChartType
-}
+type BodyLine = { text: string; target: boolean }
 const loading = ref(false)
 const errorMessage = ref('')
 const metricName = ref('')
@@ -336,7 +341,6 @@ const headerLines = computed<HeaderLine[]>(() => {
 	}
 	return lines
 })
-interface BodyLine { text: string; target: boolean }
 const TARGET_TOKEN = '__OVERWATCH_TARGET__'
 const buildBodyObject = (segments: string[]): unknown => {
 	const [head, ...rest] = segments
@@ -362,21 +366,33 @@ const bodyLines = computed<BodyLine[]>(() => {
 
 const canSave = computed(() =>
 	metricName.value.trim() !== '' && path.value.trim() !== '' && pathError.value === '' && selector.value.trim() !== '')
-const addMetric = () => {
+
+const addMetric = async () => {
 	if (!canSave.value) return
-	metrics.value.push({
-		name: metricName.value.trim(),
-		method: method.value,
-		path: path.value.trim(),
-		source: source.value,
-		selector: selector.value.trim(),
-		timeframe: timeframe.value,
-		aggregation: aggregation.value,
-		valueType: valueType.value,
-		applyRules: applyRules.value,
-		chartType: chartType.value,
-	})
-	resetForm()
+	loading.value = true
+	try {
+		const metric: CustomMetric = {
+			name: metricName.value.trim(),
+			method: method.value,
+			path: path.value.trim(),
+			source: source.value,
+			selector: selector.value.trim(),
+			timeframe: timeframe.value,
+			aggregation: aggregation.value,
+			valueType: valueType.value,
+			applyRules: applyRules.value,
+			chartType: chartType.value,
+		}
+		await addCustomMetric(metric)
+		errorMessage.value = 'Custom metric saved successfully.'
+		metrics.value.push(metric)
+	} catch (e) {
+		console.error(e)
+		errorMessage.value = 'Failed to save custom metric.'
+	} finally {
+		resetForm()
+		loading.value = false
+	}
 }
 
 const resetForm = () => {

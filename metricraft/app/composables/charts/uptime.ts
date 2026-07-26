@@ -1,6 +1,6 @@
 import { Chart } from "chart.js";
 import { emptyChart } from "~/composables/charts/charts";
-import type { WorkerUptimeData, WorkerUptimeEntry } from "~/composables/types";
+import type { WorkerUptimeData, WorkerUptimeEntry } from '@/composables/types/additional'
 
 export const createWorkerUptimeChart = (
 	canvas: HTMLCanvasElement,

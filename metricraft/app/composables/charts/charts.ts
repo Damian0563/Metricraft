@@ -1,5 +1,5 @@
 import { Chart } from "chart.js";
-import type { ChartData, HttpMethodData, HttpMethodEntry, WorldData, TrafficCongestionData, ThroughputData, ThroughputEntry, DistributionData, additionalDataHeaders, CongestionEntry, StringInt32Map } from "~/composables/types";
+import type { ChartData, HttpMethodData, HttpMethodEntry, WorldData, TrafficCongestionData, ThroughputData, ThroughputEntry, DistributionData, additionalDataHeaders, CongestionEntry, StringInt32Map } from '@/composables/types/metrics'
 import { ColorPicker } from "~/composables/colorpicker";
 import { truncateUrl } from "~/composables/helpers";
 import { ChoroplethChart } from 'chartjs-chart-geo';

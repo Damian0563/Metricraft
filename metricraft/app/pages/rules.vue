@@ -221,7 +221,7 @@ definePageMeta({
 })
 import { getRules, addRule, deleteRule } from '@/calls/rules'
 import { parseApiError } from '@/composables/helpers'
-import type { Rule } from '@/composables/types'
+import type { Rule } from '@/composables/types/additional'
 
 const router = useRouter()
 const groupingMode = computed(() => {

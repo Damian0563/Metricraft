@@ -1,4 +1,4 @@
-import type { dashboardInitPayload } from '@/composables/types';
+import type { dashboardInitPayload } from '@/composables/types/views'
 
 export const getDashboard = async (): Promise<dashboardInitPayload> => {
 	try {

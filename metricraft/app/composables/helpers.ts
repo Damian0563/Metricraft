@@ -1,4 +1,5 @@
 import { zxcvbn } from "@zxcvbn-ts/core"
+import type { config } from '@/composables/types/views'
 
 export const useBackendUrl = (): config => {
 	const config = useRuntimeConfig()

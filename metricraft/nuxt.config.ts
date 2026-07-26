@@ -1,5 +1,5 @@
 import tailwindcss from "@tailwindcss/vite";
-import type { config } from "./app/composables/types";
+import type { config } from "./app/composables/types/views";
 
 const getConfig = (): config => {
 	try {
@@ -32,6 +32,7 @@ export default defineNuxtConfig({
 	compatibilityDate: "2025-07-15",
 	devtools: { enabled: true },
 	css: ["@/assets/css/main.css"],
+	modules: ["motion-v/nuxt"],
 	runtimeConfig: {
 		public: {
 			backendPort: 8080,

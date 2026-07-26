@@ -1,4 +1,5 @@
-import type { signPayload, welcomeResponse, signResponse, verifyResponse } from '@/composables/types';
+import type { signPayload } from '@/composables/types/metrics'
+import type { welcomeResponse, signResponse, verifyResponse } from '@/composables/types/views'
 
 export const welcome = async (): Promise<boolean> => {
 	try {

@@ -164,7 +164,7 @@
 definePageMeta({
 	layout: 'dashboard',
 })
-import type { pendingUsersPayload, TeamUser } from "@/composables/types";
+import type { pendingUsersPayload, TeamUser } from '@/composables/types/additional'
 import { getCookie, validateEmail } from "@/composables/helpers";
 import { getPendingUsers, uploadUsersFromCSV, handlePermissionDecision, getTeamUsers, sendManualInvitesToUsers, getTeamMemberStatusInfo } from "@/calls/invite";
 type PendingUser = pendingUsersPayload["users"][number]

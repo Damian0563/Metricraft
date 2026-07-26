@@ -1,4 +1,4 @@
-import type { pendingUsersPayload, allowedUsersPayload, TeamUser } from "@/composables/types";
+import type { pendingUsersPayload, allowedUsersPayload, TeamUser } from '@/composables/types/additional'
 type PendingUser = { mail: string };
 
 export const getTeamMemberStatusInfo = (status: boolean) => {

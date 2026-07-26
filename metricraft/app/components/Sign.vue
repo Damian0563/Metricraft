@@ -122,7 +122,8 @@
 </template>
 
 <script setup lang="ts">
-import type { signPayload } from '@/composables/types';
+import type { signPayload } from '@/composables/types/metrics'
+import type { verifyResponse } from '@/composables/types/views'
 import { validateEmail, evaluatePasswordStrength } from '@/composables/helpers';
 import { sign, verify, sendVerification, sendRecovery } from '~/calls/welcome';
 const props = defineProps<{
