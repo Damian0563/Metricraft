@@ -1,19 +1,5 @@
 package types
 
-type DashboardInitPayload struct {
-	AppName      string   `json:"appName"`
-	SignedSecret string   `json:"signedSecret"`
-	Settings     Settings `json:"settings"`
-	Error        string   `json:"error"`
-	Urls         []string `json:"urls"`
-}
-
-type Settings struct {
-	Realtime  bool                     `json:"realtime"`
-	Enabled   map[string]EnabledMetric `json:"enabled"`
-	Retention int                      `json:"retention"`
-}
-
 type PendingUsers struct {
 	Mail string `json:"mail"`
 }

@@ -48,6 +48,10 @@ func InitDB(ctx context.Context, errChannel chan error) {
 		errChannel <- err
 		return
 	}
+	if _, err = conn.Exec(ctx, "CREATE TABLE IF NOT EXISTS custom_metrics (date TIMESTAMP, metric TEXT PRIMARY KEY NOT NULL)"); err != nil {
+		errChannel <- err
+		return
+	}
 	if _, err = conn.Exec(ctx, "CREATE TABLE IF NOT EXISTS rules (rule TEXT, matches TEXT[], mode TEXT)"); err != nil {
 		errChannel <- err
 		return

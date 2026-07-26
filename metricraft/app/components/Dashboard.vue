@@ -14,7 +14,7 @@
 <script setup lang="ts">
 import { handleMessage } from "@/ws/visitors"
 import { toggleRealtime } from "@/calls/settings"
-import type { config } from "@/composables/types"
+import type { config } from '@/composables/types/views'
 const props = defineProps<{
 	realtimeEnabled: boolean;
 	logRetention: number;

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"strings"
+	"time"
 )
 
 var usersPool *pgxpool.Pool
@@ -39,4 +40,18 @@ func urlMatchesRulePrefix(url, rule string) bool {
 		return true
 	}
 	return url[len(rule)] == '/'
+}
+
+var ErrInvalidTimezone = errors.New("invalid timezone")
+
+func getLocation(tz string) (*time.Location, error) {
+	tz = strings.TrimSpace(tz)
+	if tz == "" {
+		tz = "UTC"
+	}
+	loc, err := time.LoadLocation(tz)
+	if err != nil {
+		return nil, errors.Join(ErrInvalidTimezone, err)
+	}
+	return loc, nil
 }

@@ -1,4 +1,4 @@
-import type { additionalDataHeaders } from "~/composables/types";
+import type { additionalDataHeaders } from '@/composables/types/metrics'
 import type { ColorPicker } from "~/composables/colorpicker";
 
 type AdditionalDataRow = {

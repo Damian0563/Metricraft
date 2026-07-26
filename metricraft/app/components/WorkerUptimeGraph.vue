@@ -13,7 +13,7 @@
 import { Chart, CategoryScale, LinearScale, BarController, BarElement, Tooltip, Title } from "chart.js";
 import { onBeforeUnmount, onMounted, toRaw } from "vue";
 import { createWorkerUptimeChart } from "~/composables/charts/uptime";
-import type { WorkerUptimeData } from "~/composables/types";
+import type { WorkerUptimeData } from '@/composables/types/additional'
 const props = defineProps<{
 	url: string;
 	data: WorkerUptimeData;

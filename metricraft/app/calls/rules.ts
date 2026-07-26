@@ -1,4 +1,4 @@
-import type { Rule } from "@/composables/types";
+import type { Rule } from '@/composables/types/additional'
 
 export const getRules = async (): Promise<Rule[]> => {
 	try {

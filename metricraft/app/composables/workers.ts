@@ -1,4 +1,5 @@
-import type { Worker, HeaderRow } from '@/composables/types'
+import type { Worker } from '@/composables/types/additional'
+import type { HeaderRow } from '@/composables/types/metrics'
 
 export const headersToRows = (headers?: Record<string, string>): HeaderRow[] => {
 	if (!headers) return []

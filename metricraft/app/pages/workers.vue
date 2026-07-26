@@ -158,7 +158,7 @@ definePageMeta({
 import { parseApiError, truncateUrl } from '@/composables/helpers'
 import { getTeamUsers } from "@/calls/invite";
 import { getExistingWorkers, saveWorker, updateWorker, deleteWorkerEntry, getWorkerUptime } from '@/composables/workers'
-import type { Worker, WorkerUptimeData, TeamUser } from '@/composables/types'
+import type { Worker, WorkerUptimeData, TeamUser } from '@/composables/types/additional'
 const errorMessage = ref<string | null>(null)
 const cleanMessage = ref<string>('')
 const { data: existingWorkers, error: fetchError } = await useAsyncData<Worker[]>('existingWorkers', () => getExistingWorkers())

@@ -52,7 +52,7 @@ import { ChoroplethChart } from 'chartjs-chart-geo';
 import { onMounted, toRaw } from "vue";
 import { useColorPicker } from "~/composables/colorpicker";
 import { createTrafficCongestionTrends, createRouteCongestion, createHttpMethodMix, createUniqueVisitors, createThroughput, createStatusCodeDistribution, createGeographicalTraffic, createGeographicPerformance, createP95Latency, createUptimeScore } from "~/composables/charts/charts";
-import type { ChartData, WorldData } from "~/composables/types";
+import type { ChartData, WorldData } from '@/composables/types/metrics'
 const props = defineProps<{
 	name: string;
 	timeframe: string;

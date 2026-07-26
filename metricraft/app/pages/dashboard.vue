@@ -9,7 +9,7 @@
 </template>
 
 <script setup lang="ts">
-import type { dashboardInitPayload } from '@/composables/types';
+import type { dashboardInitPayload } from '@/composables/types/views'
 import { getDashboard } from "~/calls/dashboard";
 const localLoading = ref(false);
 const errorMessage = ref("");

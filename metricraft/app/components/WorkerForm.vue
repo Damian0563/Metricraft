@@ -78,7 +78,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Worker } from '@/composables/types'
+import type { Worker } from '@/composables/types/additional'
 import { useWorkerForm } from '@/composables/workers'
 
 const props = withDefaults(defineProps<{

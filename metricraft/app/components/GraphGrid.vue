@@ -13,7 +13,7 @@
 <script setup lang="ts">
 import { fetchMetric } from "~/calls/dashboard";
 import { topojson } from 'chartjs-chart-geo';
-import type { WorldData } from "~/composables/types";
+import type { WorldData } from '@/composables/types/metrics'
 const props = defineProps<{
 	metrics: Record<string, { enabled: boolean, timeframe: string }>
 }>();
