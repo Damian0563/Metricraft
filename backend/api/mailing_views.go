@@ -15,10 +15,6 @@ import (
 )
 
 func CheckRecovery(w http.ResponseWriter, r *http.Request) {
-	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
 	id := r.URL.Query().Get("id")
 	if id == "" {
 		w.WriteHeader(http.StatusBadRequest)
@@ -44,10 +40,6 @@ func CheckRecovery(w http.ResponseWriter, r *http.Request) {
 }
 
 func SendRecovery(w http.ResponseWriter, r *http.Request) {
-	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
 	var payload types.SendRecoveryUser
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		http.Error(w, "Invalid payload", http.StatusBadRequest)
@@ -86,10 +78,6 @@ func SendRecovery(w http.ResponseWriter, r *http.Request) {
 }
 
 func SendVerification(w http.ResponseWriter, r *http.Request) {
-	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
 	type sendVerificationPayload struct {
 		Mail string `json:"mail"`
 	}
@@ -126,10 +114,6 @@ func SendVerification(w http.ResponseWriter, r *http.Request) {
 }
 
 func CheckVerification(w http.ResponseWriter, r *http.Request) {
-	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
 	type checkVerificationPayload struct {
 		AppName string `json:"appName"`
 		Mail    string `json:"mail"`

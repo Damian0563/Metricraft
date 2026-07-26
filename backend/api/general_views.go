@@ -7,44 +7,31 @@ import (
 	"backend/types"
 	"encoding/csv"
 	"encoding/json"
-	"errors"
 	"github.com/jackc/pgx/v5"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 )
 
 func Welcome(w http.ResponseWriter, r *http.Request) {
 	var jsonResponse = make(map[string]any)
-	var unauthorized = false
-	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
-		w.WriteHeader(http.StatusUnauthorized)
-		jsonResponse["err"] = errors.New("Unauthorized")
+	token := auth.NewToken(r.Header.Get("Session-Token"))
+	exists, err := token.Verify()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		jsonResponse["err"] = "Error occured during checking session token. Please try again later."
 		jsonResponse["exists"] = false
-		unauthorized = true
+		response, _ := json.Marshal(jsonResponse)
+		w.Write(response)
+		return
 	}
-	if !unauthorized {
-		token := auth.NewToken(r.Header.Get("Session-Token"))
-		exists, err := token.Verify()
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			jsonResponse["err"] = "Error occured during checking session token. Please try again later."
-			jsonResponse["exists"] = false
-			return
-		}
-		jsonResponse["exists"] = exists
-		w.WriteHeader(http.StatusOK)
-	}
+	jsonResponse["exists"] = exists
+	w.WriteHeader(http.StatusOK)
 	response, _ := json.Marshal(jsonResponse)
 	w.Write(response)
 }
 
 func ToggleRealtime(w http.ResponseWriter, r *http.Request) {
-	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, true)
 	if !authed {
@@ -66,10 +53,7 @@ func ToggleRealtime(w http.ResponseWriter, r *http.Request) {
 }
 
 func ChangeMetricsHandler(w http.ResponseWriter, r *http.Request) {
-	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, true)
 	if !authed {
@@ -88,10 +72,7 @@ func ChangeMetricsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func ChangeRetention(w http.ResponseWriter, r *http.Request) {
-	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, false)
 	if !authed {
@@ -113,10 +94,7 @@ func ChangeRetention(w http.ResponseWriter, r *http.Request) {
 }
 
 func TeamMembers(w http.ResponseWriter, r *http.Request) {
-	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, false)
 	if !authed {
@@ -145,10 +123,7 @@ func TeamMembers(w http.ResponseWriter, r *http.Request) {
 }
 
 func UploadUsersFromCSV(w http.ResponseWriter, r *http.Request) {
-	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, true)
 	if !authed {
@@ -200,10 +175,7 @@ func sendInvites(invitees []string, appName string) error {
 }
 
 func SendInvites(w http.ResponseWriter, r *http.Request) {
-	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, true)
 	if !authed {
@@ -237,10 +209,7 @@ func SendInvites(w http.ResponseWriter, r *http.Request) {
 func HandleInvite(w http.ResponseWriter, r *http.Request) {
 	mail := r.URL.Query().Get("user")
 	decision := r.URL.Query().Get("action")
-	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	} else if mail == "" || decision == "" {
+	if mail == "" || decision == "" {
 		http.Error(w, "Invalid payload", http.StatusBadRequest)
 		return
 	} else if !mailer.ValidateMail(mail) {
@@ -270,10 +239,7 @@ func HandleInvite(w http.ResponseWriter, r *http.Request) {
 }
 
 func PendingInvites(w http.ResponseWriter, r *http.Request) {
-	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, true)
 	if !authed {
@@ -308,10 +274,7 @@ func PendingInvites(w http.ResponseWriter, r *http.Request) {
 }
 
 func DashboardInit(w http.ResponseWriter, r *http.Request) {
-	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, false)
 	if !authed {
@@ -349,10 +312,7 @@ func DashboardInit(w http.ResponseWriter, r *http.Request) {
 }
 
 func DashboardUrls(w http.ResponseWriter, r *http.Request) {
-	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	if authed := token.ValidateRequest(&w, false); !authed {
 		return
@@ -372,10 +332,7 @@ func DashboardUrls(w http.ResponseWriter, r *http.Request) {
 }
 
 func SaveNotificationRecipients(w http.ResponseWriter, r *http.Request) {
-	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, true)
 	if !authed {
@@ -399,10 +356,6 @@ func SaveNotificationRecipients(w http.ResponseWriter, r *http.Request) {
 }
 
 func Sign(w http.ResponseWriter, r *http.Request) {
-	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Invalid payload", http.StatusBadRequest)
