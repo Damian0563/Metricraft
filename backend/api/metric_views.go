@@ -12,7 +12,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	pb "metricraft/proto/metricraft/proto"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -63,10 +62,7 @@ func convertTimeframe(timeframe string, timezone string) (time.Time, resolutionD
 }
 
 func Navigator(w http.ResponseWriter, r *http.Request) {
-	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, false)
 	if !authed {
@@ -140,10 +136,7 @@ func Navigator(w http.ResponseWriter, r *http.Request) {
 }
 
 func SaveWorker(w http.ResponseWriter, r *http.Request) {
-	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, true)
 	if !authed {
@@ -193,10 +186,7 @@ func SaveWorker(w http.ResponseWriter, r *http.Request) {
 }
 
 func ListWorkers(w http.ResponseWriter, r *http.Request) {
-	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, true)
 	if !authed {
@@ -223,10 +213,7 @@ func ListWorkers(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteWorker(w http.ResponseWriter, r *http.Request) {
-	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, true)
 	if !authed {
@@ -269,10 +256,7 @@ func DeleteWorker(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateWorker(w http.ResponseWriter, r *http.Request) {
-	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, true)
 	if !authed {
@@ -317,10 +301,7 @@ func UpdateWorker(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetWorkerUptime(w http.ResponseWriter, r *http.Request) {
-	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, false)
 	if !authed {

@@ -1,6 +1,8 @@
+import type { FetchOptions } from "ofetch";
 import { getCookie } from "@/composables/helpers";
 
-export const useApi = () => {
+type ApiFetch = <T = unknown>(request: string, opts?: FetchOptions) => Promise<T>;
+export const useApi = (): ApiFetch => {
 	const config = useRuntimeConfig();
 	const sessionToken = useCookie<string>("session-token");
 	return $fetch.create({
@@ -12,5 +14,5 @@ export const useApi = () => {
 			if (token) headers.set("Session-Token", token);
 			options.headers = headers;
 		},
-	});
+	}) as ApiFetch;
 };

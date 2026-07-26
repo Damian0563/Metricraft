@@ -16,7 +16,7 @@ export const welcome = async (): Promise<boolean> => {
 
 export const sign = async (payload: signPayload): Promise<string | null> => {
 	try {
-		const data: string | signResponse = await useApi()(`/sign`, {
+		const data = await useApi()<signResponse>(`/sign`, {
 			method: 'POST',
 			body: payload,
 		})

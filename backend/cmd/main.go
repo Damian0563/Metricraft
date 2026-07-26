@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -49,6 +50,12 @@ func corsMiddleware(next http.Handler) http.Handler {
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
 			return
+		}
+		if secret := os.Getenv("SECRET"); secret != "" && !strings.HasPrefix(r.URL.Path, "/ws/") {
+			if secret != r.Header.Get("Authorization") {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
 		}
 		next.ServeHTTP(w, r)
 	})

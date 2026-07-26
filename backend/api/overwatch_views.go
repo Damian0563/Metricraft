@@ -7,15 +7,10 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"os"
 	"strings"
 )
 
 func AddCustomMetric(w http.ResponseWriter, r *http.Request) {
-	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, true)
 	if !authed {

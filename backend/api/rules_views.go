@@ -7,14 +7,9 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"os"
 )
 
 func AddRule(w http.ResponseWriter, r *http.Request) {
-	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	if authed := token.ValidateRequest(&w, true); !authed {
 		return
@@ -33,10 +28,6 @@ func AddRule(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetRules(w http.ResponseWriter, r *http.Request) {
-	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	if authed := token.ValidateRequest(&w, false); !authed {
 		return
@@ -57,10 +48,6 @@ func GetRules(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteRule(w http.ResponseWriter, r *http.Request) {
-	if os.Getenv("SECRET") != r.Header.Get("Authorization") && os.Getenv("SECRET") != "" {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	if authed := token.ValidateRequest(&w, false); !authed {
 		return
