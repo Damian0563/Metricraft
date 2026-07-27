@@ -17,6 +17,7 @@ export type CustomMetric = {
 	valueType: string
 	applyRules: boolean
 	chartType: ChartType
+	lastUpdate?: string
 }
 
 export type Rule = {

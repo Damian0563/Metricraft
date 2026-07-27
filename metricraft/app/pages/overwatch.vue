@@ -216,12 +216,43 @@
 						</div>
 					</div>
 				</section>
-				<section class="flex flex-col bg-gray-50/60">
+				<section class="flex flex-col flex-1 min-h-0 bg-gray-50/60">
 					<div class="px-6 py-5 border-b border-gray-100">
 						<div class="flex items-center justify-between gap-3">
 							<h2 class="text-sm font-semibold text-gray-800">Configured metrics</h2>
 							<span class="shrink-0 text-xs font-medium text-gray-500">{{ metrics.length }} defined</span>
 						</div>
+					</div>
+
+					<div v-if="metrics.length > 0" class="min-h-0 flex-1 overflow-y-auto">
+						<div v-for="metric in metrics" :key="`${metric.name}-${metric.path}-${metric.selector}`"
+							class="px-6 py-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors">
+							<p class="text-sm font-semibold text-gray-900">{{ metric.name }}</p>
+							<p class="mt-1 font-mono text-xs text-gray-600 break-all">
+								<span class="text-[#00B35C] font-semibold">{{ metric.method }}</span>
+								{{ ' ' + metric.path }}
+							</p>
+							<p class="mt-2 text-xs text-gray-500">
+								<span class="font-medium text-gray-700">{{ metric.aggregation }}</span>
+								of {{ metric.source }} <span class="font-mono text-gray-700">{{ metric.selector }}</span>
+								· {{ metric.valueType }} · {{ metric.timeframe.toLowerCase() }} · {{ metric.chartType }}
+							</p>
+							<p v-if="metric.lastUpdate" class="mt-1 text-xs text-gray-400">
+								Last updated {{ metric.lastUpdate }}
+							</p>
+						</div>
+					</div>
+
+					<div v-else class="min-h-0 flex-1 px-6 py-10 text-center">
+						<div class="mx-auto mb-3 h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
+							<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+								<path fill-rule="evenodd"
+									d="M3 3a1 1 0 000 2h14a1 1 0 100-2H3zm0 4a1 1 0 000 2h9a1 1 0 100-2H3zm0 4a1 1 0 100 2h14a1 1 0 100-2H3zm0 4a1 1 0 100 2h9a1 1 0 100-2H3z"
+									clip-rule="evenodd" />
+							</svg>
+						</div>
+						<p class="text-sm text-gray-500">No custom metrics yet.</p>
+						<p class="text-xs text-gray-400 mt-1">Create a metric to start tracking API values.</p>
 					</div>
 				</section>
 			</div>
@@ -232,13 +263,21 @@
 
 <script setup lang="ts">
 import type { ChartType, CustomMetric, MetricSource } from '@/composables/types/additional'
-import { addCustomMetric } from '@/calls/overwatch'
+import { addCustomMetric, getCustomMetrics } from '@/calls/overwatch'
 definePageMeta({
 	layout: 'dashboard',
 })
-type BodyLine = { text: string; target: boolean }
+const metrics = ref<CustomMetric[]>([])
 const loading = ref(false)
 const errorMessage = ref('')
+const { data: fetchedMetrics, error: errorFetchMetrics } = await useAsyncData('getCustomMetrics', () => getCustomMetrics(), { default: () => [] })
+watch(fetchedMetrics, (val) => {
+	metrics.value = val ? [...val] : []
+}, { immediate: true })
+if (errorFetchMetrics.value) {
+	errorMessage.value = 'Failed to fetch existing custom metrics.'
+}
+type BodyLine = { text: string; target: boolean }
 const metricName = ref('')
 const applyRules = ref(false)
 const chartType = ref<ChartType>('line')
@@ -249,7 +288,6 @@ const pathError = ref('')
 const source = ref<MetricSource>('body')
 const selector = ref('')
 const aggregation = ref<string>('avg')
-const metrics = ref<CustomMetric[]>([])
 const sourceLabel = computed(() => sources.find(s => s.id === source.value)?.label ?? '')
 const methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const
 const valueType: Ref<string> = ref('number')
@@ -367,11 +405,26 @@ const bodyLines = computed<BodyLine[]>(() => {
 const canSave = computed(() =>
 	metricName.value.trim() !== '' && path.value.trim() !== '' && pathError.value === '' && selector.value.trim() !== '')
 
+const formatMetricLastUpdate = (date = new Date()) => {
+	const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
+	const parts = new Intl.DateTimeFormat('en-US', {
+		timeZone: tz,
+		month: 'short',
+		day: 'numeric',
+		year: 'numeric',
+		hour: 'numeric',
+		minute: '2-digit',
+		hour12: true,
+	}).formatToParts(date)
+	const get = (type: Intl.DateTimeFormatPartTypes) => parts.find(p => p.type === type)?.value ?? ''
+	return `${get('month')} ${get('day')}, ${get('year')} at ${get('hour')}:${get('minute')}${get('dayPeriod').toLowerCase()}`
+}
+
 const addMetric = async () => {
 	if (!canSave.value) return
 	loading.value = true
 	try {
-		const metric: CustomMetric = {
+		const metric: Omit<CustomMetric, 'lastUpdate'> = {
 			name: metricName.value.trim(),
 			method: method.value,
 			path: path.value.trim(),
@@ -385,7 +438,7 @@ const addMetric = async () => {
 		}
 		await addCustomMetric(metric)
 		errorMessage.value = 'Custom metric saved successfully.'
-		metrics.value.push(metric)
+		metrics.value.push({ ...metric, lastUpdate: formatMetricLastUpdate() })
 	} catch (e) {
 		console.error(e)
 		errorMessage.value = 'Failed to save custom metric.'

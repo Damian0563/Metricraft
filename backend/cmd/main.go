@@ -123,6 +123,7 @@ func main() {
 	router.Get("/rules", api.GetRules)
 	router.Delete("/rules/delete", api.DeleteRule)
 	router.Post("/overwatch/metrics/add", api.AddCustomMetric)
+	router.Get("/overwatch/metrics", api.ListCustomMetrics)
 	router.Group(func(r chi.Router) {
 		r.Use(httprate.LimitByIP(6, time.Minute))
 		r.Post("/verify/send", api.SendVerification)
