@@ -33,3 +33,24 @@ func AddCustomMetric(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 }
+
+func ListCustomMetrics(w http.ResponseWriter, r *http.Request) {
+	token := auth.NewToken(r.Header.Get("Session-Token"))
+	authed := token.ValidateRequest(&w, true)
+	if !authed {
+		return
+	}
+	tz := strings.TrimSpace(r.URL.Query().Get("timezone"))
+	metrics, err := db.ListMetrics(r.Context(), tz)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	var formattedMetrics []byte
+	if formattedMetrics, err = json.Marshal(metrics); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(formattedMetrics)
+}

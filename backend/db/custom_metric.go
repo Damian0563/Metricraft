@@ -24,6 +24,7 @@ type CustomMetric struct {
 	ValueType   string `json:"valueType"`
 	ApplyRules  bool   `json:"applyRules"`
 	ChartType   string `json:"chartType"`
+	LastUpdate  string `json:"lastUpdate"`
 }
 
 func (m *CustomMetric) Initialize(ctx context.Context, tz string) error {
@@ -51,6 +52,7 @@ func dbAddCustomMetric(ctx context.Context, metric *CustomMetric, tz string) err
 	if err != nil {
 		return err
 	}
+	metric.LastUpdate = ""
 	formattedMetric, err := json.Marshal(metric)
 	if err != nil {
 		return err
@@ -58,4 +60,35 @@ func dbAddCustomMetric(ctx context.Context, metric *CustomMetric, tz string) err
 	now := time.Now().In(loc)
 	_, err = conn.Exec(ctx, "INSERT INTO custom_metrics (date, metric) VALUES ($1,$2)", now, string(formattedMetric))
 	return err
+}
+
+func ListMetrics(ctx context.Context, tz string) ([]CustomMetric, error) {
+	conn, err := GetLogsPool()
+	if err != nil {
+		return nil, err
+	}
+	var metrics []CustomMetric
+	rows, err := conn.Query(ctx, "SELECT date, metric FROM custom_metrics WHERE TRUE")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	loc, err := getLocation(tz)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var metric CustomMetric
+		var date time.Time
+		var rawMetric string
+		if err := rows.Scan(&date, &rawMetric); err != nil {
+			return nil, err
+		}
+		if err := json.Unmarshal([]byte(rawMetric), &metric); err != nil {
+			return nil, err
+		}
+		metric.LastUpdate = date.In(loc).Format("Jan 2, 2006 at 3:04pm")
+		metrics = append(metrics, metric)
+	}
+	return metrics, nil
 }
