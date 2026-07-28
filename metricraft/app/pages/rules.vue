@@ -115,7 +115,6 @@
 												class="rounded bg-gray-100 px-1 text-gray-600">{{ path.tail }}</span>
 										</div>
 									</div>
-
 									<div class="flex items-center justify-center text-[#00B35C]" aria-hidden="true">
 										<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 rotate-90 sm:rotate-0" viewBox="0 0 20 20"
 											fill="currentColor">
@@ -175,27 +174,35 @@
 				</div>
 
 				<div v-if="rulesList.length > 0" class="min-h-0 flex-1 overflow-y-auto">
-					<template v-for="entry in rulesList" :key="entry.rule">
-						<div v-if="groupingMode ? entry.mode === 'grouping' : entry.mode === 'blacklisting'"
-							class="flex items-center gap-3 px-6 py-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors">
-							<div class="min-w-0 flex-1">
-								<p class="font-mono text-sm text-gray-900 break-all leading-snug">
-									{{ entry.rule }}<span class="text-gray-300">/</span><span
-										class="text-[#00B35C] font-semibold">*</span>
-								</p>
-								<p class="mt-1 text-xs" :class="entry.matches.length > 0 ? 'text-gray-500' : 'text-gray-400 italic'">
-									{{ entry.matches.length > 5
-										? `Collapses ${entry.matches.slice(0, 5)} routes and ${entry.matches.length - 5} more`
-										: entry.matches.length > 0 ? `Collapses ${entry.matches} route${entry.matches.length === 1 ? '' :
-											's'}` : 'Waiting for matching traffic' }}
-								</p>
-							</div>
-							<button type="button" @click="removeRule(entry)" :disabled="saving"
-								class="shrink-0 px-4 py-2 text-sm font-semibold rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-								Delete
-							</button>
-						</div>
-					</template>
+					<ClientOnly>
+						<AnimatePresence>
+							<motion.div v-for="(entry, index) in rulesList" layout :key="entry.rule"
+								:initial="{ opacity: 0, height: 0 }" :animate="{ opacity: 1, height: 'auto' }"
+								:exit="{ opacity: 0, height: 0, x: 32, transition: { duration: 0.22, ease: 'easeIn' } }"
+								:transition="{ type: 'spring', stiffness: 480, damping: 34, delay: Math.min(index * 0.045, 0.27) }">
+								<div v-if="groupingMode ? entry.mode === 'grouping' : entry.mode === 'blacklisting'"
+									class="flex items-center gap-3 px-6 py-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors">
+									<div class="min-w-0 flex-1">
+										<p class="font-mono text-sm text-gray-900 break-all leading-snug">
+											{{ entry.rule }}<span class="text-gray-300">/</span><span
+												class="text-[#00B35C] font-semibold">*</span>
+										</p>
+										<p class="mt-1 text-xs"
+											:class="entry.matches.length > 0 ? 'text-gray-500' : 'text-gray-400 italic'">
+											{{ entry.matches.length > 5
+												? `Collapses ${entry.matches.slice(0, 5)} routes and ${entry.matches.length - 5} more`
+												: entry.matches.length > 0 ? `Collapses ${entry.matches} route${entry.matches.length === 1 ? '' :
+													's'}` : 'Waiting for matching traffic' }}
+										</p>
+									</div>
+									<button type="button" @click="removeRule(entry)" :disabled="saving"
+										class="shrink-0 px-4 py-2 text-sm font-semibold rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+										Delete
+									</button>
+								</div>
+							</motion.div>
+						</AnimatePresence>
+					</ClientOnly>
 				</div>
 
 				<div v-else class="min-h-0 flex-1 px-6 py-10 text-center">
@@ -220,6 +227,7 @@ definePageMeta({
 	layout: 'dashboard',
 })
 import { getRules, addRule, deleteRule } from '@/calls/rules'
+import { motion, AnimatePresence } from "motion-v"
 import { parseApiError } from '@/composables/helpers'
 import type { Rule } from '@/composables/types/additional'
 
