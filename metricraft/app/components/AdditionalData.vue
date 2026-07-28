@@ -1,32 +1,36 @@
 <template>
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm md:p-8 w-full h-full"
-		@click.self="close">
-		<div
-			class="flex w-full max-w-6xl max-h-[90vh] flex-col overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-slate-100"
-			role="dialog" aria-modal="true">
-			<div class="grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-6 py-4">
-				<button @click="createCSV"
-					class="justify-self-start flex h-8 shrink-0 items-center justify-center rounded-lg px-3 text-dark-gray transition-colors hover:bg-slate-100 hover:text-[#00F376]">
-					Export to CSV
-				</button>
-				<span class="min-w-0 truncate text-center text-dark-gray">
-					{{ props.metric }}
-				</span>
-				<button type="button" @click="close"
-					class="justify-self-end flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-dark-gray transition-colors hover:bg-slate-100 hover:text-[#00F376]"
-					aria-label="Close">
-					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-						stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
-						<line x1="18" y1="6" x2="6" y2="18"></line>
-						<line x1="6" y1="6" x2="18" y2="18"></line>
-					</svg>
-				</button>
+	<ClientOnly>
+		<Teleport to="body">
+			<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm md:p-8 w-full h-full"
+				@click.self="close">
+				<div
+					class="flex w-full max-w-6xl max-h-[90vh] flex-col overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-slate-100"
+					role="dialog" aria-modal="true">
+					<div class="grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-6 py-4">
+						<button @click="createCSV"
+							class="justify-self-start flex h-8 shrink-0 items-center justify-center rounded-lg px-3 text-dark-gray transition-colors hover:bg-slate-100 hover:text-[#00F376]">
+							Export to CSV
+						</button>
+						<span class="min-w-0 truncate text-center text-dark-gray">
+							{{ props.metric }}
+						</span>
+						<button type="button" @click="close"
+							class="justify-self-end flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-dark-gray transition-colors hover:bg-slate-100 hover:text-[#00F376]"
+							aria-label="Close">
+							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+								stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
+								<line x1="18" y1="6" x2="6" y2="18"></line>
+								<line x1="6" y1="6" x2="18" y2="18"></line>
+							</svg>
+						</button>
+					</div>
+					<div class="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+						<div ref="contentRef" class="additional-data-content"></div>
+					</div>
+				</div>
 			</div>
-			<div class="min-h-0 flex-1 overflow-y-auto px-6 py-4">
-				<div ref="contentRef" class="additional-data-content"></div>
-			</div>
-		</div>
-	</div>
+		</Teleport>
+	</ClientOnly>
 </template>
 
 <script setup lang="ts">

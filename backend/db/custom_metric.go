@@ -7,7 +7,7 @@ import (
 )
 
 type MetricOrchestrator interface {
-	Initialize(context.Context, string) error
+	Initialize(context.Context) error
 	PrepareData(context.Context, string) (string, error) //stringified data and error
 	Delete(context.Context, string) error
 	Edit(context.Context, string) error
@@ -27,8 +27,8 @@ type CustomMetric struct {
 	LastUpdate  string `json:"lastUpdate"`
 }
 
-func (m *CustomMetric) Initialize(ctx context.Context, tz string) error {
-	return dbAddCustomMetric(ctx, m, tz)
+func (m *CustomMetric) Initialize(ctx context.Context) error {
+	return dbAddCustomMetric(ctx, m)
 }
 
 func (m *CustomMetric) PrepareData(ctx context.Context) (string, error) {
@@ -36,19 +36,49 @@ func (m *CustomMetric) PrepareData(ctx context.Context) (string, error) {
 }
 
 func (m *CustomMetric) Delete(ctx context.Context) error {
-	return nil
+	return dbDeleteCustomMetric(ctx, m)
 }
 
-func (m *CustomMetric) Edit(ctx context.Context) error {
-	return nil
+func (m *CustomMetric) Edit(ctx context.Context, updated CustomMetric) error {
+	return dbEditCustomMetric(ctx, m, updated)
 }
 
-func dbAddCustomMetric(ctx context.Context, metric *CustomMetric, tz string) error {
+func dbEditCustomMetric(ctx context.Context, original *CustomMetric, updated CustomMetric) error {
 	conn, err := GetLogsPool()
 	if err != nil {
 		return err
 	}
-	loc, err := getLocation(tz)
+	original.LastUpdate = ""
+	var formattedOriginal []byte
+	if formattedOriginal, err = json.Marshal(original); err != nil {
+		return err
+	}
+	updated.LastUpdate = ""
+	var formattedUpdated []byte
+	if formattedUpdated, err = json.Marshal(updated); err != nil {
+		return err
+	}
+	now := time.Now().UTC()
+	_, err = conn.Exec(ctx, "UPDATE custom_metrics SET metric=$1, date=$2 WHERE metric=$3", string(formattedUpdated), now, string(formattedOriginal))
+	return err
+}
+
+func dbDeleteCustomMetric(ctx context.Context, metric *CustomMetric) error {
+	conn, err := GetLogsPool()
+	if err != nil {
+		return err
+	}
+	metric.LastUpdate = ""
+	var formattedMetric []byte
+	if formattedMetric, err = json.Marshal(metric); err != nil {
+		return err
+	}
+	_, err = conn.Exec(ctx, "DELETE FROM custom_metrics WHERE metric=$1", string(formattedMetric))
+	return err
+}
+
+func dbAddCustomMetric(ctx context.Context, metric *CustomMetric) error {
+	conn, err := GetLogsPool()
 	if err != nil {
 		return err
 	}
@@ -57,12 +87,12 @@ func dbAddCustomMetric(ctx context.Context, metric *CustomMetric, tz string) err
 	if err != nil {
 		return err
 	}
-	now := time.Now().In(loc)
+	now := time.Now().UTC()
 	_, err = conn.Exec(ctx, "INSERT INTO custom_metrics (date, metric) VALUES ($1,$2)", now, string(formattedMetric))
 	return err
 }
 
-func ListMetrics(ctx context.Context, tz string) ([]CustomMetric, error) {
+func ListMetrics(ctx context.Context) ([]CustomMetric, error) {
 	conn, err := GetLogsPool()
 	if err != nil {
 		return nil, err
@@ -73,10 +103,6 @@ func ListMetrics(ctx context.Context, tz string) ([]CustomMetric, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	loc, err := getLocation(tz)
-	if err != nil {
-		return nil, err
-	}
 	for rows.Next() {
 		var metric CustomMetric
 		var date time.Time
@@ -87,7 +113,7 @@ func ListMetrics(ctx context.Context, tz string) ([]CustomMetric, error) {
 		if err := json.Unmarshal([]byte(rawMetric), &metric); err != nil {
 			return nil, err
 		}
-		metric.LastUpdate = date.In(loc).Format("Jan 2, 2006 at 3:04pm")
+		metric.LastUpdate = date.UTC().Format(time.RFC3339)
 		metrics = append(metrics, metric)
 	}
 	return metrics, nil
