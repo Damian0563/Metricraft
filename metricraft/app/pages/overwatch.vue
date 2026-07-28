@@ -4,6 +4,8 @@
 			<Spinner :loading="loading" />
 		</ClientOnly>
 		<Popup :message="errorMessage" @close="errorMessage = ''" />
+		<UpdateMetricForm :open="editingMetric !== null" :metric="editingMetric" :saving="loading"
+			@close="editingMetric = null" @update="onMetricUpdate" />
 		<div class="relative flex items-center justify-center mb-6">
 			<h1 class="text-3xl font-bold text-center" style="color: #00F376;">Overwatch</h1>
 		</div>
@@ -225,22 +227,50 @@
 					</div>
 
 					<div v-if="metrics.length > 0" class="min-h-0 flex-1 overflow-y-auto">
-						<div v-for="metric in metrics" :key="`${metric.name}-${metric.path}-${metric.selector}`"
-							class="px-6 py-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors">
-							<p class="text-sm font-semibold text-gray-900">{{ metric.name }}</p>
-							<p class="mt-1 font-mono text-xs text-gray-600 break-all">
-								<span class="text-[#00B35C] font-semibold">{{ metric.method }}</span>
-								{{ ' ' + metric.path }}
-							</p>
-							<p class="mt-2 text-xs text-gray-500">
-								<span class="font-medium text-gray-700">{{ metric.aggregation }}</span>
-								of {{ metric.source }} <span class="font-mono text-gray-700">{{ metric.selector }}</span>
-								· {{ metric.valueType }} · {{ metric.timeframe.toLowerCase() }} · {{ metric.chartType }}
-							</p>
-							<p v-if="metric.lastUpdate" class="mt-1 text-xs text-gray-400">
-								Last updated {{ metric.lastUpdate }}
-							</p>
-						</div>
+						<ClientOnly>
+							<AnimatePresence mode="popLayout">
+								<motion.div v-for="(metric, index) in metrics" :key="metricKey(metric)" layout
+									class="group relative overflow-hidden border-b border-gray-100 last:border-b-0"
+									:initial="{ opacity: 0, height: 0 }" :animate="{ opacity: 1, height: 'auto' }"
+									:exit="{ opacity: 0, height: 0, x: 32, transition: { duration: 0.22, ease: 'easeIn' } }"
+									:transition="{ type: 'spring', stiffness: 480, damping: 34, delay: Math.min(index * 0.045, 0.27) }">
+									<div
+										class="flex items-center justify-between gap-3 px-6 py-4 transition-colors duration-200 hover:bg-[#00F376]/[0.04]">
+										<motion.div
+											class="min-w-0 flex-1 border-l-2 border-transparent pl-3 transition-[border-color] duration-200 group-hover:border-[#00F376]/70"
+											:initial="{ opacity: 0, x: -10 }" :animate="{ opacity: 1, x: 0 }"
+											:transition="{ delay: Math.min(index * 0.045, 0.27) + 0.08, duration: 0.28, ease: 'easeOut' }">
+											<p class="text-sm font-semibold text-gray-900 transition-colors group-hover:text-[#00B35C]">
+												{{ metric.name }}
+											</p>
+											<p class="mt-1 font-mono text-xs text-gray-600 break-all">
+												<span class="text-[#00B35C] font-semibold">{{ metric.method }}</span>
+												{{ ' ' + metric.path }}
+											</p>
+											<p class="mt-2 text-xs text-gray-500">
+												<span class="font-medium text-gray-700">{{ metric.aggregation }}</span>
+												of {{ metric.source }} <span class="font-mono text-gray-700">{{ metric.selector }}</span>
+												· {{ metric.valueType }} · {{ metric.timeframe.toLowerCase() }} · {{ metric.chartType }}
+											</p>
+											<p v-if="metric.lastUpdate" class="mt-1 text-xs text-gray-400">
+												Last updated {{ formatMetricLastUpdate(metric.lastUpdate) }}
+											</p>
+										</motion.div>
+										<motion.div class="flex shrink-0 items-center gap-3" :initial="{ opacity: 0, scale: 0.9 }"
+											:animate="{ opacity: 1, scale: 1 }"
+											:transition="{ type: 'spring', stiffness: 420, damping: 26, delay: Math.min(index * 0.045, 0.27) + 0.12 }">
+											<button type="button" @click="editingMetric = metric"
+												class="shrink-0 px-4 py-2 text-sm font-semibold rounded-lg bg-[#00F376] text-gray-900 shadow-sm hover:bg-[#00D96A] hover:shadow-md transition-all cursor-pointer">
+												Update
+											</button>
+											<button type="button"
+												class="shrink-0 px-4 py-2 text-sm font-semibold rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors cursor-pointer"
+												@click="deleteMetric(metric)">Delete</button>
+										</motion.div>
+									</div>
+								</motion.div>
+							</AnimatePresence>
+						</ClientOnly>
 					</div>
 
 					<div v-else class="min-h-0 flex-1 px-6 py-10 text-center">
@@ -263,13 +293,33 @@
 
 <script setup lang="ts">
 import type { ChartType, CustomMetric, MetricSource } from '@/composables/types/additional'
-import { addCustomMetric, getCustomMetrics } from '@/calls/overwatch'
+import { addCustomMetric, getCustomMetrics, deleteCustomMetric, updateCustomMetric } from '@/calls/overwatch'
+import { motion, AnimatePresence } from 'motion-v'
 definePageMeta({
 	layout: 'dashboard',
 })
 const metrics = ref<CustomMetric[]>([])
 const loading = ref(false)
 const errorMessage = ref('')
+const editingMetric = ref<CustomMetric | null>(null)
+const metricKey = (metric: CustomMetric) => `${metric.name}-${metric.path}-${metric.selector}-${metric.aggregation}-${metric.timeframe}-${metric.valueType}-${metric.chartType}-${metric.applyRules}`
+const formatMetricLastUpdate = (iso: string | Date) => {
+	const parsed = typeof iso === 'string' ? new Date(iso) : iso
+	if (Number.isNaN(parsed.getTime())) return ''
+	const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
+	const parts = new Intl.DateTimeFormat('en-US', {
+		timeZone: tz,
+		month: 'short',
+		day: 'numeric',
+		year: 'numeric',
+		hour: 'numeric',
+		minute: '2-digit',
+		hour12: true,
+	}).formatToParts(parsed)
+	const get = (type: Intl.DateTimeFormatPartTypes) => parts.find(p => p.type === type)?.value ?? ''
+	return `${get('month')} ${get('day')}, ${get('year')} at ${get('hour')}:${get('minute')}${get('dayPeriod').toLowerCase()}`
+}
+
 const { data: fetchedMetrics, error: errorFetchMetrics } = await useAsyncData('getCustomMetrics', () => getCustomMetrics(), { default: () => [] })
 watch(fetchedMetrics, (val) => {
 	metrics.value = val ? [...val] : []
@@ -405,21 +455,6 @@ const bodyLines = computed<BodyLine[]>(() => {
 const canSave = computed(() =>
 	metricName.value.trim() !== '' && path.value.trim() !== '' && pathError.value === '' && selector.value.trim() !== '')
 
-const formatMetricLastUpdate = (date = new Date()) => {
-	const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
-	const parts = new Intl.DateTimeFormat('en-US', {
-		timeZone: tz,
-		month: 'short',
-		day: 'numeric',
-		year: 'numeric',
-		hour: 'numeric',
-		minute: '2-digit',
-		hour12: true,
-	}).formatToParts(date)
-	const get = (type: Intl.DateTimeFormatPartTypes) => parts.find(p => p.type === type)?.value ?? ''
-	return `${get('month')} ${get('day')}, ${get('year')} at ${get('hour')}:${get('minute')}${get('dayPeriod').toLowerCase()}`
-}
-
 const addMetric = async () => {
 	if (!canSave.value) return
 	loading.value = true
@@ -438,13 +473,49 @@ const addMetric = async () => {
 		}
 		await addCustomMetric(metric)
 		errorMessage.value = 'Custom metric saved successfully.'
-		metrics.value.push({ ...metric, lastUpdate: formatMetricLastUpdate() })
+		metrics.value.push({ ...metric, lastUpdate: new Date().toISOString() })
+		resetForm()
 	} catch (e) {
 		console.error(e)
 		errorMessage.value = 'Failed to save custom metric.'
 	} finally {
-		resetForm()
 		loading.value = false
+	}
+}
+
+const onMetricUpdate = (updated: CustomMetric) => {
+	const original = editingMetric.value
+	if (!original) return
+	updateMetric(original, updated)
+}
+
+const updateMetric = async (original: CustomMetric, updated: CustomMetric) => {
+	editingMetric.value = null
+	if (metricKey(original) === metricKey(updated)) return
+	loading.value = true
+	try {
+		await updateCustomMetric(original, updated)
+		errorMessage.value = 'Custom metric updated successfully.'
+		const index = metrics.value.findIndex(m => metricKey(m) === metricKey(original))
+		if (index !== -1) {
+			metrics.value[index] = { ...updated, lastUpdate: new Date().toISOString() }
+		}
+	} catch (e) {
+		console.error(e)
+		errorMessage.value = 'Failed to update custom metric.'
+	} finally {
+		loading.value = false
+	}
+}
+
+const deleteMetric = async (metric: CustomMetric) => {
+	try {
+		await deleteCustomMetric(metric)
+		errorMessage.value = 'Custom metric deleted successfully.'
+		metrics.value.splice(metrics.value.findIndex(m => m === metric), 1)
+	} catch (e) {
+		console.error(e)
+		errorMessage.value = 'Failed to delete custom metric.'
 	}
 }
 

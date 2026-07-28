@@ -124,6 +124,8 @@ func main() {
 	router.Delete("/rules/delete", api.DeleteRule)
 	router.Post("/overwatch/metrics/add", api.AddCustomMetric)
 	router.Get("/overwatch/metrics", api.ListCustomMetrics)
+	router.Post("/overwatch/metrics/delete", api.DeleteCustomMetric)
+	router.Patch("/overwatch/metrics/update", api.UpdateCustomMetrics)
 	router.Group(func(r chi.Router) {
 		r.Use(httprate.LimitByIP(6, time.Minute))
 		r.Post("/verify/send", api.SendVerification)
