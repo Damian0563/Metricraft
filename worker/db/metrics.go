@@ -496,3 +496,47 @@ func GetUniqueVisitors(ctx context.Context, rules []*pb.Rule, start time.Time, r
 	}
 	return &pb.SimpleRepeatedDistribution{Distribution: dist}, nil
 }
+
+func GetHotHours(ctx context.Context, rules []*pb.Rule, start time.Time, timezone string) (*pb.SimpleRepeatedDistribution, error) {
+	conn, err := getLogsPool()
+	if err != nil {
+		return nil, err
+	}
+	tz := validTimezone(timezone)
+	loc := loadLocation(timezone)
+	end := time.Now().Add(time.Hour).Truncate(time.Hour).In(loc)
+	startAdjusted := start.In(loc).Truncate(time.Hour)
+	blacklisted := blacklistedRules(rules)
+	dist := make([]*pb.StringInt32Map, 24)
+	for hour := 0; hour < 24; hour++ {
+		label := fmt.Sprintf("%02d:00", hour)
+		dist[hour] = &pb.StringInt32Map{Values: map[string]int32{label: 0}}
+	}
+	res, err := conn.Query(ctx, fmt.Sprintf(`
+		SELECT
+			EXTRACT(HOUR FROM (date AT TIME ZONE $4))::int AS bucket,
+			COUNT(*) AS count
+		FROM logs
+		WHERE date >= $1 AND date < $2 AND %s
+		GROUP BY bucket
+	`, blacklistFilterSQL("url", "$3")), startAdjusted, end, blacklisted, tz)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+	for res.Next() {
+		var bucket int
+		var count int
+		if err = res.Scan(&bucket, &count); err != nil {
+			return nil, err
+		}
+		if bucket >= 0 && bucket < len(dist) {
+			label := fmt.Sprintf("%02d:00", bucket)
+			dist[bucket].Values[label] = int32(count)
+		}
+	}
+	if err := res.Err(); err != nil {
+		return nil, err
+	}
+	return &pb.SimpleRepeatedDistribution{Distribution: dist}, nil
+}

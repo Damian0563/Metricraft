@@ -134,8 +134,8 @@
 					<div v-if="users.length > 0" class="min-h-0 flex-1 overflow-y-auto p-4 space-y-2">
 						<ClientOnly>
 							<AnimatePresence>
-								<motion.div v-for="(user, index) in users" :key="user.mail" layout :initial="{ opacity: 0, height: 0 }"
-									:animate="{ opacity: 1, height: 'auto' }"
+								<motion.label v-for="(user, index) in users" :key="user.mail" layout
+									:initial="{ opacity: 0, height: 0 }" :animate="{ opacity: 1, height: 'auto' }"
 									:exit="{ opacity: 0, height: 0, x: 32, transition: { duration: 0.22, ease: 'easeIn' } }"
 									:transition="{ type: 'spring', stiffness: 480, damping: 34, delay: Math.min(index * 0.045, 0.27) }"
 									class="flex items-center gap-3 rounded-lg border bg-white px-4 py-3 transition-colors cursor-pointer"
@@ -147,7 +147,7 @@
 										{{ user.initials }}
 									</div>
 									<span class="min-w-0 flex-1 truncate text-sm font-medium text-gray-800">{{ user.mail }}</span>
-								</motion.div>
+								</motion.label>
 							</AnimatePresence>
 						</ClientOnly>
 					</div>
