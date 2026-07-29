@@ -145,6 +145,7 @@ const originalMetrics = ref<Metric[]>([
 	{ id: 8, name: 'Throughput', description: 'Requests per second measured over configurable time intervals to track traffic capacity and trends.', enabled: true, timeframe: "7d" },
 	{ id: 9, name: 'HTTP method distribution', description: 'Breakdown of HTTP methods used by clients over time.', enabled: true, timeframe: "7d" },
 	{ id: 10, name: 'Unique visitors', description: 'Number of unique visitors over time.', enabled: true, timeframe: "7d" },
+	{ id: 11, name: 'Hot hours', description: 'Most popular hours of the day.', enabled: true, timeframe: "7d" },
 ])
 watch(() => props.derivedMetrics, (metrics) => {
 	const updated = originalMetrics.value.map(metric => {

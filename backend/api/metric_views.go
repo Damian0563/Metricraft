@@ -117,6 +117,8 @@ func Navigator(w http.ResponseWriter, r *http.Request) {
 		response, err = client.GetHttpMethodDistribution(ctx, timeframeEntry)
 	case "Unique visitors":
 		response, err = client.GetUniqueVisitors(ctx, timeframeEntry)
+	case "Hot hours":
+		response, err = client.GetHotHours(ctx, timeframeEntry)
 	default:
 		break
 	}

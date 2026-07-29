@@ -15,6 +15,7 @@ service Metricraft {
   rpc getRouteCongestion(timeframe) returns (distribution);
   rpc getHttpMethodDistribution(timeframe) returns (congestion);
   rpc getUniqueVisitors(timeframe) returns (simpleRepeatedDistribution);
+  rpc getHotHours(timeframe) returns (simpleRepeatedDistribution);
 
   rpc createWorker(worker) returns (status);
   rpc deleteWorker(workerUrl) returns (status);

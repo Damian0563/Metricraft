@@ -49,3 +49,7 @@ func (s *Server) GetHttpMethodDistribution(ctx context.Context, req *pb.Timefram
 func (s *Server) GetUniqueVisitors(ctx context.Context, req *pb.Timeframe) (*pb.SimpleRepeatedDistribution, error) {
 	return db.GetUniqueVisitors(ctx, req.Rules, req.Start.AsTime(), req.Resolution, req.Timezone)
 }
+
+func (s *Server) GetHotHours(ctx context.Context, req *pb.Timeframe) (*pb.SimpleRepeatedDistribution, error) {
+	return db.GetHotHours(ctx, req.Rules, req.Start.AsTime(), req.Timezone)
+}

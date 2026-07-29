@@ -39,7 +39,7 @@
 							<div class="space-y-2 max-h-60 overflow-y-auto pr-2">
 								<ClientOnly>
 									<AnimatePresence>
-										<motion.div v-for="(email, index) in emails" :key="index" layout
+										<motion.div v-for="(email, index) in emails" :key="email" layout
 											:initial="{ opacity: 0, height: 0 }" :animate="{ opacity: 1, height: 'auto' }"
 											:exit="{ opacity: 0, height: 0, x: 32, transition: { duration: 0.22, ease: 'easeIn' } }"
 											:transition="{ type: 'spring', stiffness: 480, damping: 34, delay: Math.min(index * 0.045, 0.27) }"
@@ -141,9 +141,9 @@
 					<h2 class="text-2xl font-bold text-gray-900">Pending Verification</h2>
 					<p class="text-sm text-gray-500 mt-1">Review users waiting for access to this project.</p>
 				</div>
-				<ClientOnly>
-					<AnimatePresence>
-						<div v-if="pendingUserList.length > 0" layout class="space-y-3">
+				<div v-if="pendingUserList.length > 0" layout class="space-y-3">
+					<ClientOnly>
+						<AnimatePresence>
 							<motion.div v-for="(user, index) in pendingUserList" :key="user.mail" layout
 								:initial="{ opacity: 0, height: 0 }" :animate="{ opacity: 1, height: 'auto' }"
 								:exit="{ opacity: 0, height: 0, x: 32, transition: { duration: 0.22, ease: 'easeIn' } }"
@@ -174,10 +174,10 @@
 									</button>
 								</div>
 							</motion.div>
-						</div>
-						<p v-else class="text-sm text-gray-500">No users are pending verification.</p>
-					</AnimatePresence>
-				</ClientOnly>
+						</AnimatePresence>
+					</ClientOnly>
+				</div>
+				<p v-else class="text-sm text-gray-500">No users are pending verification.</p>
 			</div>
 		</div>
 	</div>
