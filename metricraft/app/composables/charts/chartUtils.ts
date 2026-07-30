@@ -7,8 +7,14 @@ type AdditionalDataRow = {
 	color: string | null;
 };
 
+type AdditionalDataArrayEntry = {
+	timerange: string;
+	value: number | string;
+	color?: string | null;
+};
+
 export const createAdditionalData = (
-	data: Map<string, number> | Array<{ timerange: string, value: number | string }>,
+	data: Map<string, number> | Array<AdditionalDataArrayEntry>,
 	headers: additionalDataHeaders,
 	colorPicker: ColorPicker | null = null
 ): HTMLTableElement | null => {
@@ -24,10 +30,10 @@ export const createAdditionalData = (
 			.sort((a, b) => b.value - a.value);
 	} else if (data instanceof Array) {
 		if (!data.length) return null;
-		rows = data.map(({ timerange, value }) => ({
+		rows = data.map(({ timerange, value, color }) => ({
 			utterance: timerange,
 			value,
-			color: colorPicker?.getColorForUrl(timerange) ?? null,
+			color: color ?? colorPicker?.getColorForUrl(timerange) ?? null,
 		}));
 		rows.reverse();
 	} else {
@@ -59,7 +65,7 @@ export const createAdditionalData = (
 		urlCell.classList.add('py-1.5', 'px-3', 'min-w-0');
 		const urlWrap = document.createElement('span');
 		urlWrap.classList.add('inline-flex', 'items-center', 'gap-1.5', 'min-w-0', 'max-w-full');
-		if (colorPicker && color) {
+		if (color) {
 			const dot = document.createElement('span');
 			dot.classList.add('size-2', 'shrink-0', 'rounded-full', 'ring-1', 'ring-black/5');
 			dot.style.backgroundColor = color;

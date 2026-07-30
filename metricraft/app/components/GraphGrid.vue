@@ -1,7 +1,7 @@
 <template>
 	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mx-4 md:mx-8 p-2 mb-16">
 		<Popup :message="errorMessage" @close="errorMessage = ''" />
-		<AdditionalData :data="additionalData" :metric="additionalDataName" v-if="viewingDetails"
+		<AdditionalData :show="viewingDetails" :data="additionalData" :metric="additionalDataName"
 			@close="viewingDetails = false" />
 		<div v-for="entry in enabledMetrics" :key="entry.name">
 			<Graph :name="entry.name" :data="entry.metrics" :timeframe="entry.timeframe" :worldData="worldData"
@@ -29,7 +29,7 @@ type MetricData = {
 const enabledMetrics = ref<MetricData[] | undefined>([]);
 const errorMessage = ref<string>('');
 const viewingDetails = ref<boolean>(false);
-const additionalData = ref<HTMLDivElement | null>(null);
+const additionalData = shallowRef<HTMLDivElement | null>(null);
 const additionalDataName = ref<string>('');
 const { data: worldData } = await useFetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json', {
 	transform: (world: any): WorldData => ({

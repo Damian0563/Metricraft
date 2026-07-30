@@ -1,5 +1,5 @@
 import { Chart } from "chart.js";
-import type { ChartData, HttpMethodData, HttpMethodEntry, WorldData, TrafficCongestionData, ThroughputData, ThroughputEntry, DistributionData, additionalDataHeaders, CongestionEntry, StringInt32Map } from '@/composables/types/metrics'
+import type { ChartData, HotHoursDist, simpleDataDistEntry, simpleDataDistribution, WorldData, TrafficCongestionData, ThroughputData, ThroughputEntry, DistributionData, additionalDataHeaders, CongestionEntry, StringInt32Map } from '@/composables/types/metrics'
 import { ColorPicker } from "~/composables/colorpicker";
 import { truncateUrl } from "~/composables/helpers";
 import { ChoroplethChart } from 'chartjs-chart-geo';
@@ -36,6 +36,161 @@ const emptyChoroplethChart = (canvas: HTMLCanvasElement): ChoroplethChart =>
 	new ChoroplethChart(canvas, {
 		data: { labels: [], datasets: [] },
 	}) as ChoroplethChart;
+
+export const createHotHours = (
+	canvas: HTMLCanvasElement,
+	data: HotHoursDist,
+): ChartData => {
+	try {
+		if (!data?.distribution) throw new Error('Data is empty');
+		const mapped = new Map<string, number>();
+		const labels: string[] = [];
+		const values: number[] = [];
+		let total = 0;
+		data.distribution.forEach((entry: { values: Record<string, number> }) => {
+			if (!entry.values) return;
+			for (const [hour, count] of Object.entries(entry.values)) {
+				mapped.set(hour, Number(count));
+				labels.push(hour);
+				values.push(Number(count));
+				total += Number(count);
+			}
+		});
+		if (!labels.length || !values.length || total === 0) throw new Error('Data is empty');
+		const percentsValues: number[] = values.map((value: number): number => Number((value / total * 100).toFixed(2)));
+		if (!labels.length) throw new Error('Data is empty');
+		const maxValue = Math.max(...values, 1);
+		const neonBarColor = (value: number, hover = false): string => {
+			const t = maxValue > 0 ? value / maxValue : 0;
+			const opacity = 0.25 + 0.75 * t;
+			const finalOpacity = hover ? Math.min(1, opacity + 0.12) : opacity;
+			return `rgba(0, 243, 118, ${finalOpacity.toFixed(2)})`;
+		};
+		const barColors: string[] = values.map((value) => neonBarColor(value));
+		const barHoverColors: string[] = values.map((value) => neonBarColor(value, true));
+		const stepSize = labels.length <= 12 ? 1 : 2;
+		type HotHoursChart = Chart & { $hoveredIndex?: number | null };
+		const chart: Chart = new Chart(canvas, {
+			type: 'bar',
+			plugins: [
+				{
+					id: 'hotHoursLabelHover',
+					afterInit(chart) {
+						const hotHoursChart = chart as HotHoursChart;
+						hotHoursChart.$hoveredIndex = null;
+					},
+					afterEvent(chart) {
+						const hotHoursChart = chart as HotHoursChart;
+						const active = chart.getActiveElements();
+						const nextIndex = active[0]?.index ?? null;
+						if (nextIndex === hotHoursChart.$hoveredIndex) return;
+						hotHoursChart.$hoveredIndex = nextIndex;
+						chart.update('none');
+					},
+				},
+			],
+			data: {
+				labels,
+				datasets: [{
+					label: 'Requests',
+					data: values,
+					backgroundColor: barColors,
+					hoverBackgroundColor: barHoverColors,
+					borderWidth: 0,
+					borderRadius: 6,
+					borderSkipped: false,
+					maxBarThickness: 40,
+					categoryPercentage: 0.82,
+					barPercentage: 0.9,
+				}],
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				devicePixelRatio: Math.ceil(window.devicePixelRatio || 1),
+				animation: { duration: 250 },
+				interaction: { mode: 'index', intersect: false },
+				layout: { padding: { right: 8, left: 2, bottom: 2, top: 4 } },
+				scales: {
+					x: {
+						grid: { display: false },
+						border: { display: false },
+						ticks: {
+							autoSkip: false,
+							maxRotation: 0,
+							padding: 6,
+							color: (ctx) => {
+								const hovered = (ctx.chart as HotHoursChart).$hoveredIndex;
+								return ctx.index === hovered ? '#00F376' : '#475569';
+							},
+							font: (ctx): any => ({
+								weight: ctx.index === (ctx.chart as HotHoursChart).$hoveredIndex ? 'bold' : '600',
+								size: 11,
+							}),
+							callback: (_value: string | number, index: number): string =>
+								index % stepSize === 0 || index === labels.length - 1
+									? (labels[index] ?? '')
+									: '',
+						},
+						title: {
+							display: true,
+							text: 'Hour of day',
+							color: '#475569',
+							font: { weight: 'bold', size: 13 },
+							padding: { top: 2 },
+						},
+					},
+					y: {
+						beginAtZero: true,
+						border: { display: false },
+						grid: { color: 'rgba(0,0,0,0.06)', drawTicks: false },
+						ticks: {
+							padding: 8,
+							precision: 0,
+							color: '#475569',
+							font: { weight: 'bold', size: 11 },
+						},
+						title: {
+							display: true,
+							text: 'Requests',
+							color: '#475569',
+							font: { weight: 'bold', size: 13 },
+						},
+					},
+				},
+				plugins: {
+					legend: { display: false },
+					tooltip: {
+						enabled: true,
+						displayColors: true,
+						padding: 10,
+						titleFont: { weight: 'bold', size: 13 },
+						bodyFont: { size: 12 },
+						callbacks: {
+							title: (items) => labels[items[0]?.dataIndex ?? 0] ?? '',
+							label: (item) => {
+								const index = item.dataIndex ?? 0;
+								const count = Number(item.parsed.y);
+								const share = percentsValues[index];
+								return share != null && !Number.isNaN(share)
+									? `Requests: ${count.toLocaleString()} (${share}%)`
+									: `Requests: ${count.toLocaleString()}`;
+							},
+							labelColor: (item) => {
+								const color = barColors[item.dataIndex ?? 0] ?? '#00F376';
+								return { borderColor: color, backgroundColor: color };
+							},
+						},
+					},
+				},
+			},
+		});
+		const headers: additionalDataHeaders = { h1: 'Hour', h2: 'Requests (share)' };
+		return { chart, additionalData: createAdditionalData(mapped, headers) };
+	} catch (e) {
+		return { chart: emptyChart(canvas), additionalData: null };
+	}
+}
 
 
 export const createRouteCongestion = (
@@ -1298,7 +1453,7 @@ export const createTrafficCongestionTrends = (
 
 export const createHttpMethodMix = (
 	canvas: HTMLCanvasElement,
-	data: HttpMethodData,
+	data: simpleDataDistribution,
 	timeframe: string,
 	detailed: boolean,
 ): ChartData => {
@@ -1321,7 +1476,7 @@ export const createHttpMethodMix = (
 			const mapped = new Map<string, Array<number>>();
 			const labels: string[] = [];
 			const addData: Array<{ timerange: string, value: string }> = [];
-			values.forEach((entry: HttpMethodEntry) => {
+			values.forEach((entry: simpleDataDistEntry) => {
 				if (!entry.pairing?.values) return;
 				for (const [method, count] of Object.entries(entry.pairing.values)) {
 					const key = method.toUpperCase();
@@ -1469,7 +1624,7 @@ export const createHttpMethodMix = (
 			};
 			return { chart, additionalData: createAdditionalData(addData, headers) };
 		} else {
-			values.forEach((entry: HttpMethodEntry) => {
+			values.forEach((entry: simpleDataDistEntry) => {
 				if (!entry.pairing?.values) return;
 				for (const [method, count] of Object.entries(entry.pairing.values)) {
 					const key = method.toUpperCase();
@@ -1542,7 +1697,6 @@ export const createHttpMethodMix = (
 			return { chart, additionalData: createAdditionalData(cumulativeMap, headers) };
 		}
 	} catch (e) {
-		console.error(e);
 		return { chart: emptyChart(canvas), additionalData: null };
 	}
 }
