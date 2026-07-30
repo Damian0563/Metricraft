@@ -6,11 +6,17 @@ export type WorldData = {
 	countries: any;
 }
 
-export type HttpMethodData = {
-	values: Array<HttpMethodEntry>
+export type HotHoursDist = {
+	distribution: Array<{
+		values: Record<string, number>;
+	}>
 }
 
-export type HttpMethodEntry = {
+export type simpleDataDistribution = {
+	values: Array<simpleDataDistEntry>
+}
+
+export type simpleDataDistEntry = {
 	timerange: string;
 	pairing?: StringInt32Map;
 };

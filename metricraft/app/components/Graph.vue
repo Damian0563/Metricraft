@@ -12,7 +12,7 @@
 				<div class="flex justify-start gap-2">
 					<button
 						class="cursor-pointer shadow-sm rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-9 text-xs font-medium text-slate-700 transition-colors hover:border-slate-300 focus:border-[#00F376] focus:outline-none focus:ring-2 focus:ring-[#00F376]/30"
-						@click="seeDetails = !seeDetails; emit('seeDetails', { metric: props.name, additionalData: additionalDataRef })">
+						@click="openDetails">
 						View details
 					</button>
 					<button
@@ -27,12 +27,16 @@
 						<select :value="props.timeframe"
 							@change="emit('timeframeChange', { metric: props.name, timeframe: ($event.target as HTMLSelectElement).value as string })"
 							class="appearance-none cursor-pointer rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-9 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 focus:border-[#00F376] focus:outline-none focus:ring-2 focus:ring-[#00F376]/30">
+							<option value="0.5d">Last 12 hours</option>
 							<option value="1d">Last 24 hours</option>
 							<option value="7d">Last 7 days</option>
 							<option value="30d">Last 30 days</option>
 							<option value="90d">Last 90 days</option>
 							<option value="180d">Last 180 days</option>
 							<option value="365d">Last 365 days</option>
+							<option value="7t">This week</option>
+							<option value="30t">This month</option>
+							<option value="365t">This year</option>
 						</select>
 						<svg class="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
 							fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -51,7 +55,7 @@ import { ChoroplethController, GeoFeature, ColorScale, ProjectionScale } from 'c
 import { ChoroplethChart } from 'chartjs-chart-geo';
 import { onMounted, toRaw } from "vue";
 import { useColorPicker } from "~/composables/colorpicker";
-import { createTrafficCongestionTrends, createRouteCongestion, createHttpMethodMix, createUniqueVisitors, createThroughput, createStatusCodeDistribution, createGeographicalTraffic, createGeographicPerformance, createP95Latency, createUptimeScore } from "~/composables/charts/charts";
+import { createTrafficCongestionTrends, createHotHours, createRouteCongestion, createHttpMethodMix, createUniqueVisitors, createThroughput, createStatusCodeDistribution, createGeographicalTraffic, createGeographicPerformance, createP95Latency, createUptimeScore } from "~/composables/charts/charts";
 import type { ChartData, WorldData } from '@/composables/types/metrics'
 const props = defineProps<{
 	name: string;
@@ -94,6 +98,14 @@ const mutateAdditionalData = (additionalData: HTMLElement | null): void => {
 	}
 }
 
+const openDetails = (): void => {
+	seeDetails.value = !seeDetails.value;
+	emit('seeDetails', {
+		metric: props.name,
+		additionalData: additionalDataRef.value,
+	});
+}
+
 const populateChart = async (data: any): Promise<void> => {
 	const picker = colorPicker.value;
 	if (props.name === "Traffic congestion trends" && chartRef.value && picker) {
@@ -134,6 +146,10 @@ const populateChart = async (data: any): Promise<void> => {
 		mutateAdditionalData(additionalData);
 	} else if (props.name === "Unique visitors" && chartRef.value) {
 		const { chart, additionalData }: ChartData = createUniqueVisitors(chartRef.value, toRaw(data), props.timeframe)
+		chartInstance = chart;
+		mutateAdditionalData(additionalData);
+	} else if (props.name === "Hot hours" && chartRef.value) {
+		const { chart, additionalData }: ChartData = createHotHours(chartRef.value, toRaw(data))
 		chartInstance = chart;
 		mutateAdditionalData(additionalData);
 	}

@@ -107,7 +107,7 @@
 								<label for="metric-timeframe" class="block text-sm font-medium text-gray-700 mb-2">Timeframe</label>
 								<select id="metric-timeframe" v-model="timeframe"
 									class="w-full px-4 py-2 rounded-lg border border-gray-200 text-gray-800 focus:outline-none focus:border-[#00F376] transition-colors cursor-pointer">
-									<option v-for="tf in timeframes" :key="tf" :value="tf">{{ tf }}</option>
+									<option v-for="[label, value] in timeframes" :key="value" :value="value">{{ label }}</option>
 								</select>
 							</div>
 							<div class="flex-1 min-w-0 ">
@@ -206,7 +206,7 @@
 								<span class="text-gray-500">as a</span>
 								<span class="font-medium text-gray-700">{{ valueType }}</span>
 								<span class="text-gray-500">over</span>
-								<span class="font-medium text-gray-700">{{ timeframe.toLowerCase() }}</span>
+								<span class="font-medium text-gray-700">{{ timeframeLabelFor(timeframe).toLowerCase() }}</span>
 								<span class="text-gray-500">as a</span>
 								<span class="font-medium text-gray-700">{{ chartType }}</span>
 								<span class="text-gray-500">chart</span>
@@ -250,7 +250,9 @@
 											<p class="mt-2 text-xs text-gray-500">
 												<span class="font-medium text-gray-700">{{ metric.aggregation }}</span>
 												of {{ metric.source }} <span class="font-mono text-gray-700">{{ metric.selector }}</span>
-												· {{ metric.valueType }} · {{ metric.timeframe.toLowerCase() }} · {{ metric.chartType }}
+												· {{ metric.valueType }} · {{ timeframeLabelFor(metric.timeframe).toLowerCase() }} · {{
+													metric.chartType
+												}}
 											</p>
 											<p v-if="metric.lastUpdate" class="mt-1 text-xs text-gray-400">
 												Last updated {{ formatMetricLastUpdate(metric.lastUpdate) }}
@@ -353,8 +355,12 @@ watch(valueType, (t) => {
 		aggregation.value = allowed[0]!
 	}
 })
-const timeframes = ['Last hour', 'Last 12 hours', 'Last 24 hours', 'Last 7 days', 'Last 30 days', 'Last 90 days', 'Last 365 days', 'This month', 'This year'] as const
-const timeframe = ref<string>('Last hour')
+const timeframes = new Map<string, string>([['Last 12 hours', "0.5d"], ['Last 24 hours', "1d"], ['Last 7 days', "7d"], ['Last 30 days', "30d"], ['Last 90 days', "90d"], ['Last 365 days', "365d"], ['This week', '7t'], ['This month', "30t"], ['This year', "365t"]])
+const defaultTimeframe = '7d'
+const timeframe = ref(defaultTimeframe)
+const timeframeLabelFor = (tf: string) => {
+	return [...timeframes.entries()].find(([, value]) => value === tf)?.[0] ?? tf
+}
 const sources: { id: MetricSource; label: string; icon: string }[] = [
 	{
 		id: 'body',
@@ -529,5 +535,6 @@ const resetForm = () => {
 	valueType.value = 'number'
 	applyRules.value = false
 	chartType.value = 'line'
+	timeframe.value = defaultTimeframe
 }
 </script>

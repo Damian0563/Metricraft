@@ -27,14 +27,15 @@ type resolutionDays struct {
 	Days int32
 }
 
-func convertTimeframe(timeframe string, timezone string) (time.Time, resolutionDays) {
-	if timeframe == "" {
-		timeframe = "7d"
+func convertTimeframe(inputTimeframe string, timezone string) (time.Time, resolutionDays) {
+	if inputTimeframe == "" {
+		inputTimeframe = "7d"
 	}
-	timeframe = strings.ReplaceAll(timeframe, "d", "")
-	num, err := strconv.Atoi(timeframe)
-	if err != nil {
-		num = 7
+	numFloat := float32(7)
+	timeframe := strings.ReplaceAll(inputTimeframe, "d", "")
+	timeframe = strings.ReplaceAll(timeframe, "t", "")
+	if num64, err := strconv.ParseFloat(timeframe, 32); err == nil {
+		numFloat = float32(num64)
 	}
 	loc := time.UTC
 	if timezone != "" {
@@ -42,7 +43,8 @@ func convertTimeframe(timeframe string, timezone string) (time.Time, resolutionD
 			loc = loaded
 		}
 	}
-	var timeResolution map[int]resolutionDays = map[int]resolutionDays{
+	timeResolution := map[float32]resolutionDays{
+		0.5: {Days: -1},
 		1:   {Days: 0},
 		7:   {Days: 1},
 		14:  {Days: 2},
@@ -53,16 +55,37 @@ func convertTimeframe(timeframe string, timezone string) (time.Time, resolutionD
 	}
 	now := time.Now().In(loc)
 	var start time.Time
-	if num != 1 {
-		start = now.Add(-time.Duration(num) * 24 * time.Hour)
+	if strings.Contains(inputTimeframe, "d") {
+		switch numFloat {
+		case 1:
+			start = now.Add(-23 * time.Hour)
+		case 0.5:
+			start = now.Add(-11 * time.Hour)
+		default:
+			start = now.Add(-time.Duration(int(numFloat)) * 24 * time.Hour)
+		}
+	} else if strings.Contains(inputTimeframe, "t") {
+		switch numFloat {
+		case 7:
+			weekday := int(now.Weekday()) - 1
+			if weekday < 0 {
+				weekday = 6
+			}
+			start = now.Add(time.Duration(weekday) * -23 * time.Hour)
+		case 30:
+			monthday := now.Day()
+			start = now.Add(time.Duration(monthday) * -23 * time.Hour)
+		default: //365
+			yearday := now.YearDay()
+			start = now.Add(time.Duration(yearday) * -23 * time.Hour)
+		}
 	} else {
-		start = now.Add(-23 * time.Hour)
+		start = now.Add(-time.Duration(int(numFloat)) * 24 * time.Hour)
 	}
-	return start.UTC(), timeResolution[num]
+	return start.UTC(), timeResolution[numFloat]
 }
 
 func Navigator(w http.ResponseWriter, r *http.Request) {
-
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, false)
 	if !authed {
@@ -138,7 +161,6 @@ func Navigator(w http.ResponseWriter, r *http.Request) {
 }
 
 func SaveWorker(w http.ResponseWriter, r *http.Request) {
-
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, true)
 	if !authed {
@@ -188,7 +210,6 @@ func SaveWorker(w http.ResponseWriter, r *http.Request) {
 }
 
 func ListWorkers(w http.ResponseWriter, r *http.Request) {
-
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, true)
 	if !authed {
@@ -215,7 +236,6 @@ func ListWorkers(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteWorker(w http.ResponseWriter, r *http.Request) {
-
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, true)
 	if !authed {
@@ -258,7 +278,6 @@ func DeleteWorker(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateWorker(w http.ResponseWriter, r *http.Request) {
-
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, true)
 	if !authed {
