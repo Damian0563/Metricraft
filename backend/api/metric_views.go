@@ -160,6 +160,33 @@ func Navigator(w http.ResponseWriter, r *http.Request) {
 	w.Write(httpresponse)
 }
 
+func CustomMetricFetch(w http.ResponseWriter, r *http.Request) {
+	token := auth.NewToken(r.Header.Get("Session-Token"))
+	authed := token.ValidateRequest(&w, false)
+	timezone := r.URL.Query().Get("timezone")
+	tz, err := time.LoadLocation(timezone)
+	if err != nil {
+		tz = time.UTC
+	}
+	if !authed {
+		return
+	}
+	var metricData []types.MetricData
+	ctx := context.Background()
+	if err := db.GetCustomMetricsData(ctx, &metricData, tz); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	fmt.Println(metricData)
+	w.Header().Set("Content-Type", "application/json")
+	httpresponse, err := json.Marshal(metricData)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Write(httpresponse)
+}
+
 func SaveWorker(w http.ResponseWriter, r *http.Request) {
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, true)

@@ -11,6 +11,14 @@ export const useBackendUrl = (): config => {
 	}
 }
 
+export const timeframeLabelFor = (tf: string,) => {
+	const timeframes = new Map<string, string>([['Last 12 hours', "0.5d"], ['Last 24 hours', "1d"], ['Last 7 days', "7d"], ['Last 30 days', "30d"], ['Last 90 days', "90d"], ['Last 180 days', "180d"], ['Last 365 days', "365d"], ['This week', '7t'], ['This month', "30t"], ['This year', "365t"]])
+	return [...timeframes.entries()].find(([, value]) => value === tf)?.[0] ?? tf
+}
+
+export const timeframeValueFor = (tf: string,) => {
+	return [...new Map<string, string>([['Last 12 hours', "0.5d"], ['Last 24 hours', "1d"], ['Last 7 days', "7d"], ['Last 30 days', "30d"], ['Last 90 days', "90d"], ['Last 180 days', "180d"], ['Last 365 days', "365d"], ['This week', '7t'], ['This month', "30t"], ['This year', "365t"]]).entries()].find(([key]) => key === tf)?.[1] ?? tf
+}
 export const truncateUrl = (url: string, max = 20): string => {
 	if (url.length <= max) return url;
 	return `${url.slice(0, max - 1)}…`;

@@ -295,6 +295,7 @@
 
 <script setup lang="ts">
 import type { ChartType, CustomMetric, MetricSource } from '@/composables/types/additional'
+import { timeframeLabelFor } from '@/composables/helpers'
 import { addCustomMetric, getCustomMetrics, deleteCustomMetric, updateCustomMetric } from '@/calls/overwatch'
 import { motion, AnimatePresence } from 'motion-v'
 definePageMeta({
@@ -355,12 +356,9 @@ watch(valueType, (t) => {
 		aggregation.value = allowed[0]!
 	}
 })
-const timeframes = new Map<string, string>([['Last 12 hours', "0.5d"], ['Last 24 hours', "1d"], ['Last 7 days', "7d"], ['Last 30 days', "30d"], ['Last 90 days', "90d"], ['Last 365 days', "365d"], ['This week', '7t'], ['This month', "30t"], ['This year', "365t"]])
+const timeframes = new Map<string, string>([['Last 12 hours', "0.5d"], ['Last 24 hours', "1d"], ['Last 7 days', "7d"], ['Last 30 days', "30d"], ['Last 90 days', "90d"], ['Last 180 days', "180d"], ['Last 365 days', "365d"], ['This week', '7t'], ['This month', "30t"], ['This year', "365t"]])
 const defaultTimeframe = '7d'
 const timeframe = ref(defaultTimeframe)
-const timeframeLabelFor = (tf: string) => {
-	return [...timeframes.entries()].find(([, value]) => value === tf)?.[0] ?? tf
-}
 const sources: { id: MetricSource; label: string; icon: string }[] = [
 	{
 		id: 'body',
