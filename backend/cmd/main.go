@@ -108,6 +108,7 @@ func main() {
 	router.Post("/settings/retention", api.ChangeRetention)
 	router.Post("/settings/metrics", api.ChangeMetricsHandler)
 	router.Get("/dashboard/fetch", api.Navigator) //?persist=boolean
+	router.Get("/dashboard/custom/fetch", api.CustomMetricFetch)
 	router.Get("/dashboard/worker/list", api.ListWorkers)
 	router.Post("/dashboard/worker/new", api.SaveWorker)
 	router.Patch("/dashboard/worker/update", api.UpdateWorker)

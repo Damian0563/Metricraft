@@ -1,9 +1,11 @@
-# Caveman review — current git diff
+# Caveman review — custom metrics dashboard + styling
 
-Hot-hours chart wired; timeframe tokens extended (`0.5d`, `7t`/`30t`/`365t`); details modal animated. `0.5d` backend parse and details DOM move are the main landmines.
+Custom metrics fetched into `GraphGrid`, styled via `Graph` `custom` prop. Wiring is mostly there; timeframe refresh and chart rendering are the gaps.
 
 ## Findings
 
-`backend/api/metric_views.go:L84`: 🟡 risk: `timeResolution[numFloat]` misses bad tokens (zero value). Default resolution when key absent.
+`GraphGrid.vue:L66-74`: 🔴 bug: `handleTimeframeChange` always calls `fetchMetric` (built-in `/dashboard/fetch`). Custom cards hit wrong endpoint; timeframe change won't work. Branch on `entry.customMetrics` and refetch via custom API (or re-call `fetchCustomMetrics` + merge).
 
+`Graph.vue:L144-191`: 🔴 bug: `populateChart` has no custom-metric branch. Custom cards render styled shell + empty canvas. Add renderer keyed on chart type (or generic line/bar/pie from Overwatch config).
 
+`GraphGrid.vue:L6`: 🟡 risk: `v-for` `:key="entry.name"` collides if custom metric name matches a built-in. Key on `${entry.customMetrics}-${entry.name}` or stable id.

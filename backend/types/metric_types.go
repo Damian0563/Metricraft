@@ -1,5 +1,12 @@
 package types
 
+type MetricData struct {
+	Name          string            `json:"name"`
+	Metrics       map[string]string `json:"metrics"`
+	Timeframe     string            `json:"timeframe"`
+	CustomMetrics bool              `json:"customMetrics"`
+}
+
 type Rule struct {
 	Rule    string   `json:"rule"`
 	Matches []string `json:"matches"`

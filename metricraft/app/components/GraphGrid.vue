@@ -4,28 +4,23 @@
 		<AdditionalData :show="viewingDetails" :data="additionalData" :metric="additionalDataName"
 			@close="viewingDetails = false" />
 		<div v-for="entry in enabledMetrics" :key="entry.name">
-			<Graph :name="entry.name" :data="entry.metrics" :timeframe="entry.timeframe" :worldData="worldData"
-				@timeframe-change="handleTimeframeChange($event)" @see-details="handleDetails($event)" />
+			<Graph :name="entry.name" :custom="!!entry.customMetrics" :data="entry.metrics" :timeframe="entry.timeframe"
+				:worldData="worldData" @timeframe-change="handleTimeframeChange($event)" @see-details="handleDetails($event)" />
 		</div>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { fetchMetric } from "~/calls/dashboard";
+import { fetchMetric, fetchCustomMetrics } from "~/calls/dashboard";
 import { topojson } from 'chartjs-chart-geo';
-import type { WorldData } from '@/composables/types/metrics'
+import { timeframeValueFor } from '@/composables/helpers';
+import type { WorldData, MetricData } from '@/composables/types/metrics';
 const props = defineProps<{
 	metrics: Record<string, { enabled: boolean, timeframe: string }>
 }>();
 const emit = defineEmits<{
 	load: [value: void]
 }>();
-
-type MetricData = {
-	name: string;
-	metrics: any;
-	timeframe: string;
-};
 const enabledMetrics = ref<MetricData[] | undefined>([]);
 const errorMessage = ref<string>('');
 const viewingDetails = ref<boolean>(false);
@@ -44,12 +39,14 @@ const fetchAllMetrics = async (enabled: Record<string, { enabled: boolean, timef
 			(entry): entry is [string, { enabled: boolean, timeframe: string }] => entry[1]?.enabled === true
 		)
 		const results = await Promise.all(enabledEntries.map(([name, config]) => fetchMetric(name, config.timeframe, errorMessage)))
-		emit('load')
-		return enabledEntries.map(([name, config], index) => ({
+		const customMetrics: MetricData[] = await fetchCustomMetrics(errorMessage)
+		const standardMetrics: MetricData[] = enabledEntries.map(([name, config], index) => ({
 			name,
 			metrics: results[index],
 			timeframe: config.timeframe,
-		}))
+			customMetrics: false,
+		}));
+		return standardMetrics.concat(customMetrics.map((metric) => ({ ...metric, timeframe: timeframeValueFor(metric.timeframe) })));
 	} catch (_) {
 		emit('load')
 		errorMessage.value = 'Something went wrong, Check your internet connection and try again.'

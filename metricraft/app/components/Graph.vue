@@ -1,23 +1,49 @@
 <template>
 	<div
-		class="flex flex-col rounded-xl shadow-lg bg-white w-full text-black ring-1 ring-slate-100 h-96 md:h-[26rem] lg:h-[30rem]">
-		<h1 class="text-2xl font-bold text-center mt-6 mb-2 shrink-0 text-slate-800">{{ props.name }}</h1>
+		:class="[
+			'relative flex flex-col overflow-hidden rounded-xl w-full text-black h-96 md:h-[26rem] lg:h-[30rem] transition-shadow duration-300',
+			props.custom
+				? 'bg-white shadow-[0_10px_40px_-8px_rgba(0,243,118,0.16),0_4px_14px_-4px_rgba(15,23,42,0.07)] ring-1 ring-[#00F376]/25'
+				: 'bg-white shadow-lg ring-1 ring-slate-100',
+		]">
+		<div
+			v-if="props.custom"
+			class="pointer-events-none absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-[#00F376] to-[#00B35C]"
+			aria-hidden="true" />
+		<div class="shrink-0 px-5 pt-6 pb-2 text-center">
+			<p
+				v-if="props.custom"
+				class="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#00B35C]">
+				Overwatch · Custom
+			</p>
+			<h1
+				:class="[
+					'text-2xl font-bold text-slate-800',
+					props.custom && 'tracking-tight text-slate-900',
+				]">
+				{{ props.name }}
+			</h1>
+		</div>
 		<div class="flex flex-col flex-1 min-h-0 px-5 pb-5 gap-3">
 			<CustomGraphHeader :data="{ metric: props.name, data: props.data }" />
-			<div class="relative flex-1 min-h-0 rounded-lg">
+			<div
+				:class="[
+					'relative flex-1 min-h-0 rounded-lg',
+					props.custom && 'bg-slate-50/70 ring-1 ring-inset ring-[#00F376]/12',
+				]">
 				<canvas ref="chartRef"></canvas>
 			</div>
 			<div ref="additionalDataRef" class="hidden" aria-hidden="true"></div>
 			<div class="flex justify-between shrink-0">
 				<div class="flex justify-start gap-2">
 					<button
-						class="cursor-pointer shadow-sm rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-9 text-xs font-medium text-slate-700 transition-colors hover:border-slate-300 focus:border-[#00F376] focus:outline-none focus:ring-2 focus:ring-[#00F376]/30"
+						:class="controlClass"
 						@click="openDetails">
 						View details
 					</button>
 					<button
 						v-if="props.name === 'Status code distribution' || props.name === 'HTTP method distribution' || props.name === 'Traffic congestion trends'"
-						class="cursor-pointer shadow-sm rounded-lg border border-slate-200 bg-slate-50 py-1.5 px-3 text-xs font-medium text-slate-700 transition-colors hover:border-slate-300 focus:border-[#00F376] focus:outline-none focus:ring-2 focus:ring-[#00F376]/30"
+						:class="controlClass"
 						@click="toggleDetailed">
 						{{ detailedMode ? 'Grouped view' : 'Detailed view' }}
 					</button>
@@ -26,7 +52,7 @@
 					<div class="relative">
 						<select :value="props.timeframe"
 							@change="emit('timeframeChange', { metric: props.name, timeframe: ($event.target as HTMLSelectElement).value as string })"
-							class="appearance-none cursor-pointer rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-9 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 focus:border-[#00F376] focus:outline-none focus:ring-2 focus:ring-[#00F376]/30">
+							:class="[controlClass, 'appearance-none pr-9']">
 							<option value="0.5d">Last 12 hours</option>
 							<option value="1d">Last 24 hours</option>
 							<option value="7d">Last 7 days</option>
@@ -57,12 +83,21 @@ import { onMounted, toRaw } from "vue";
 import { useColorPicker } from "~/composables/colorpicker";
 import { createTrafficCongestionTrends, createHotHours, createRouteCongestion, createHttpMethodMix, createUniqueVisitors, createThroughput, createStatusCodeDistribution, createGeographicalTraffic, createGeographicPerformance, createP95Latency, createUptimeScore } from "~/composables/charts/charts";
 import type { ChartData, WorldData } from '@/composables/types/metrics'
-const props = defineProps<{
+const props = withDefaults(defineProps<{
 	name: string;
 	timeframe: string;
 	data: any;
 	worldData: WorldData | undefined;
-}>();
+	custom?: boolean;
+}>(), {
+	custom: false,
+});
+
+const controlClass = computed(() =>
+	props.custom
+		? 'cursor-pointer rounded-lg border border-[#00F376]/25 bg-[#00F376]/[0.06] py-1.5 px-3 text-xs font-medium text-[#007A45] shadow-sm transition-colors hover:border-[#00F376]/40 hover:bg-[#00F376]/10 focus:border-[#00F376] focus:outline-none focus:ring-2 focus:ring-[#00F376]/30'
+		: 'cursor-pointer rounded-lg border border-slate-200 bg-slate-50 py-1.5 px-3 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 focus:border-[#00F376] focus:outline-none focus:ring-2 focus:ring-[#00F376]/30',
+);
 const emit = defineEmits<{
 	timeframeChange: [{ metric: string, timeframe: string }];
 	seeDetails: [{ metric: string, additionalData: HTMLDivElement | null }];

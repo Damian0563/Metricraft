@@ -1,4 +1,5 @@
 import type { dashboardInitPayload } from '@/composables/types/views'
+import type { MetricData } from '@/composables/types/metrics'
 
 export const getDashboard = async (): Promise<dashboardInitPayload> => {
 	try {
@@ -38,12 +39,26 @@ export const getUrls = async (): Promise<string[]> => {
 export const fetchMetric = async (metric: string, timeframe: string, errorMessage: Ref<string>, persist: boolean = false): Promise<Map<string, number>> => {
 	const userZone = Intl.DateTimeFormat().resolvedOptions().timeZone
 	try {
-		return await useApi()<Map<string, number>>(`/dashboard/fetch?persist=${persist}&timezone=${userZone}`, {
+		return await useApi()<Map<string, number>>(`/dashboard/fetch?persist=${persist}&timezone=${encodeURIComponent(userZone)}`, {
 			method: "GET",
 			query: { metric, timeframe },
 		})
 	} catch (e) {
 		errorMessage.value = `Something went wrong while fetching "${metric}" metrics.`
 		return new Map<string, number>()
+	}
+}
+
+export const fetchCustomMetrics = async (errorMessage: Ref<string>): Promise<MetricData[]> => {
+	const userZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+	try {
+		return await useApi()<MetricData[]>(`/dashboard/custom/fetch?timezone=${encodeURIComponent(userZone)}`, {
+			method: "GET",
+			responseType: "json",
+		})
+	} catch (e) {
+		console.error(e)
+		errorMessage.value = `Something went wrong while fetching custom metrics.`
+		return []
 	}
 }
