@@ -42,7 +42,7 @@ func Navigator(w http.ResponseWriter, r *http.Request) {
 	} else {
 		persistChan <- nil
 	}
-	convertedTimeframe, resolution := db.ConvertTimeframe(timeframe, timezone)
+	convertedTimeframe, resolution := convertTimeframe(timeframe, timezone)
 	var response any
 	var err error
 	ctx := context.Background()
@@ -131,7 +131,8 @@ func CustomMetricFetch(w http.ResponseWriter, r *http.Request) {
 		wg.Add(1)
 		go func(metric db.CustomMetric) {
 			defer wg.Done()
-			start, resolution := db.ConvertTimeframe(metric.Timeframe, timezone)
+			standardizedTimeframe := standardizeTimeframe(metric.Timeframe)
+			start, resolution := convertTimeframe(standardizedTimeframe, timezone)
 			resp, err := client.GetCustomMetricData(ctx, &pb.CustomMetricRequest{
 				Metric: &pb.CustomMetric{
 					Name:        metric.Name,
@@ -151,8 +152,10 @@ func CustomMetricFetch(w http.ResponseWriter, r *http.Request) {
 				Rules:      ruleInput,
 			})
 			if err != nil {
+				fmt.Println(err)
 				return
 			}
+			//fmt.Println(resp)
 			mu.Lock()
 			metricData = append(metricData, types.MetricData{
 				Name:          metric.Name,

@@ -44,7 +44,7 @@ func GetTrafficCongestion(ctx context.Context, rules []*pb.Rule, startDate time.
 		) filtered
 		GROUP BY bucket, grouped_url
 		ORDER BY COUNT(*) DESC
-	`, groupedUrlSQL("url", "$8"), blacklistFilterSQL("url", "$7")),
+	`, groupedUrlSQL("$8"), blacklistFilterSQL("$7")),
 		alignedStart, endDate, increment.Seconds(), storageTimezone, tz, truncPeriod, blacklisted, grouping)
 	if err != nil {
 		return nil, err
@@ -81,7 +81,7 @@ func GetGeographicalTraffic(ctx context.Context, rules []*pb.Rule, startDate tim
 		FROM logs
 		WHERE date > $1 AND date <= $2 AND %s
 		GROUP BY country
-		ORDER BY COUNT(*) DESC`, blacklistFilterSQL("url", "$3")),
+		ORDER BY COUNT(*) DESC`, blacklistFilterSQL("$3")),
 		startDate, endDate, blacklisted)
 	if err != nil {
 		return nil, err
@@ -119,7 +119,7 @@ func GetP95Latency(ctx context.Context, rules []*pb.Rule, startDate time.Time, t
 				AND %s
 		) filtered
 		GROUP BY grouped_url
-		ORDER BY percentile DESC`, groupedUrlSQL("url", "$4"), blacklistFilterSQL("url", "$3")),
+		ORDER BY percentile DESC`, groupedUrlSQL("$4"), blacklistFilterSQL("$3")),
 		startDate, endDate, blacklisted, grouping)
 	if err != nil {
 		return nil, err
@@ -157,7 +157,7 @@ func GetUptimeScore(ctx context.Context, rules []*pb.Rule, startDate time.Time, 
 				AND %s
 		) filtered
 		GROUP BY grouped_url
-		ORDER BY availability DESC`, groupedUrlSQL("url", "$4"), blacklistFilterSQL("url", "$3")),
+		ORDER BY availability DESC`, groupedUrlSQL("$4"), blacklistFilterSQL("$3")),
 		startDate, endDate, blacklisted, grouping)
 	if err != nil {
 		return nil, err
@@ -205,7 +205,7 @@ func GetThroughput(ctx context.Context, rules []*pb.Rule, start time.Time, resol
 		FROM logs
 		WHERE date > $1 AND date <= $2 AND %s
 		GROUP BY bucket
-	`, blacklistFilterSQL("url", "$7")),
+	`, blacklistFilterSQL("$7")),
 		alignedStart, endDate, increment.Seconds(), storageTimezone, tz, truncPeriod, blacklisted)
 	if err != nil {
 		return nil, err
@@ -234,7 +234,7 @@ func GetThroughput(ctx context.Context, rules []*pb.Rule, start time.Time, resol
 	err = conn.QueryRow(ctx, fmt.Sprintf(`
 		SELECT COUNT(DISTINCT "user")
 		FROM logs
-		WHERE date > $1 AND date <= $2 AND %s`, blacklistFilterSQL("url", "$3")),
+		WHERE date > $1 AND date <= $2 AND %s`, blacklistFilterSQL("$3")),
 		alignedStart, endDate, blacklisted).Scan(&uniqUsers)
 	if err != nil {
 		return nil, err
@@ -261,7 +261,7 @@ func GetGeographicalPerformance(ctx context.Context, rules []*pb.Rule, startDate
 				AND %s
 		) filtered
 		GROUP BY country
-		ORDER BY median DESC`, blacklistFilterSQL("url", "$3")),
+		ORDER BY median DESC`, blacklistFilterSQL("$3")),
 		alignedStart, endDate, blacklisted)
 	if err != nil {
 		return nil, err
@@ -298,7 +298,7 @@ func GetStatusCodeDistribution(ctx context.Context, rules []*pb.Rule, startDate 
 		FROM logs
 		WHERE date >= $1 AND date < $2 AND %s
 		GROUP BY status
-		ORDER BY COUNT(*) DESC`, blacklistFilterSQL("url", "$3")),
+		ORDER BY COUNT(*) DESC`, blacklistFilterSQL("$3")),
 		start, end, blacklisted)
 	if err != nil {
 		return nil, err
@@ -336,7 +336,7 @@ func GetRouteCongestion(ctx context.Context, rules []*pb.Rule, start time.Time, 
 				AND %s
 		) filtered
 		GROUP BY grouped_url
-		ORDER BY COUNT(*) DESC`, groupedUrlSQL("url", "$4"), blacklistFilterSQL("url", "$3")),
+		ORDER BY COUNT(*) DESC`, groupedUrlSQL("$4"), blacklistFilterSQL("$3")),
 		alignedStart, end, blacklisted, grouping)
 	if err != nil {
 		return nil, err
@@ -387,7 +387,7 @@ func GetHttpMethodDistribution(ctx context.Context, rules []*pb.Rule, startDate 
 			FROM logs
 			WHERE date >= $1 AND date < $2 AND %s
 		) filtered
-		GROUP BY bucket, method`, blacklistFilterSQL("url", "$7")),
+		GROUP BY bucket, method`, blacklistFilterSQL("$7")),
 		alignedStart, end, increment.Seconds(), storageTimezone, tz, truncPeriod, blacklisted)
 	if err != nil {
 		return nil, err
@@ -436,7 +436,7 @@ func GetUniqueVisitors(ctx context.Context, rules []*pb.Rule, start time.Time, r
 		FROM logs
 		WHERE date >= $1 AND date < $2 AND %s
 		GROUP BY bucket
-	`, blacklistFilterSQL("url", "$7")),
+	`, blacklistFilterSQL("$7")),
 		alignedStart, end, increment.Seconds(), storageTimezone, tz, truncPeriod, blacklisted)
 	if err != nil {
 		return nil, err
@@ -484,7 +484,7 @@ func GetHotHours(ctx context.Context, rules []*pb.Rule, start time.Time, timezon
 		FROM logs
 		WHERE date >= $1 AND date < $2 AND %s
 		GROUP BY bucket
-	`, blacklistFilterSQL("url", "$3")), startAdjusted, end, blacklisted, tz)
+	`, blacklistFilterSQL("$3")), startAdjusted, end, blacklisted, tz)
 	if err != nil {
 		return nil, err
 	}
@@ -523,7 +523,57 @@ func GetCustomMetricData(ctx context.Context, metric *pb.CustomMetric, rules []*
 			Value:     0,
 		})
 	}
-	blacklisted := blacklistedRules(rules)
-	fmt.Println(blacklisted, truncPeriod, conn)
-	return nil, fmt.Errorf("custom metric is not implemented yet")
+	var blacklisted []string
+	grouping := groupingRules(rules)
+	applyRules := metric.ApplyRules
+	if applyRules {
+		blacklisted = blacklistedRules(rules)
+	}
+	args := []any{alignedStart, endDate, increment.Seconds(), storageTimezone, tz, truncPeriod, blacklisted}
+	var pathParam, methodParam, groupingParam string
+	args, pathParam = appendQueryParam(args, metric.Path)
+	args, methodParam = appendQueryParam(args, metric.Method)
+	groupedURLSelect := "url"
+	if applyRules && len(grouping) > 0 {
+		args, groupingParam = appendQueryParam(args, grouping)
+		groupedURLSelect = groupedUrlSQL(groupingParam)
+	}
+	res, err := conn.Query(ctx, fmt.Sprintf(`
+		SELECT
+			FLOOR(
+				EXTRACT(EPOCH FROM
+					date_trunc($6, (date AT TIME ZONE $4) AT TIME ZONE $5)
+					- date_trunc($6, ($1 AT TIME ZONE $4) AT TIME ZONE $5)
+				) / $3
+			)::int AS bucket,
+			COUNT(*) AS count
+		FROM (
+			SELECT
+				date,
+				url,
+				%s AS grouped_url
+			FROM logs
+			WHERE %s
+		) filtered
+		WHERE date >= $1 AND date < $2 AND %s
+		GROUP BY bucket
+	`, groupedURLSelect, customMetricInnerWhere(pathParam, methodParam, groupingParam, applyRules), blacklistFilterSQL("$7")), args...)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+	for res.Next() {
+		var bucket int
+		var count int
+		if err = res.Scan(&bucket, &count); err != nil {
+			return nil, err
+		}
+		if bucket >= 0 && bucket < len(buckets) {
+			buckets[bucket].Value = int32(count)
+		}
+	}
+	if err := res.Err(); err != nil {
+		return nil, err
+	}
+	return &pb.CustomMetricData{Metrics: []*pb.CustomMetricResolutionMapping{{Data: buckets}}}, nil
 }

@@ -2,6 +2,8 @@ package db
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 	pb "metricraft/proto/metricraft/proto"
 	"time"
@@ -67,19 +69,31 @@ func getIncrementTruncPeriod(resolution int32) (time.Duration, string) {
 	return increment, truncPeriod
 }
 
-func urlPrefixMatchSQL(urlCol, ruleCol string) string {
-	return fmt.Sprintf(`(%s = %s OR (starts_with(%s, %s) AND length(%s) > length(%s) AND substring(%s, length(%s) + 1, 1) = '/'))`,
-		urlCol, ruleCol, urlCol, ruleCol, urlCol, ruleCol, urlCol, ruleCol)
+func resolveFieldName(customMetricSrc string) string {
+	switch customMetricSrc {
+	case "body":
+		return "payload"
+	case "header":
+		return "headers"
+	case "query":
+		return "url"
+	}
+	return ""
 }
 
-func blacklistFilterSQL(urlCol, param string) string {
+func urlPrefixMatchSQL(ruleCol string) string {
+	return fmt.Sprintf(`(url = %s OR (starts_with(url, %s) AND length(url) > length(%s) AND substring(url, length(%s) + 1, 1) = '/'))`,
+		ruleCol, ruleCol, ruleCol, ruleCol)
+}
+
+func blacklistFilterSQL(param string) string {
 	return fmt.Sprintf(`NOT EXISTS (
 		SELECT 1 FROM unnest(%s::text[]) AS bl(rule)
 		WHERE %s
-	)`, param, urlPrefixMatchSQL(urlCol, "bl.rule"))
+	)`, param, urlPrefixMatchSQL("bl.rule"))
 }
 
-func groupedUrlSQL(urlCol, groupingParam string) string {
+func groupedUrlSQL(groupingParam string) string {
 	return fmt.Sprintf(`COALESCE(
 		(
 			SELECT g.rule
@@ -88,6 +102,28 @@ func groupedUrlSQL(urlCol, groupingParam string) string {
 			ORDER BY ord
 			LIMIT 1
 		),
-		%s
-	)`, groupingParam, urlPrefixMatchSQL(urlCol, "g.rule"), urlCol)
+		url
+	)`, groupingParam, urlPrefixMatchSQL("g.rule"))
+}
+
+func appendQueryParam(args []any, value any) ([]any, string) {
+	args = append(args, value)
+	return args, fmt.Sprintf("$%d", len(args))
+}
+
+func customMetricInnerWhere(pathParam, methodParam, groupingParam string, applyRules bool) string {
+	if !applyRules {
+		return fmt.Sprintf("url = %s AND method = %s", pathParam, methodParam)
+	}
+	parts := []string{
+		urlPrefixMatchSQL(pathParam),
+		fmt.Sprintf("method = %s", methodParam),
+	}
+	if groupingParam != "" {
+		parts = append(parts, fmt.Sprintf(`EXISTS (
+			SELECT 1 FROM unnest(%s::text[]) AS g(rule)
+			WHERE %s
+		)`, groupingParam, urlPrefixMatchSQL("g.rule")))
+	}
+	return strings.Join(parts, " AND ")
 }
