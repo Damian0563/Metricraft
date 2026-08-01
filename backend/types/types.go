@@ -33,3 +33,7 @@ type ExistsErrResponse struct {
 	Origin string
 	Owner  string
 }
+
+type ResolutionDays struct {
+	Days int32
+}

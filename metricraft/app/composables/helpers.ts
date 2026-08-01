@@ -65,6 +65,30 @@ export const invalidateCookie = (): void => {
 	document.cookie = "session-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 }
 
+export const DEFAULT_METRIC_NAMES = [
+	'Geographical traffic',
+	'P95 Latency',
+	'Traffic congestion trends',
+	'Uptime Score',
+	'Geographic performance',
+	'Status code distribution',
+	'Route congestion',
+	'Throughput',
+	'HTTP method distribution',
+	'Unique visitors',
+	'Hot hours',
+] as const
+
+export const customMetricNamingError = (name: string): string => {
+	const trimmed = name.trim()
+	if (!trimmed) return ''
+	const lower = trimmed.toLowerCase()
+	if (DEFAULT_METRIC_NAMES.some((metric) => metric.toLowerCase() === lower)) {
+		return 'This name is reserved for a built-in metric. Try a different one.'
+	}
+	return ''
+}
+
 export const parseApiError = (error: unknown, fallback: string): string => {
 	if (!error || typeof error !== 'object') return fallback
 

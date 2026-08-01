@@ -53,3 +53,7 @@ func (s *Server) GetUniqueVisitors(ctx context.Context, req *pb.Timeframe) (*pb.
 func (s *Server) GetHotHours(ctx context.Context, req *pb.Timeframe) (*pb.SimpleRepeatedDistribution, error) {
 	return db.GetHotHours(ctx, req.Rules, req.Start.AsTime(), req.Timezone)
 }
+
+func (s *Server) GetCustomMetricData(ctx context.Context, req *pb.CustomMetricRequest) (*pb.CustomMetricData, error) {
+	return db.GetCustomMetricData(ctx, req.Metric, req.Rules, req.Start.AsTime(), req.Resolution, req.Timezone)
+}

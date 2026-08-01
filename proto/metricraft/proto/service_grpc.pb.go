@@ -30,6 +30,7 @@ const (
 	Metricraft_GetHttpMethodDistribution_FullMethodName  = "/metricraft.Metricraft/getHttpMethodDistribution"
 	Metricraft_GetUniqueVisitors_FullMethodName          = "/metricraft.Metricraft/getUniqueVisitors"
 	Metricraft_GetHotHours_FullMethodName                = "/metricraft.Metricraft/getHotHours"
+	Metricraft_GetCustomMetricData_FullMethodName        = "/metricraft.Metricraft/getCustomMetricData"
 	Metricraft_CreateWorker_FullMethodName               = "/metricraft.Metricraft/createWorker"
 	Metricraft_DeleteWorker_FullMethodName               = "/metricraft.Metricraft/deleteWorker"
 	Metricraft_UpdateWorker_FullMethodName               = "/metricraft.Metricraft/updateWorker"
@@ -51,6 +52,7 @@ type MetricraftClient interface {
 	GetHttpMethodDistribution(ctx context.Context, in *Timeframe, opts ...grpc.CallOption) (*Congestion, error)
 	GetUniqueVisitors(ctx context.Context, in *Timeframe, opts ...grpc.CallOption) (*SimpleRepeatedDistribution, error)
 	GetHotHours(ctx context.Context, in *Timeframe, opts ...grpc.CallOption) (*SimpleRepeatedDistribution, error)
+	GetCustomMetricData(ctx context.Context, in *CustomMetricRequest, opts ...grpc.CallOption) (*CustomMetricData, error)
 	CreateWorker(ctx context.Context, in *Worker, opts ...grpc.CallOption) (*Status, error)
 	DeleteWorker(ctx context.Context, in *WorkerUrl, opts ...grpc.CallOption) (*Status, error)
 	UpdateWorker(ctx context.Context, in *Worker, opts ...grpc.CallOption) (*Status, error)
@@ -175,6 +177,16 @@ func (c *metricraftClient) GetHotHours(ctx context.Context, in *Timeframe, opts 
 	return out, nil
 }
 
+func (c *metricraftClient) GetCustomMetricData(ctx context.Context, in *CustomMetricRequest, opts ...grpc.CallOption) (*CustomMetricData, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CustomMetricData)
+	err := c.cc.Invoke(ctx, Metricraft_GetCustomMetricData_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *metricraftClient) CreateWorker(ctx context.Context, in *Worker, opts ...grpc.CallOption) (*Status, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Status)
@@ -230,6 +242,7 @@ type MetricraftServer interface {
 	GetHttpMethodDistribution(context.Context, *Timeframe) (*Congestion, error)
 	GetUniqueVisitors(context.Context, *Timeframe) (*SimpleRepeatedDistribution, error)
 	GetHotHours(context.Context, *Timeframe) (*SimpleRepeatedDistribution, error)
+	GetCustomMetricData(context.Context, *CustomMetricRequest) (*CustomMetricData, error)
 	CreateWorker(context.Context, *Worker) (*Status, error)
 	DeleteWorker(context.Context, *WorkerUrl) (*Status, error)
 	UpdateWorker(context.Context, *Worker) (*Status, error)
@@ -276,6 +289,9 @@ func (UnimplementedMetricraftServer) GetUniqueVisitors(context.Context, *Timefra
 }
 func (UnimplementedMetricraftServer) GetHotHours(context.Context, *Timeframe) (*SimpleRepeatedDistribution, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetHotHours not implemented")
+}
+func (UnimplementedMetricraftServer) GetCustomMetricData(context.Context, *CustomMetricRequest) (*CustomMetricData, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetCustomMetricData not implemented")
 }
 func (UnimplementedMetricraftServer) CreateWorker(context.Context, *Worker) (*Status, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateWorker not implemented")
@@ -508,6 +524,24 @@ func _Metricraft_GetHotHours_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Metricraft_GetCustomMetricData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CustomMetricRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetricraftServer).GetCustomMetricData(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Metricraft_GetCustomMetricData_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetricraftServer).GetCustomMetricData(ctx, req.(*CustomMetricRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Metricraft_CreateWorker_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Worker)
 	if err := dec(in); err != nil {
@@ -630,6 +664,10 @@ var Metricraft_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "getHotHours",
 			Handler:    _Metricraft_GetHotHours_Handler,
+		},
+		{
+			MethodName: "getCustomMetricData",
+			Handler:    _Metricraft_GetCustomMetricData_Handler,
 		},
 		{
 			MethodName: "createWorker",

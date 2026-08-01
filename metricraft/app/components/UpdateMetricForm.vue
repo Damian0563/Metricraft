@@ -32,8 +32,10 @@
 						<div class="min-h-0 flex-1 overflow-y-auto px-8 py-6">
 							<div class="space-y-6">
 								<div>
-									<label :for="`${idPrefix}-name`" class="mb-1.5 block text-sm font-medium text-gray-700">Metric
-										name</label>
+									<div class="mb-1.5 flex items-baseline justify-between gap-3">
+										<label :for="`${idPrefix}-name`" class="text-sm font-medium text-gray-700">Metric name</label>
+										<p v-if="namingError" class="text-right text-xs text-red-500">{{ namingError }}</p>
+									</div>
 									<input :id="`${idPrefix}-name`" v-model="metricName" type="text" placeholder="Checkout order total"
 										class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 transition-colors focus:border-[#00F376] focus:outline-none" />
 								</div>
@@ -147,6 +149,7 @@
 <script setup lang="ts">
 import { AnimatePresence, motion } from 'motion-v'
 import type { ChartType, CustomMetric, MetricSource } from '@/composables/types/additional'
+import { customMetricNamingError } from '@/composables/helpers'
 
 const props = defineProps<{
 	open: boolean
@@ -258,8 +261,10 @@ const selectorHelp = computed(() => {
 	}
 })
 
+const namingError = computed(() => customMetricNamingError(metricName.value))
+
 const canSave = computed(() =>
-	metricName.value.trim() !== '' && path.value.trim() !== '' && pathError.value === '' && selector.value.trim() !== '',
+	metricName.value.trim() !== '' && path.value.trim() !== '' && pathError.value === '' && namingError.value === '' && selector.value.trim() !== '',
 )
 
 const submit = () => {

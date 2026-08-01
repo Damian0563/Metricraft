@@ -33,7 +33,7 @@ func ListCustomMetrics(w http.ResponseWriter, r *http.Request) {
 	if !authed {
 		return
 	}
-	metrics, err := db.ListMetrics(r.Context())
+	metrics, err := db.ListCustomMetrics(r.Context())
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
