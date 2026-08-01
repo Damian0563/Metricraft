@@ -54,6 +54,19 @@ func groupingRules(rules []*pb.Rule) []string {
 	return grouping
 }
 
+func getIncrementTruncPeriod(resolution int32) (time.Duration, string) {
+	var increment time.Duration
+	var truncPeriod string
+	if resolution == 0 {
+		increment = time.Hour
+		truncPeriod = "hour"
+	} else {
+		increment = time.Hour * 24 * time.Duration(resolution)
+		truncPeriod = "day"
+	}
+	return increment, truncPeriod
+}
+
 func urlPrefixMatchSQL(urlCol, ruleCol string) string {
 	return fmt.Sprintf(`(%s = %s OR (starts_with(%s, %s) AND length(%s) > length(%s) AND substring(%s, length(%s) + 1, 1) = '/'))`,
 		urlCol, ruleCol, urlCol, ruleCol, urlCol, ruleCol, urlCol, ruleCol)

@@ -44,7 +44,10 @@
 					</div>
 					<div class="space-y-6">
 						<div>
-							<label for="metric-name" class="block text-sm font-medium text-gray-700 mb-2">Metric name</label>
+							<div class="flex items-baseline justify-between gap-3 mb-2">
+								<label for="metric-name" class="text-sm font-medium text-gray-700">Metric name</label>
+								<p v-if="namingError" class="text-xs text-red-500 text-right">{{ namingError }}</p>
+							</div>
 							<input id="metric-name" v-model="metricName" type="text" placeholder="Checkout order total"
 								class="w-full px-4 py-2 rounded-lg border border-gray-200 text-gray-800 focus:outline-none focus:border-[#00F376] transition-colors" />
 							<p class="mt-2 text-xs text-gray-500">A human-friendly label shown on your dashboards.</p>
@@ -295,7 +298,7 @@
 
 <script setup lang="ts">
 import type { ChartType, CustomMetric, MetricSource } from '@/composables/types/additional'
-import { timeframeLabelFor } from '@/composables/helpers'
+import { customMetricNamingError, timeframeLabelFor } from '@/composables/helpers'
 import { addCustomMetric, getCustomMetrics, deleteCustomMetric, updateCustomMetric } from '@/calls/overwatch'
 import { motion, AnimatePresence } from 'motion-v'
 definePageMeta({
@@ -356,6 +359,8 @@ watch(valueType, (t) => {
 		aggregation.value = allowed[0]!
 	}
 })
+
+const namingError = computed(() => customMetricNamingError(metricName.value))
 const timeframes = new Map<string, string>([['Last 12 hours', "0.5d"], ['Last 24 hours', "1d"], ['Last 7 days', "7d"], ['Last 30 days', "30d"], ['Last 90 days', "90d"], ['Last 180 days', "180d"], ['Last 365 days', "365d"], ['This week', '7t'], ['This month', "30t"], ['This year', "365t"]])
 const defaultTimeframe = '7d'
 const timeframe = ref(defaultTimeframe)
@@ -457,7 +462,7 @@ const bodyLines = computed<BodyLine[]>(() => {
 })
 
 const canSave = computed(() =>
-	metricName.value.trim() !== '' && path.value.trim() !== '' && pathError.value === '' && selector.value.trim() !== '')
+	metricName.value.trim() !== '' && path.value.trim() !== '' && pathError.value === '' && namingError.value === '' && selector.value.trim() !== '')
 
 const addMetric = async () => {
 	if (!canSave.value) return

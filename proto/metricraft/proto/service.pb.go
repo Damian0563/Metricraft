@@ -854,6 +854,338 @@ func (x *Congestion) GetValues() []*CongestionEntry {
 	return nil
 }
 
+type CustomMetric struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Method        string                 `protobuf:"bytes,2,opt,name=method,proto3" json:"method,omitempty"`
+	Path          string                 `protobuf:"bytes,3,opt,name=path,proto3" json:"path,omitempty"`
+	Source        string                 `protobuf:"bytes,4,opt,name=source,proto3" json:"source,omitempty"`
+	Selector      string                 `protobuf:"bytes,5,opt,name=selector,proto3" json:"selector,omitempty"`
+	Aggregation   string                 `protobuf:"bytes,6,opt,name=aggregation,proto3" json:"aggregation,omitempty"`
+	Timeframe     string                 `protobuf:"bytes,7,opt,name=timeframe,proto3" json:"timeframe,omitempty"`
+	ValueType     string                 `protobuf:"bytes,8,opt,name=value_type,json=valueType,proto3" json:"value_type,omitempty"`
+	ApplyRules    bool                   `protobuf:"varint,9,opt,name=apply_rules,json=applyRules,proto3" json:"apply_rules,omitempty"`
+	ChartType     string                 `protobuf:"bytes,10,opt,name=chart_type,json=chartType,proto3" json:"chart_type,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CustomMetric) Reset() {
+	*x = CustomMetric{}
+	mi := &file_service_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CustomMetric) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CustomMetric) ProtoMessage() {}
+
+func (x *CustomMetric) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CustomMetric.ProtoReflect.Descriptor instead.
+func (*CustomMetric) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *CustomMetric) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CustomMetric) GetMethod() string {
+	if x != nil {
+		return x.Method
+	}
+	return ""
+}
+
+func (x *CustomMetric) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
+func (x *CustomMetric) GetSource() string {
+	if x != nil {
+		return x.Source
+	}
+	return ""
+}
+
+func (x *CustomMetric) GetSelector() string {
+	if x != nil {
+		return x.Selector
+	}
+	return ""
+}
+
+func (x *CustomMetric) GetAggregation() string {
+	if x != nil {
+		return x.Aggregation
+	}
+	return ""
+}
+
+func (x *CustomMetric) GetTimeframe() string {
+	if x != nil {
+		return x.Timeframe
+	}
+	return ""
+}
+
+func (x *CustomMetric) GetValueType() string {
+	if x != nil {
+		return x.ValueType
+	}
+	return ""
+}
+
+func (x *CustomMetric) GetApplyRules() bool {
+	if x != nil {
+		return x.ApplyRules
+	}
+	return false
+}
+
+func (x *CustomMetric) GetChartType() string {
+	if x != nil {
+		return x.ChartType
+	}
+	return ""
+}
+
+type CustomMetricDataPoint struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Timerange     string                 `protobuf:"bytes,1,opt,name=timerange,proto3" json:"timerange,omitempty"`
+	Value         int32                  `protobuf:"varint,2,opt,name=value,proto3" json:"value,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CustomMetricDataPoint) Reset() {
+	*x = CustomMetricDataPoint{}
+	mi := &file_service_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CustomMetricDataPoint) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CustomMetricDataPoint) ProtoMessage() {}
+
+func (x *CustomMetricDataPoint) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CustomMetricDataPoint.ProtoReflect.Descriptor instead.
+func (*CustomMetricDataPoint) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *CustomMetricDataPoint) GetTimerange() string {
+	if x != nil {
+		return x.Timerange
+	}
+	return ""
+}
+
+func (x *CustomMetricDataPoint) GetValue() int32 {
+	if x != nil {
+		return x.Value
+	}
+	return 0
+}
+
+type CustomMetricResolutionMapping struct {
+	state         protoimpl.MessageState   `protogen:"open.v1"`
+	Data          []*CustomMetricDataPoint `protobuf:"bytes,1,rep,name=data,proto3" json:"data,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CustomMetricResolutionMapping) Reset() {
+	*x = CustomMetricResolutionMapping{}
+	mi := &file_service_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CustomMetricResolutionMapping) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CustomMetricResolutionMapping) ProtoMessage() {}
+
+func (x *CustomMetricResolutionMapping) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CustomMetricResolutionMapping.ProtoReflect.Descriptor instead.
+func (*CustomMetricResolutionMapping) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *CustomMetricResolutionMapping) GetData() []*CustomMetricDataPoint {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+type CustomMetricData struct {
+	state         protoimpl.MessageState           `protogen:"open.v1"`
+	Metrics       []*CustomMetricResolutionMapping `protobuf:"bytes,1,rep,name=metrics,proto3" json:"metrics,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CustomMetricData) Reset() {
+	*x = CustomMetricData{}
+	mi := &file_service_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CustomMetricData) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CustomMetricData) ProtoMessage() {}
+
+func (x *CustomMetricData) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CustomMetricData.ProtoReflect.Descriptor instead.
+func (*CustomMetricData) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *CustomMetricData) GetMetrics() []*CustomMetricResolutionMapping {
+	if x != nil {
+		return x.Metrics
+	}
+	return nil
+}
+
+type CustomMetricRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Metric        *CustomMetric          `protobuf:"bytes,1,opt,name=metric,proto3" json:"metric,omitempty"`
+	Start         *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=start,proto3" json:"start,omitempty"`
+	Resolution    int32                  `protobuf:"varint,3,opt,name=resolution,proto3" json:"resolution,omitempty"`
+	Timezone      string                 `protobuf:"bytes,4,opt,name=timezone,proto3" json:"timezone,omitempty"`
+	Rules         []*Rule                `protobuf:"bytes,5,rep,name=rules,proto3" json:"rules,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CustomMetricRequest) Reset() {
+	*x = CustomMetricRequest{}
+	mi := &file_service_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CustomMetricRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CustomMetricRequest) ProtoMessage() {}
+
+func (x *CustomMetricRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CustomMetricRequest.ProtoReflect.Descriptor instead.
+func (*CustomMetricRequest) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *CustomMetricRequest) GetMetric() *CustomMetric {
+	if x != nil {
+		return x.Metric
+	}
+	return nil
+}
+
+func (x *CustomMetricRequest) GetStart() *timestamppb.Timestamp {
+	if x != nil {
+		return x.Start
+	}
+	return nil
+}
+
+func (x *CustomMetricRequest) GetResolution() int32 {
+	if x != nil {
+		return x.Resolution
+	}
+	return 0
+}
+
+func (x *CustomMetricRequest) GetTimezone() string {
+	if x != nil {
+		return x.Timezone
+	}
+	return ""
+}
+
+func (x *CustomMetricRequest) GetRules() []*Rule {
+	if x != nil {
+		return x.Rules
+	}
+	return nil
+}
+
 var File_service_proto protoreflect.FileDescriptor
 
 const file_service_proto_rawDesc = "" +
@@ -922,7 +1254,37 @@ const file_service_proto_rawDesc = "" +
 	"\fdistribution\x18\x01 \x01(\v2\x1a.metricraft.StringInt32MapR\fdistribution\"A\n" +
 	"\n" +
 	"congestion\x123\n" +
-	"\x06values\x18\x01 \x03(\v2\x1b.metricraft.CongestionEntryR\x06values2\xae\b\n" +
+	"\x06values\x18\x01 \x03(\v2\x1b.metricraft.CongestionEntryR\x06values\"\xa1\x02\n" +
+	"\fcustomMetric\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x16\n" +
+	"\x06method\x18\x02 \x01(\tR\x06method\x12\x12\n" +
+	"\x04path\x18\x03 \x01(\tR\x04path\x12\x16\n" +
+	"\x06source\x18\x04 \x01(\tR\x06source\x12\x1a\n" +
+	"\bselector\x18\x05 \x01(\tR\bselector\x12 \n" +
+	"\vaggregation\x18\x06 \x01(\tR\vaggregation\x12\x1c\n" +
+	"\ttimeframe\x18\a \x01(\tR\ttimeframe\x12\x1d\n" +
+	"\n" +
+	"value_type\x18\b \x01(\tR\tvalueType\x12\x1f\n" +
+	"\vapply_rules\x18\t \x01(\bR\n" +
+	"applyRules\x12\x1d\n" +
+	"\n" +
+	"chart_type\x18\n" +
+	" \x01(\tR\tchartType\"K\n" +
+	"\x15customMetricDataPoint\x12\x1c\n" +
+	"\ttimerange\x18\x01 \x01(\tR\ttimerange\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\x05R\x05value\"V\n" +
+	"\x1dcustomMetricResolutionMapping\x125\n" +
+	"\x04data\x18\x01 \x03(\v2!.metricraft.customMetricDataPointR\x04data\"W\n" +
+	"\x10customMetricData\x12C\n" +
+	"\ametrics\x18\x01 \x03(\v2).metricraft.customMetricResolutionMappingR\ametrics\"\xdd\x01\n" +
+	"\x13customMetricRequest\x120\n" +
+	"\x06metric\x18\x01 \x01(\v2\x18.metricraft.customMetricR\x06metric\x120\n" +
+	"\x05start\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x05start\x12\x1e\n" +
+	"\n" +
+	"resolution\x18\x03 \x01(\x05R\n" +
+	"resolution\x12\x1a\n" +
+	"\btimezone\x18\x04 \x01(\tR\btimezone\x12&\n" +
+	"\x05rules\x18\x05 \x03(\v2\x10.metricraft.ruleR\x05rules2\x84\t\n" +
 	"\n" +
 	"Metricraft\x12I\n" +
 	"\x16getGeographicalTraffic\x12\x15.metricraft.timeframe\x1a\x18.metricraft.distribution\x12E\n" +
@@ -935,7 +1297,8 @@ const file_service_proto_rawDesc = "" +
 	"\x12getRouteCongestion\x12\x15.metricraft.timeframe\x1a\x18.metricraft.distribution\x12J\n" +
 	"\x19getHttpMethodDistribution\x12\x15.metricraft.timeframe\x1a\x16.metricraft.congestion\x12R\n" +
 	"\x11getUniqueVisitors\x12\x15.metricraft.timeframe\x1a&.metricraft.simpleRepeatedDistribution\x12L\n" +
-	"\vgetHotHours\x12\x15.metricraft.timeframe\x1a&.metricraft.simpleRepeatedDistribution\x126\n" +
+	"\vgetHotHours\x12\x15.metricraft.timeframe\x1a&.metricraft.simpleRepeatedDistribution\x12T\n" +
+	"\x13getCustomMetricData\x12\x1f.metricraft.customMetricRequest\x1a\x1c.metricraft.customMetricData\x126\n" +
 	"\fcreateWorker\x12\x12.metricraft.worker\x1a\x12.metricraft.status\x129\n" +
 	"\fdeleteWorker\x12\x15.metricraft.workerUrl\x1a\x12.metricraft.status\x126\n" +
 	"\fupdateWorker\x12\x12.metricraft.worker\x1a\x12.metricraft.status\x12B\n" +
@@ -953,78 +1316,90 @@ func file_service_proto_rawDescGZIP() []byte {
 	return file_service_proto_rawDescData
 }
 
-var file_service_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_service_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
 var file_service_proto_goTypes = []any{
-	(*SimpleRepeatedDistribution)(nil), // 0: metricraft.simpleRepeatedDistribution
-	(*Timeframe)(nil),                  // 1: metricraft.timeframe
-	(*Rule)(nil),                       // 2: metricraft.rule
-	(*WorkerUrl)(nil),                  // 3: metricraft.workerUrl
-	(*Worker)(nil),                     // 4: metricraft.worker
-	(*Status)(nil),                     // 5: metricraft.status
-	(*WorkerUptime)(nil),               // 6: metricraft.workerUptime
-	(*WorkerUptimeEntry)(nil),          // 7: metricraft.workerUptimeEntry
-	(*StringInt32Map)(nil),             // 8: metricraft.StringInt32Map
-	(*StringFloat32Map)(nil),           // 9: metricraft.StringFloat32Map
-	(*FloatDistribution)(nil),          // 10: metricraft.floatDistribution
-	(*Throughput)(nil),                 // 11: metricraft.throughput
-	(*ThroughputEntry)(nil),            // 12: metricraft.ThroughputEntry
-	(*CongestionEntry)(nil),            // 13: metricraft.CongestionEntry
-	(*Distribution)(nil),               // 14: metricraft.distribution
-	(*Congestion)(nil),                 // 15: metricraft.congestion
-	nil,                                // 16: metricraft.worker.HeadersEntry
-	nil,                                // 17: metricraft.StringInt32Map.ValuesEntry
-	nil,                                // 18: metricraft.StringFloat32Map.ValuesEntry
-	(*timestamppb.Timestamp)(nil),      // 19: google.protobuf.Timestamp
+	(*SimpleRepeatedDistribution)(nil),    // 0: metricraft.simpleRepeatedDistribution
+	(*Timeframe)(nil),                     // 1: metricraft.timeframe
+	(*Rule)(nil),                          // 2: metricraft.rule
+	(*WorkerUrl)(nil),                     // 3: metricraft.workerUrl
+	(*Worker)(nil),                        // 4: metricraft.worker
+	(*Status)(nil),                        // 5: metricraft.status
+	(*WorkerUptime)(nil),                  // 6: metricraft.workerUptime
+	(*WorkerUptimeEntry)(nil),             // 7: metricraft.workerUptimeEntry
+	(*StringInt32Map)(nil),                // 8: metricraft.StringInt32Map
+	(*StringFloat32Map)(nil),              // 9: metricraft.StringFloat32Map
+	(*FloatDistribution)(nil),             // 10: metricraft.floatDistribution
+	(*Throughput)(nil),                    // 11: metricraft.throughput
+	(*ThroughputEntry)(nil),               // 12: metricraft.ThroughputEntry
+	(*CongestionEntry)(nil),               // 13: metricraft.CongestionEntry
+	(*Distribution)(nil),                  // 14: metricraft.distribution
+	(*Congestion)(nil),                    // 15: metricraft.congestion
+	(*CustomMetric)(nil),                  // 16: metricraft.customMetric
+	(*CustomMetricDataPoint)(nil),         // 17: metricraft.customMetricDataPoint
+	(*CustomMetricResolutionMapping)(nil), // 18: metricraft.customMetricResolutionMapping
+	(*CustomMetricData)(nil),              // 19: metricraft.customMetricData
+	(*CustomMetricRequest)(nil),           // 20: metricraft.customMetricRequest
+	nil,                                   // 21: metricraft.worker.HeadersEntry
+	nil,                                   // 22: metricraft.StringInt32Map.ValuesEntry
+	nil,                                   // 23: metricraft.StringFloat32Map.ValuesEntry
+	(*timestamppb.Timestamp)(nil),         // 24: google.protobuf.Timestamp
 }
 var file_service_proto_depIdxs = []int32{
 	8,  // 0: metricraft.simpleRepeatedDistribution.distribution:type_name -> metricraft.StringInt32Map
-	19, // 1: metricraft.timeframe.start:type_name -> google.protobuf.Timestamp
+	24, // 1: metricraft.timeframe.start:type_name -> google.protobuf.Timestamp
 	2,  // 2: metricraft.timeframe.rules:type_name -> metricraft.rule
-	16, // 3: metricraft.worker.headers:type_name -> metricraft.worker.HeadersEntry
+	21, // 3: metricraft.worker.headers:type_name -> metricraft.worker.HeadersEntry
 	7,  // 4: metricraft.workerUptime.entries:type_name -> metricraft.workerUptimeEntry
-	19, // 5: metricraft.workerUptimeEntry.stamp:type_name -> google.protobuf.Timestamp
-	17, // 6: metricraft.StringInt32Map.values:type_name -> metricraft.StringInt32Map.ValuesEntry
-	18, // 7: metricraft.StringFloat32Map.values:type_name -> metricraft.StringFloat32Map.ValuesEntry
+	24, // 5: metricraft.workerUptimeEntry.stamp:type_name -> google.protobuf.Timestamp
+	22, // 6: metricraft.StringInt32Map.values:type_name -> metricraft.StringInt32Map.ValuesEntry
+	23, // 7: metricraft.StringFloat32Map.values:type_name -> metricraft.StringFloat32Map.ValuesEntry
 	9,  // 8: metricraft.floatDistribution.distribution:type_name -> metricraft.StringFloat32Map
 	12, // 9: metricraft.throughput.values:type_name -> metricraft.ThroughputEntry
 	8,  // 10: metricraft.CongestionEntry.pairing:type_name -> metricraft.StringInt32Map
 	8,  // 11: metricraft.distribution.distribution:type_name -> metricraft.StringInt32Map
 	13, // 12: metricraft.congestion.values:type_name -> metricraft.CongestionEntry
-	1,  // 13: metricraft.Metricraft.getGeographicalTraffic:input_type -> metricraft.timeframe
-	1,  // 14: metricraft.Metricraft.getTrafficCongestion:input_type -> metricraft.timeframe
-	1,  // 15: metricraft.Metricraft.getP95Latency:input_type -> metricraft.timeframe
-	1,  // 16: metricraft.Metricraft.getUptimeScore:input_type -> metricraft.timeframe
-	1,  // 17: metricraft.Metricraft.getThroughput:input_type -> metricraft.timeframe
-	1,  // 18: metricraft.Metricraft.getGeographicalPerformance:input_type -> metricraft.timeframe
-	1,  // 19: metricraft.Metricraft.getStatusCodeDistribution:input_type -> metricraft.timeframe
-	1,  // 20: metricraft.Metricraft.getRouteCongestion:input_type -> metricraft.timeframe
-	1,  // 21: metricraft.Metricraft.getHttpMethodDistribution:input_type -> metricraft.timeframe
-	1,  // 22: metricraft.Metricraft.getUniqueVisitors:input_type -> metricraft.timeframe
-	1,  // 23: metricraft.Metricraft.getHotHours:input_type -> metricraft.timeframe
-	4,  // 24: metricraft.Metricraft.createWorker:input_type -> metricraft.worker
-	3,  // 25: metricraft.Metricraft.deleteWorker:input_type -> metricraft.workerUrl
-	4,  // 26: metricraft.Metricraft.updateWorker:input_type -> metricraft.worker
-	3,  // 27: metricraft.Metricraft.getWorkerUptime:input_type -> metricraft.workerUrl
-	14, // 28: metricraft.Metricraft.getGeographicalTraffic:output_type -> metricraft.distribution
-	15, // 29: metricraft.Metricraft.getTrafficCongestion:output_type -> metricraft.congestion
-	14, // 30: metricraft.Metricraft.getP95Latency:output_type -> metricraft.distribution
-	10, // 31: metricraft.Metricraft.getUptimeScore:output_type -> metricraft.floatDistribution
-	11, // 32: metricraft.Metricraft.getThroughput:output_type -> metricraft.throughput
-	10, // 33: metricraft.Metricraft.getGeographicalPerformance:output_type -> metricraft.floatDistribution
-	14, // 34: metricraft.Metricraft.getStatusCodeDistribution:output_type -> metricraft.distribution
-	14, // 35: metricraft.Metricraft.getRouteCongestion:output_type -> metricraft.distribution
-	15, // 36: metricraft.Metricraft.getHttpMethodDistribution:output_type -> metricraft.congestion
-	0,  // 37: metricraft.Metricraft.getUniqueVisitors:output_type -> metricraft.simpleRepeatedDistribution
-	0,  // 38: metricraft.Metricraft.getHotHours:output_type -> metricraft.simpleRepeatedDistribution
-	5,  // 39: metricraft.Metricraft.createWorker:output_type -> metricraft.status
-	5,  // 40: metricraft.Metricraft.deleteWorker:output_type -> metricraft.status
-	5,  // 41: metricraft.Metricraft.updateWorker:output_type -> metricraft.status
-	6,  // 42: metricraft.Metricraft.getWorkerUptime:output_type -> metricraft.workerUptime
-	28, // [28:43] is the sub-list for method output_type
-	13, // [13:28] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	17, // 13: metricraft.customMetricResolutionMapping.data:type_name -> metricraft.customMetricDataPoint
+	18, // 14: metricraft.customMetricData.metrics:type_name -> metricraft.customMetricResolutionMapping
+	16, // 15: metricraft.customMetricRequest.metric:type_name -> metricraft.customMetric
+	24, // 16: metricraft.customMetricRequest.start:type_name -> google.protobuf.Timestamp
+	2,  // 17: metricraft.customMetricRequest.rules:type_name -> metricraft.rule
+	1,  // 18: metricraft.Metricraft.getGeographicalTraffic:input_type -> metricraft.timeframe
+	1,  // 19: metricraft.Metricraft.getTrafficCongestion:input_type -> metricraft.timeframe
+	1,  // 20: metricraft.Metricraft.getP95Latency:input_type -> metricraft.timeframe
+	1,  // 21: metricraft.Metricraft.getUptimeScore:input_type -> metricraft.timeframe
+	1,  // 22: metricraft.Metricraft.getThroughput:input_type -> metricraft.timeframe
+	1,  // 23: metricraft.Metricraft.getGeographicalPerformance:input_type -> metricraft.timeframe
+	1,  // 24: metricraft.Metricraft.getStatusCodeDistribution:input_type -> metricraft.timeframe
+	1,  // 25: metricraft.Metricraft.getRouteCongestion:input_type -> metricraft.timeframe
+	1,  // 26: metricraft.Metricraft.getHttpMethodDistribution:input_type -> metricraft.timeframe
+	1,  // 27: metricraft.Metricraft.getUniqueVisitors:input_type -> metricraft.timeframe
+	1,  // 28: metricraft.Metricraft.getHotHours:input_type -> metricraft.timeframe
+	20, // 29: metricraft.Metricraft.getCustomMetricData:input_type -> metricraft.customMetricRequest
+	4,  // 30: metricraft.Metricraft.createWorker:input_type -> metricraft.worker
+	3,  // 31: metricraft.Metricraft.deleteWorker:input_type -> metricraft.workerUrl
+	4,  // 32: metricraft.Metricraft.updateWorker:input_type -> metricraft.worker
+	3,  // 33: metricraft.Metricraft.getWorkerUptime:input_type -> metricraft.workerUrl
+	14, // 34: metricraft.Metricraft.getGeographicalTraffic:output_type -> metricraft.distribution
+	15, // 35: metricraft.Metricraft.getTrafficCongestion:output_type -> metricraft.congestion
+	14, // 36: metricraft.Metricraft.getP95Latency:output_type -> metricraft.distribution
+	10, // 37: metricraft.Metricraft.getUptimeScore:output_type -> metricraft.floatDistribution
+	11, // 38: metricraft.Metricraft.getThroughput:output_type -> metricraft.throughput
+	10, // 39: metricraft.Metricraft.getGeographicalPerformance:output_type -> metricraft.floatDistribution
+	14, // 40: metricraft.Metricraft.getStatusCodeDistribution:output_type -> metricraft.distribution
+	14, // 41: metricraft.Metricraft.getRouteCongestion:output_type -> metricraft.distribution
+	15, // 42: metricraft.Metricraft.getHttpMethodDistribution:output_type -> metricraft.congestion
+	0,  // 43: metricraft.Metricraft.getUniqueVisitors:output_type -> metricraft.simpleRepeatedDistribution
+	0,  // 44: metricraft.Metricraft.getHotHours:output_type -> metricraft.simpleRepeatedDistribution
+	19, // 45: metricraft.Metricraft.getCustomMetricData:output_type -> metricraft.customMetricData
+	5,  // 46: metricraft.Metricraft.createWorker:output_type -> metricraft.status
+	5,  // 47: metricraft.Metricraft.deleteWorker:output_type -> metricraft.status
+	5,  // 48: metricraft.Metricraft.updateWorker:output_type -> metricraft.status
+	6,  // 49: metricraft.Metricraft.getWorkerUptime:output_type -> metricraft.workerUptime
+	34, // [34:50] is the sub-list for method output_type
+	18, // [18:34] is the sub-list for method input_type
+	18, // [18:18] is the sub-list for extension type_name
+	18, // [18:18] is the sub-list for extension extendee
+	0,  // [0:18] is the sub-list for field type_name
 }
 
 func init() { file_service_proto_init() }
@@ -1038,7 +1413,7 @@ func file_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_service_proto_rawDesc), len(file_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   19,
+			NumMessages:   24,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

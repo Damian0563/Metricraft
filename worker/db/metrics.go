@@ -16,12 +16,7 @@ func GetTrafficCongestion(ctx context.Context, rules []*pb.Rule, startDate time.
 	tz := validTimezone(timezone)
 	loc := loadLocation(tz)
 	alignedStart := alignStart(startDate, loc, resolution)
-	var increment time.Duration
-	if resolution == 0 {
-		increment = time.Hour
-	} else {
-		increment = time.Hour * 24 * time.Duration(resolution)
-	}
+	increment, truncPeriod := getIncrementTruncPeriod(resolution)
 	endDate := rangeEnd(loc, increment, resolution)
 	congestion := make([]*pb.CongestionEntry, 0)
 	for cursor := alignedStart; cursor.Before(endDate); cursor = cursor.Add(increment) {
@@ -29,12 +24,6 @@ func GetTrafficCongestion(ctx context.Context, rules []*pb.Rule, startDate time.
 			Timerange: timerangeLabel(cursor.In(loc), increment, resolution, "congestion"),
 			Pairing:   &pb.StringInt32Map{Values: map[string]int32{}},
 		})
-	}
-	var truncPeriod string
-	if resolution != 0 {
-		truncPeriod = "day"
-	} else {
-		truncPeriod = "hour"
 	}
 	blacklisted := blacklistedRules(rules)
 	grouping := groupingRules(rules)
@@ -194,15 +183,7 @@ func GetThroughput(ctx context.Context, rules []*pb.Rule, start time.Time, resol
 	tz := validTimezone(timezone)
 	loc := loadLocation(tz)
 	alignedStart := alignStart(start, loc, resolution)
-	var increment time.Duration
-	var truncPeriod string
-	if resolution == 0 {
-		increment = time.Minute * 60
-		truncPeriod = "hour"
-	} else {
-		increment = time.Hour * 24 * time.Duration(resolution)
-		truncPeriod = "day"
-	}
+	increment, truncPeriod := getIncrementTruncPeriod(resolution)
 	endDate := rangeEnd(loc, increment, resolution)
 	var throughput []*pb.ThroughputEntry
 	for cursor := alignedStart; cursor.Before(endDate); cursor = cursor.Add(increment) {
@@ -382,16 +363,8 @@ func GetHttpMethodDistribution(ctx context.Context, rules []*pb.Rule, startDate 
 	loc := loadLocation(timezone)
 	alignedStart := alignStart(startDate, loc, resolution)
 	end := rangeEnd(loc, time.Hour, resolution)
-	var increment time.Duration
-	var truncPeriod string
 	tz := validTimezone(timezone)
-	if resolution == 0 {
-		increment = time.Hour
-		truncPeriod = "hour"
-	} else {
-		increment = time.Hour * 24 * time.Duration(resolution)
-		truncPeriod = "day"
-	}
+	increment, truncPeriod := getIncrementTruncPeriod(resolution)
 	var congestion []*pb.CongestionEntry
 	for cursor := alignedStart; cursor.Before(end); cursor = cursor.Add(increment) {
 		congestion = append(congestion, &pb.CongestionEntry{
@@ -442,16 +415,8 @@ func GetUniqueVisitors(ctx context.Context, rules []*pb.Rule, start time.Time, r
 	loc := loadLocation(timezone)
 	alignedStart := alignStart(start, loc, resolution)
 	end := rangeEnd(loc, time.Hour, resolution)
-	var increment time.Duration
-	var truncPeriod string
 	tz := validTimezone(timezone)
-	if resolution == 0 {
-		increment = time.Hour
-		truncPeriod = "hour"
-	} else {
-		increment = time.Hour * 24 * time.Duration(resolution)
-		truncPeriod = "day"
-	}
+	increment, truncPeriod := getIncrementTruncPeriod(resolution)
 	var dist []*pb.StringInt32Map
 	for cursor := alignedStart; cursor.Before(end); cursor = cursor.Add(increment) {
 		timerange := timerangeLabel(cursor.In(loc), increment, resolution, "unique visitors")
@@ -539,4 +504,26 @@ func GetHotHours(ctx context.Context, rules []*pb.Rule, start time.Time, timezon
 		return nil, err
 	}
 	return &pb.SimpleRepeatedDistribution{Distribution: dist}, nil
+}
+
+func GetCustomMetricData(ctx context.Context, metric *pb.CustomMetric, rules []*pb.Rule, start time.Time, resolution int32, timezone string) (*pb.CustomMetricData, error) {
+	conn, err := getLogsPool()
+	if err != nil {
+		return nil, err
+	}
+	tz := validTimezone(timezone)
+	loc := loadLocation(tz)
+	alignedStart := alignStart(start, loc, resolution)
+	increment, truncPeriod := getIncrementTruncPeriod(resolution)
+	endDate := rangeEnd(loc, increment, resolution)
+	buckets := make([]*pb.CustomMetricDataPoint, 0)
+	for cursor := alignedStart; cursor.Before(endDate); cursor = cursor.Add(increment) {
+		buckets = append(buckets, &pb.CustomMetricDataPoint{
+			Timerange: timerangeLabel(cursor.In(loc), increment, resolution, "custom"),
+			Value:     0,
+		})
+	}
+	blacklisted := blacklistedRules(rules)
+	fmt.Println(blacklisted, truncPeriod, conn)
+	return nil, fmt.Errorf("custom metric is not implemented yet")
 }

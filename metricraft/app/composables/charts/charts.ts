@@ -68,7 +68,6 @@ export const createHotHours = (
 		};
 		const barColors: string[] = values.map((value) => neonBarColor(value));
 		const barHoverColors: string[] = values.map((value) => neonBarColor(value, true));
-		const stepSize = labels.length <= 12 ? 1 : 2;
 		type HotHoursChart = Chart & { $hoveredIndex?: number | null };
 		const chart: Chart = new Chart(canvas, {
 			type: 'bar',
@@ -127,14 +126,14 @@ export const createHotHours = (
 								weight: ctx.index === (ctx.chart as HotHoursChart).$hoveredIndex ? 'bold' : '600',
 								size: 11,
 							}),
-							callback: (_value: string | number, index: number): string =>
-								index % stepSize === 0 || index === labels.length - 1
-									? (labels[index] ?? '')
-									: '',
+							callback: (_value: string | number, index: number): string => {
+								const label = labels[index] ?? '';
+								return index % 2 === 0 ? label : '';
+							},
 						},
 						title: {
 							display: true,
-							text: 'Hour of day',
+							text: `Hour of day adjusted to detected timezone ${Intl.DateTimeFormat().resolvedOptions().timeZone}`,
 							color: '#475569',
 							font: { weight: 'bold', size: 13 },
 							padding: { top: 2 },
