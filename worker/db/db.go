@@ -40,7 +40,7 @@ func InitDB(ctx context.Context, errChannel chan error) {
 			return
 		}
 	}
-	if _, err = conn.Exec(ctx, "CREATE TABLE IF NOT EXISTS logs (date TIMESTAMP,responseTime INTEGER, url TEXT NOT NULL, \"user\" TEXT NOT NULL,country TEXT NOT NULL ,payload TEXT, headers TEXT NOT NULL, method TEXT NOT NULL, status INTEGER NOT NULL)"); err != nil {
+	if _, err = conn.Exec(ctx, "CREATE TABLE IF NOT EXISTS logs (date TIMESTAMP,responseTime INTEGER, url TEXT NOT NULL, \"user\" TEXT NOT NULL,country TEXT NOT NULL ,payload JSONB, headers JSONB NOT NULL, method TEXT NOT NULL, status INTEGER NOT NULL)"); err != nil {
 		errChannel <- err
 		return
 	}
@@ -60,18 +60,31 @@ func InitDB(ctx context.Context, errChannel chan error) {
 		errChannel <- err
 		return
 	}
-	_, err = conn.Exec(ctx, "CREATE INDEX IF NOT EXISTS idx_url ON logs (url)")
+	if _, err = conn.Exec(ctx, "CREATE INDEX IF NOT EXISTS idx_url ON logs (url)"); err != nil {
+		errChannel <- err
+		return
+	}
+	if _, err = conn.Exec(ctx, "CREATE INDEX IF NOT EXISTS idx_payload ON logs USING GIN (payload)"); err != nil {
+		errChannel <- err
+		return
+	}
+	_, err = conn.Exec(ctx, "CREATE INDEX IF NOT EXISTS idx_headers ON logs USING GIN (headers)")
 	errChannel <- err
 }
-
 func Insert(payload types.Payload) error {
 	ctx := context.Background()
 	conn, err := getLogsPool()
 	if err != nil {
 		return err
 	}
-	headers, _ := json.Marshal(payload.Headers)
-	body, _ := json.Marshal(payload.Body)
+	headers, err := json.Marshal(payload.Headers)
+	if err != nil {
+		headers = []byte("{}")
+	}
+	body, err := json.Marshal(payload.Body)
+	if err != nil {
+		body = []byte("null")
+	}
 	var realip string = payload.Headers["X-Real-IP"]
 	var country string = "Unknown"
 	if realip == "" {

@@ -81,6 +81,27 @@ func resolveFieldName(customMetricSrc string) string {
 	return ""
 }
 
+func resolveAggregationType(aggregation string, inspectField string) string {
+	switch aggregation {
+	case "sum":
+		return fmt.Sprintf("SUM (%s)", inspectField)
+	case "avg":
+		return fmt.Sprintf("AVG (%s)", inspectField)
+	case "min":
+		return fmt.Sprintf("MIN (%s)", inspectField)
+	case "max":
+		return fmt.Sprintf("MAX (%s)", inspectField)
+	case "p95":
+		return fmt.Sprintf("percentile_cont(0.95) WITHIN GROUP (ORDER BY %s)", inspectField)
+	case "p50":
+		return fmt.Sprintf("percentile_cont(0.5) WITHIN GROUP (ORDER BY %s)", inspectField)
+	case "unique":
+		return fmt.Sprintf("COUNT(DISTINCT %s)", inspectField)
+	default:
+		return "COUNT (*)"
+	}
+}
+
 func urlPrefixMatchSQL(ruleCol string) string {
 	return fmt.Sprintf(`(url = %s OR (starts_with(url, %s) AND length(url) > length(%s) AND substring(url, length(%s) + 1, 1) = '/'))`,
 		ruleCol, ruleCol, ruleCol, ruleCol)
@@ -131,6 +152,8 @@ func customMetricInnerWhere(pathParam, methodParam, groupingParam string, applyR
 // jsonPathSelector turns a dot-notation selector such as items[0].price into a
 // postgres jsonpath expression ($."items"[0]."price"). Keys are always quoted so
 // that names containing dashes or digits stay valid.
+var replacer = strings.NewReplacer(`\`, `\\`, `"`, `\"`)
+
 func jsonPathSelector(selector string) string {
 	var path strings.Builder
 	path.WriteString("$")
@@ -147,7 +170,7 @@ func jsonPathSelector(selector string) string {
 		}
 		if key != "" {
 			path.WriteString(`."`)
-			path.WriteString(strings.NewReplacer(`\`, `\\`, `"`, `\"`).Replace(key))
+			path.WriteString(replacer.Replace(key))
 			path.WriteString(`"`)
 		}
 		path.WriteString(indexes)
@@ -164,7 +187,7 @@ func customMetricLogicMatch(inspectedField, selectorParam string) string {
 	}
 	switch inspectedField {
 	case "payload", "headers":
-		return fmt.Sprintf("jsonb_path_exists(NULLIF(%s, '')::jsonb, %s::jsonpath)", inspectedField, selectorParam)
+		return fmt.Sprintf("%s @? %s::jsonpath", inspectedField, selectorParam)
 	default:
 		return fmt.Sprintf("(strpos(url, '?' || %s || '=') > 0 OR strpos(url, '&' || %s || '=') > 0)",
 			selectorParam, selectorParam)
