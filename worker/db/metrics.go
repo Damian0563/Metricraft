@@ -541,6 +541,7 @@ func GetCustomMetricData(ctx context.Context, metric *pb.CustomMetric, rules []*
 		}
 		args, selectorParam = appendQueryParam(args, selector)
 	}
+	aggregationType := resolveAggregationType(metric.Aggregation, selectorParam)
 	groupedURLSelect := "url"
 	if applyRules && len(grouping) > 0 {
 		args, groupingParam = appendQueryParam(args, grouping)
@@ -554,17 +555,17 @@ func GetCustomMetricData(ctx context.Context, metric *pb.CustomMetric, rules []*
 					- date_trunc($6, ($1 AT TIME ZONE $4) AT TIME ZONE $5)
 				) / $3
 			)::int AS bucket,
-			COUNT(*) AS count
+			%s AS count
 		FROM (
 			SELECT
 				date,
-				%s AS url
+				%s AS grouped_url
 			FROM logs
-			WHERE %s AND %s
+			WHERE %s AND %s AND %s
 		) filtered
-		WHERE date >= $1 AND date < $2 AND %s
+		WHERE date >= $1 AND date < $2
 		GROUP BY bucket
-	`, groupedURLSelect, customMetricInnerWhere(pathParam, methodParam, groupingParam, applyRules), customMetricLogicMatch(inspectedField, selectorParam), blacklistFilterSQL("$7")), args...)
+	`, aggregationType, groupedURLSelect, customMetricInnerWhere(pathParam, methodParam, groupingParam, applyRules), customMetricLogicMatch(inspectedField, selectorParam), blacklistFilterSQL("$7")), args...)
 	if err != nil {
 		return nil, err
 	}

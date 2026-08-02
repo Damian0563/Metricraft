@@ -8,3 +8,4 @@ Dockerfile.*
 **/Dockerfile.*
 /tmp/
 !/Dockerfile
+**/cmd/tmp/main
