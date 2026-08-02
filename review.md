@@ -1,10 +1,24 @@
-# Review — custom metric query + timeframe extraction
-Solid direction: dropping the `urlCol` param from the SQL helpers removes a lot of duplication, and moving `ConvertTimeframe` out of `db` into `api` is the right layer.
+# Review — custom metric selector filtering
+
+Scope: `worker/db/metrics.go`, `worker/db/utils.go`, `backend/api/metric_views.go` (uncommitted diff).
+Solid direction: parameterizing the selector instead of interpolating it keeps this injection-free, and reusing `appendQueryParam` fits the existing style.
 
 ## worker/db/metrics.go
 
-- `L509-581`: 🔴 bug: `metric.Source`, `Selector`, `Aggregation`, `ValueType` are ignored — query is always `COUNT(*)`. `resolveFieldName` was added for exactly this and is never called. A "sum of `body.amount`" metric now silently returns request counts instead of the old `not implemented` error. Either wire aggregation/selector in, or keep returning an error for `aggregation != "count"`.
-- `L540-542,557`: 🔴 bug: `grouped_url` is selected but never used in `SELECT`/`GROUP BY`. The correlated subquery in `groupedUrlSQL` runs per row for nothing. Drop `grouped_url` from the inner select, or group by it if that was the intent.
-- `L122-126 (utils.go), via L559`: 🔴 bug: with `applyRules` + grouping rules, the inner `EXISTS(... g.rule)` *excludes* rows not matched by a grouping rule. Everywhere else grouping only relabels (`COALESCE(..., url)`). Custom metrics will undercount. Remove the `EXISTS` clause.
-- `L116`: 🟡 risk: `!applyRules` uses `url = $8`, exact match. Logged urls carry query strings (`resolveFieldName` maps `query`→`url`), so `/api/x?p=1` never matches `/api/x`. Strip query before compare or match on prefix.
+- `L561`: 🔴 bug: `%s AS url` aliases the *grouped* url over the raw one, so the outer `blacklistFilterSQL("$7")` (`L565`) now matches blacklist rules against the grouping rule instead of the real url. Every other query in this file (`L41-48`, `L117-123`, `L334-340`) blacklists on raw `url`. Restore `url, %s AS grouped_url`, or drop the grouped select entirely — nothing downstream reads it.
 
+## worker/db/utils.go
+
+- `L167`: 🔴 bug: `payload` is `TEXT` (`db.go:43`), and `::jsonb` aborts the whole query on the first row that isn't valid JSON. Postgres gives no ordering guarantee that the url/method predicates run before the cast, so one bad row kills unrelated metrics. Migrate the column to `jsonb`, or gate on a validity check (`payload ~ '^\s*[{\[]'`) inside a `CASE`.
+- `L167`: 🟡 risk: full-table `::jsonb` cast per row, unindexable. With only `idx_url` on `logs` this scans everything in the date range. Add a GIN index on the jsonb column once migrated.
+- `L144-147`: 🟡 risk: `indexes` is copied verbatim into the jsonpath, so `items[abc]` produces `$."items"[abc]` and Postgres returns a `42601` syntax error to the user at query time. Validate the bracket contents as digits (or `n to m`) and reject the selector up front.
+- `L150`: 🔵 nit: `strings.NewReplacer` allocated per segment inside the loop. Hoist to a package-level `var`.
+- `L169-170`: 🔵 nit: `strpos(url, '?'||$n||'=')` misses valueless params (`?debug`), url-encoded keys, and is case-sensitive. If that's acceptable, say so in the comment; otherwise split the query string and compare keys.
+
+## Repo hygiene
+
+- 🟡 risk: `backend/cmd/tmp/main` (29 MB) and `worker/cmd/tmp/main` (24 MB) are tracked and change on every build. Add `**/cmd/tmp/main` to `.gitignore` and `git rm --cached` them.
+
+## Questions
+
+- ❓ q: `customMetricLogicMatch` returns `TRUE` for an empty selector, so a `source: body` metric with no selector counts every matching request. Intended, or should an empty selector be a validation error?

@@ -155,7 +155,7 @@ func CustomMetricFetch(w http.ResponseWriter, r *http.Request) {
 				fmt.Println(err)
 				return
 			}
-			//fmt.Println(resp)
+			fmt.Println(resp)
 			mu.Lock()
 			metricData = append(metricData, types.MetricData{
 				Name:          metric.Name,

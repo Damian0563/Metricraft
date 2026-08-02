@@ -5,6 +5,7 @@ import (
 	"fmt"
 	pb "metricraft/proto/metricraft/proto"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -530,9 +531,16 @@ func GetCustomMetricData(ctx context.Context, metric *pb.CustomMetric, rules []*
 		blacklisted = blacklistedRules(rules)
 	}
 	args := []any{alignedStart, endDate, increment.Seconds(), storageTimezone, tz, truncPeriod, blacklisted}
-	var pathParam, methodParam, groupingParam string
+	var pathParam, methodParam, groupingParam, selectorParam string
 	args, pathParam = appendQueryParam(args, metric.Path)
 	args, methodParam = appendQueryParam(args, metric.Method)
+	inspectedField := resolveFieldName(metric.Source)
+	if selector := strings.TrimSpace(metric.Selector); selector != "" {
+		if inspectedField == "payload" || inspectedField == "headers" {
+			selector = jsonPathSelector(selector)
+		}
+		args, selectorParam = appendQueryParam(args, selector)
+	}
 	groupedURLSelect := "url"
 	if applyRules && len(grouping) > 0 {
 		args, groupingParam = appendQueryParam(args, grouping)
@@ -550,14 +558,13 @@ func GetCustomMetricData(ctx context.Context, metric *pb.CustomMetric, rules []*
 		FROM (
 			SELECT
 				date,
-				url,
-				%s AS grouped_url
+				%s AS url
 			FROM logs
-			WHERE %s
+			WHERE %s AND %s
 		) filtered
 		WHERE date >= $1 AND date < $2 AND %s
 		GROUP BY bucket
-	`, groupedURLSelect, customMetricInnerWhere(pathParam, methodParam, groupingParam, applyRules), blacklistFilterSQL("$7")), args...)
+	`, groupedURLSelect, customMetricInnerWhere(pathParam, methodParam, groupingParam, applyRules), customMetricLogicMatch(inspectedField, selectorParam), blacklistFilterSQL("$7")), args...)
 	if err != nil {
 		return nil, err
 	}
