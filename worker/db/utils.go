@@ -127,3 +127,46 @@ func customMetricInnerWhere(pathParam, methodParam, groupingParam string, applyR
 	}
 	return strings.Join(parts, " AND ")
 }
+
+// jsonPathSelector turns a dot-notation selector such as items[0].price into a
+// postgres jsonpath expression ($."items"[0]."price"). Keys are always quoted so
+// that names containing dashes or digits stay valid.
+func jsonPathSelector(selector string) string {
+	var path strings.Builder
+	path.WriteString("$")
+	sequence := strings.Split(selector, ".")
+	for _, segment := range sequence {
+		if segment == "" {
+			continue
+		}
+		key := segment
+		indexes := ""
+		if open := strings.Index(segment, "["); open >= 0 {
+			key = segment[:open]
+			indexes = segment[open:]
+		}
+		if key != "" {
+			path.WriteString(`."`)
+			path.WriteString(strings.NewReplacer(`\`, `\\`, `"`, `\"`).Replace(key))
+			path.WriteString(`"`)
+		}
+		path.WriteString(indexes)
+	}
+	return path.String()
+}
+
+// customMetricLogicMatch builds the predicate deciding whether a log row carries
+// the value a custom metric is tracking: a jsonpath into the stored JSON of the
+// request body or headers, or a query string parameter of the url.
+func customMetricLogicMatch(inspectedField, selectorParam string) string {
+	if selectorParam == "" {
+		return "TRUE"
+	}
+	switch inspectedField {
+	case "payload", "headers":
+		return fmt.Sprintf("jsonb_path_exists(NULLIF(%s, '')::jsonb, %s::jsonpath)", inspectedField, selectorParam)
+	default:
+		return fmt.Sprintf("(strpos(url, '?' || %s || '=') > 0 OR strpos(url, '&' || %s || '=') > 0)",
+			selectorParam, selectorParam)
+	}
+}
