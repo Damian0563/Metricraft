@@ -81,24 +81,46 @@ func resolveFieldName(customMetricSrc string) string {
 	return ""
 }
 
-func resolveAggregationType(aggregation string, inspectField string) string {
+func customMetricValueExpr(inspectedField, selectorParam string) string {
+	switch inspectedField {
+	case "payload", "headers":
+		if selectorParam == "" {
+			return "NULL"
+		}
+		return fmt.Sprintf("jsonb_path_query_first(%s, %s::jsonpath)#>>'{}'", inspectedField, selectorParam)
+	case "url":
+		if selectorParam == "" {
+			return "url"
+		}
+		return fmt.Sprintf("substring(url from '[?&]' || %s || '=([^&]*)')", selectorParam)
+	default:
+		return "NULL"
+	}
+}
+
+func resolveAggregationType(aggregation, valueType string) string {
+	numericValue := "NULLIF(value, '')::numeric"
+	booleanValue := "(CASE WHEN lower(value) IN ('true', '1') THEN 1 WHEN lower(value) IN ('false', '0') THEN 0 ELSE NULL END)"
 	switch aggregation {
 	case "sum":
-		return fmt.Sprintf("SUM (%s)", inspectField)
+		return fmt.Sprintf("SUM(%s)", numericValue)
 	case "avg":
-		return fmt.Sprintf("AVG (%s)", inspectField)
+		return fmt.Sprintf("AVG(%s)", numericValue)
 	case "min":
-		return fmt.Sprintf("MIN (%s)", inspectField)
+		return fmt.Sprintf("MIN(%s)", numericValue)
 	case "max":
-		return fmt.Sprintf("MAX (%s)", inspectField)
+		return fmt.Sprintf("MAX(%s)", numericValue)
 	case "p95":
-		return fmt.Sprintf("percentile_cont(0.95) WITHIN GROUP (ORDER BY %s)", inspectField)
+		return fmt.Sprintf("percentile_cont(0.95) WITHIN GROUP (ORDER BY %s)", numericValue)
 	case "p50":
-		return fmt.Sprintf("percentile_cont(0.5) WITHIN GROUP (ORDER BY %s)", inspectField)
+		if valueType == "boolean" {
+			return fmt.Sprintf("percentile_cont(0.5) WITHIN GROUP (ORDER BY %s)", booleanValue)
+		}
+		return fmt.Sprintf("percentile_cont(0.5) WITHIN GROUP (ORDER BY %s)", numericValue)
 	case "unique":
-		return fmt.Sprintf("COUNT(DISTINCT %s)", inspectField)
+		return "COUNT(DISTINCT value)"
 	default:
-		return "COUNT (*)"
+		return "COUNT(*)"
 	}
 }
 
@@ -132,19 +154,13 @@ func appendQueryParam(args []any, value any) ([]any, string) {
 	return args, fmt.Sprintf("$%d", len(args))
 }
 
-func customMetricInnerWhere(pathParam, methodParam, groupingParam string, applyRules bool) string {
+func customMetricInnerWhere(pathParam, methodParam string, applyRules bool) string {
 	if !applyRules {
 		return fmt.Sprintf("url = %s AND method = %s", pathParam, methodParam)
 	}
 	parts := []string{
 		urlPrefixMatchSQL(pathParam),
 		fmt.Sprintf("method = %s", methodParam),
-	}
-	if groupingParam != "" {
-		parts = append(parts, fmt.Sprintf(`EXISTS (
-			SELECT 1 FROM unnest(%s::text[]) AS g(rule)
-			WHERE %s
-		)`, groupingParam, urlPrefixMatchSQL("g.rule")))
 	}
 	return strings.Join(parts, " AND ")
 }
@@ -182,9 +198,6 @@ func jsonPathSelector(selector string) string {
 // the value a custom metric is tracking: a jsonpath into the stored JSON of the
 // request body or headers, or a query string parameter of the url.
 func customMetricLogicMatch(inspectedField, selectorParam string) string {
-	if selectorParam == "" {
-		return "TRUE"
-	}
 	switch inspectedField {
 	case "payload", "headers":
 		return fmt.Sprintf("%s @? %s::jsonpath", inspectedField, selectorParam)
