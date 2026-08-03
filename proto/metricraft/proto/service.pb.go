@@ -973,7 +973,7 @@ func (x *CustomMetric) GetChartType() string {
 type CustomMetricDataPoint struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Timerange     string                 `protobuf:"bytes,1,opt,name=timerange,proto3" json:"timerange,omitempty"`
-	Value         int32                  `protobuf:"varint,2,opt,name=value,proto3" json:"value,omitempty"`
+	Value         float32                `protobuf:"fixed32,2,opt,name=value,proto3" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1015,7 +1015,7 @@ func (x *CustomMetricDataPoint) GetTimerange() string {
 	return ""
 }
 
-func (x *CustomMetricDataPoint) GetValue() int32 {
+func (x *CustomMetricDataPoint) GetValue() float32 {
 	if x != nil {
 		return x.Value
 	}
@@ -1272,7 +1272,7 @@ const file_service_proto_rawDesc = "" +
 	" \x01(\tR\tchartType\"K\n" +
 	"\x15customMetricDataPoint\x12\x1c\n" +
 	"\ttimerange\x18\x01 \x01(\tR\ttimerange\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\x05R\x05value\"V\n" +
+	"\x05value\x18\x02 \x01(\x02R\x05value\"V\n" +
 	"\x1dcustomMetricResolutionMapping\x125\n" +
 	"\x04data\x18\x01 \x03(\v2!.metricraft.customMetricDataPointR\x04data\"W\n" +
 	"\x10customMetricData\x12C\n" +

@@ -525,13 +525,12 @@ func GetCustomMetricData(ctx context.Context, metric *pb.CustomMetric, rules []*
 		})
 	}
 	var blacklisted []string
-	grouping := groupingRules(rules)
 	applyRules := metric.ApplyRules
 	if applyRules {
 		blacklisted = blacklistedRules(rules)
 	}
 	args := []any{alignedStart, endDate, increment.Seconds(), storageTimezone, tz, truncPeriod, blacklisted}
-	var pathParam, methodParam, groupingParam, selectorParam string
+	var pathParam, methodParam, selectorParam string
 	args, pathParam = appendQueryParam(args, metric.Path)
 	args, methodParam = appendQueryParam(args, metric.Method)
 	inspectedField := resolveFieldName(metric.Source)
@@ -541,13 +540,9 @@ func GetCustomMetricData(ctx context.Context, metric *pb.CustomMetric, rules []*
 		}
 		args, selectorParam = appendQueryParam(args, selector)
 	}
-	aggregationType := resolveAggregationType(metric.Aggregation, selectorParam)
-	groupedURLSelect := "url"
-	if applyRules && len(grouping) > 0 {
-		args, groupingParam = appendQueryParam(args, grouping)
-		groupedURLSelect = groupedUrlSQL(groupingParam)
-	}
-	res, err := conn.Query(ctx, fmt.Sprintf(`
+	valueExpr := customMetricValueExpr(inspectedField, selectorParam)
+	aggregationExpr := resolveAggregationType(metric.Aggregation, metric.ValueType)
+	query := fmt.Sprintf(`
 		SELECT
 			FLOOR(
 				EXTRACT(EPOCH FROM
@@ -559,25 +554,26 @@ func GetCustomMetricData(ctx context.Context, metric *pb.CustomMetric, rules []*
 		FROM (
 			SELECT
 				date,
-				%s AS grouped_url
+				%s AS value
 			FROM logs
 			WHERE %s AND %s AND %s
 		) filtered
 		WHERE date >= $1 AND date < $2
 		GROUP BY bucket
-	`, aggregationType, groupedURLSelect, customMetricInnerWhere(pathParam, methodParam, groupingParam, applyRules), customMetricLogicMatch(inspectedField, selectorParam), blacklistFilterSQL("$7")), args...)
+	`, aggregationExpr, valueExpr, customMetricInnerWhere(pathParam, methodParam, applyRules), customMetricLogicMatch(inspectedField, selectorParam), blacklistFilterSQL("$7"))
+	res, err := conn.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer res.Close()
 	for res.Next() {
 		var bucket int
-		var count int
+		var count float32
 		if err = res.Scan(&bucket, &count); err != nil {
 			return nil, err
 		}
 		if bucket >= 0 && bucket < len(buckets) {
-			buckets[bucket].Value = int32(count)
+			buckets[bucket].Value = count
 		}
 	}
 	if err := res.Err(); err != nil {

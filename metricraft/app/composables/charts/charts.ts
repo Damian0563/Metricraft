@@ -600,7 +600,10 @@ export const createUptimeScore = (
 		const values = data?.distribution?.values;
 		if (!values || !Object.keys(values).length) throw new Error('Data is empty');
 		const entries: Array<[string, number]> = Object.entries(values).sort(([, a], [, b]) => a - b);
-		const mapped: Map<string, number> = new Map(entries);
+		const mapped: Map<string, number> = new Map();
+		for (const [key, value] of entries) {
+			mapped.set(key, Number(value.toFixed(2)));
+		}
 		const labels: string[] = Array.from(mapped.keys());
 		const scores: number[] = Array.from(mapped.values());
 		const isDown = scores.map((score) => score === 0);
@@ -733,7 +736,7 @@ export const createUptimeScore = (
 							label: (item) => {
 								const score = Number(item.parsed.x);
 								if (score === 0) return 'Status: Down — 0% uptime';
-								return `Uptime: ${score.toFixed(1)}% `;
+								return `Uptime: ${score}% `;
 							},
 							labelColor: (item) => {
 								const score = Number(item.parsed.x);
