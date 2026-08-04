@@ -154,12 +154,19 @@ func appendQueryParam(args []any, value any) ([]any, string) {
 	return args, fmt.Sprintf("$%d", len(args))
 }
 
-func customMetricInnerWhere(pathParam, methodParam string, applyRules bool) string {
+func customMetricInnerWhere(pathParam, methodParam, groupingParam string, applyRules bool) string {
 	if !applyRules {
 		return fmt.Sprintf("url = %s AND method = %s", pathParam, methodParam)
 	}
+	urlMatch := urlPrefixMatchSQL(pathParam)
+	if groupingParam != "" {
+		urlMatch = fmt.Sprintf(`(%s OR EXISTS (
+			SELECT 1 FROM unnest(%s::text[]) AS g(rule)
+			WHERE %s
+		))`, urlMatch, groupingParam, urlPrefixMatchSQL("g.rule"))
+	}
 	parts := []string{
-		urlPrefixMatchSQL(pathParam),
+		urlMatch,
 		fmt.Sprintf("method = %s", methodParam),
 	}
 	return strings.Join(parts, " AND ")

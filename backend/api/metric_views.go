@@ -186,7 +186,7 @@ func customMetricDataFromProto(resp *pb.CustomMetricData) []types.MetricAggregat
 		for _, point := range mapping.Data {
 			data = append(data, types.MetricAggregatorData{
 				Timerange: point.Timerange,
-				Data:      int(point.Value),
+				Data:      float64(point.Value),
 			})
 		}
 		mappings = append(mappings, types.MetricAggregatorResolutionMapping{Data: data})
