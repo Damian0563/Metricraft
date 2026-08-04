@@ -9,3 +9,4 @@ Dockerfile.*
 /tmp/
 !/Dockerfile
 **/cmd/tmp/main
+**/cmd/tmp/*.log

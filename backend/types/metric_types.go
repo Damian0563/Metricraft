@@ -35,6 +35,6 @@ type MetricAggregatorResolutionMapping struct {
 }
 
 type MetricAggregatorData struct {
-	Timerange string `json:"timerange"`
-	Data      int    `json:"value"`
+	Timerange string  `json:"timerange"`
+	Data      float64 `json:"value"`
 }

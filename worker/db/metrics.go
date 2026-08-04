@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	pb "metricraft/proto/metricraft/proto"
 	"strconv"
@@ -525,14 +526,18 @@ func GetCustomMetricData(ctx context.Context, metric *pb.CustomMetric, rules []*
 		})
 	}
 	var blacklisted []string
+	grouping := groupingRules(rules)
 	applyRules := metric.ApplyRules
 	if applyRules {
 		blacklisted = blacklistedRules(rules)
 	}
 	args := []any{alignedStart, endDate, increment.Seconds(), storageTimezone, tz, truncPeriod, blacklisted}
-	var pathParam, methodParam, selectorParam string
+	var pathParam, methodParam, groupingParam, selectorParam string
 	args, pathParam = appendQueryParam(args, metric.Path)
 	args, methodParam = appendQueryParam(args, metric.Method)
+	if applyRules && len(grouping) > 0 {
+		args, groupingParam = appendQueryParam(args, grouping)
+	}
 	inspectedField := resolveFieldName(metric.Source)
 	if selector := strings.TrimSpace(metric.Selector); selector != "" {
 		if inspectedField == "payload" || inspectedField == "headers" {
@@ -560,7 +565,7 @@ func GetCustomMetricData(ctx context.Context, metric *pb.CustomMetric, rules []*
 		) filtered
 		WHERE date >= $1 AND date < $2
 		GROUP BY bucket
-	`, aggregationExpr, valueExpr, customMetricInnerWhere(pathParam, methodParam, applyRules), customMetricLogicMatch(inspectedField, selectorParam), blacklistFilterSQL("$7"))
+	`, aggregationExpr, valueExpr, customMetricInnerWhere(pathParam, methodParam, groupingParam, applyRules), customMetricLogicMatch(inspectedField, selectorParam), blacklistFilterSQL("$7"))
 	res, err := conn.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
@@ -568,12 +573,12 @@ func GetCustomMetricData(ctx context.Context, metric *pb.CustomMetric, rules []*
 	defer res.Close()
 	for res.Next() {
 		var bucket int
-		var count float32
+		var count sql.NullFloat64
 		if err = res.Scan(&bucket, &count); err != nil {
 			return nil, err
 		}
 		if bucket >= 0 && bucket < len(buckets) {
-			buckets[bucket].Value = count
+			buckets[bucket].Value = float32(count.Float64)
 		}
 	}
 	if err := res.Err(); err != nil {
