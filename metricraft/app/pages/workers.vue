@@ -178,7 +178,6 @@ import { getExistingWorkers, saveWorker, updateWorker, deleteWorkerEntry, getWor
 import type { Worker, WorkerUptimeData, TeamUser } from '@/composables/types/additional'
 const errorMessage = ref<string | null>(null)
 const cleanMessage = ref<string>('')
-const { data: existingWorkers, error: fetchError } = await useAsyncData<Worker[]>('existingWorkers', () => getExistingWorkers())
 const workersList = ref<Worker[]>([])
 const showWorkerEditor = ref(false)
 const editingWorker = ref<Worker | null>(null)
@@ -187,9 +186,8 @@ const saving = ref(false)
 const workerUptimes = ref<{ url: string, data: WorkerUptimeData }[]>([])
 const newWorkerFormRef = ref<{ resetForm: () => void } | null>(null)
 const newWorkerStatusCodes = ref<Record<string, number>>({})
-const { data: teamUsers, error: teamUsersError } = await useAsyncData<TeamUser[]>('teamUsers', () => getTeamUsers(), { default: () => [] })
-watch(teamUsersError, () => errorMessage.value = teamUsersError.value?.message ?? '')
-const users = computed(() => teamUsers.value?.filter(user => user.status) ?? [])
+const teamUsers = ref<TeamUser[]>([])
+const users = computed(() => teamUsers.value.filter(user => user.status))
 const selectedRecipients = ref<string[]>([])
 const recipientSelectionInitialized = ref(false)
 watch(users, (availableUsers) => {
@@ -205,6 +203,31 @@ watch(users, (availableUsers) => {
 	}
 	selectedRecipients.value = selectedRecipients.value.filter(mail => notificationEnabledMails.has(mail))
 }, { immediate: true })
+
+const loadWorkers = async () => {
+	try {
+		const workers = await getExistingWorkers()
+		workersList.value = workers
+		workerUptimes.value = await Promise.all(workers.map(async (worker) => {
+			const res: WorkerUptimeData = await getWorkerUptime(worker.url, worker.pollInterval)
+			return { url: worker.url, data: res }
+		}))
+	} catch (_) {
+		errorMessage.value = 'Failed to load workers.'
+	}
+}
+const loadTeamUsers = async () => {
+	try {
+		teamUsers.value = await getTeamUsers()
+	} catch (e: unknown) {
+		errorMessage.value = e instanceof Error ? e.message : 'Failed to load team users.'
+	}
+}
+onMounted(() => {
+	loadWorkers()
+	loadTeamUsers()
+})
+
 const isRecipientSelected = (mail: string): boolean => selectedRecipients.value.includes(mail)
 const toggleRecipient = (mail: string) => {
 	selectedRecipients.value = isRecipientSelected(mail)
@@ -238,19 +261,6 @@ const statusCodeClass = (statusCode: number): string => {
 	if (statusCode >= 300 && statusCode < 400) return 'bg-blue-50 text-blue-600 border-blue-300'
 	if (statusCode >= 400 && statusCode < 500) return 'bg-amber-50 text-amber-600 border-amber-300'
 	return 'bg-red-50 text-red-600 border-red-300'
-}
-watch(existingWorkers, async (workers) => {
-	if (workers) {
-		workersList.value = workers
-		workerUptimes.value = await Promise.all(workers.map(async (worker) => {
-			const res: WorkerUptimeData = await getWorkerUptime(worker.url, worker.pollInterval)
-			return { url: worker.url, data: res }
-		}))
-	}
-}, { immediate: true })
-
-if (fetchError.value) {
-	errorMessage.value = 'Failed to load workers.'
 }
 
 const openWorkerEditor = (worker: Worker) => {

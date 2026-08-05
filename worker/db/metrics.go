@@ -508,7 +508,7 @@ func GetHotHours(ctx context.Context, rules []*pb.Rule, start time.Time, timezon
 	return &pb.SimpleRepeatedDistribution{Distribution: dist}, nil
 }
 
-func GetCustomMetricData(ctx context.Context, metric *pb.CustomMetric, rules []*pb.Rule, start time.Time, resolution int32, timezone string) (*pb.CustomMetricData, error) {
+func GetCustomMetricDataBuckets(ctx context.Context, metric *pb.CustomMetric, rules []*pb.Rule, start time.Time, resolution int32, timezone string) (*pb.CustomMetricData, error) {
 	conn, err := getLogsPool()
 	if err != nil {
 		return nil, err
@@ -521,8 +521,8 @@ func GetCustomMetricData(ctx context.Context, metric *pb.CustomMetric, rules []*
 	buckets := make([]*pb.CustomMetricDataPoint, 0)
 	for cursor := alignedStart; cursor.Before(endDate); cursor = cursor.Add(increment) {
 		buckets = append(buckets, &pb.CustomMetricDataPoint{
-			Timerange: timerangeLabel(cursor.In(loc), increment, resolution, "custom"),
-			Value:     0,
+			Grouping: timerangeLabel(cursor.In(loc), increment, resolution, "custom"),
+			Value:    0,
 		})
 	}
 	var blacklisted []string
@@ -577,12 +577,59 @@ func GetCustomMetricData(ctx context.Context, metric *pb.CustomMetric, rules []*
 		if err = res.Scan(&bucket, &count); err != nil {
 			return nil, err
 		}
-		if bucket >= 0 && bucket < len(buckets) {
+		if bucket >= 0 && bucket < len(buckets) && count.Valid {
 			buckets[bucket].Value = float32(count.Float64)
 		}
 	}
 	if err := res.Err(); err != nil {
 		return nil, err
 	}
-	return &pb.CustomMetricData{Metrics: []*pb.CustomMetricResolutionMapping{{Data: buckets}}}, nil
+	return &pb.CustomMetricData{Metrics: buckets}, nil
+}
+
+func GetCustomMetricDataCummulative(ctx context.Context, metric *pb.CustomMetric, rules []*pb.Rule, start time.Time, timezone string) (*pb.CustomMetricData, error) {
+	conn, err := getLogsPool()
+	if err != nil {
+		return nil, err
+	}
+	tz := validTimezone(timezone)
+	loc := loadLocation(tz)
+	alignedStart := start.In(loc)
+	alignedEnd := time.Now().In(loc)
+	args := []any{alignedStart, alignedEnd}
+	query := fmt.Sprintf(`
+		SELECT
+			%s as predicate,
+			%s as value
+		FROM (
+			SELECT
+				%s AS predicate,
+				COUNT(*) AS value
+			FROM logs
+			WHERE %s AND %s AND %s
+		) filtered
+		WHERE date >= $1 AND date < $2
+		GROUP BY predicate
+		ORDER BY value DESC
+	`)
+	res, err := conn.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+	result := make([]*pb.CustomMetricDataPoint, 0)
+	for res.Next() {
+		var predicate string
+		var value sql.NullFloat64
+		if err = res.Scan(&predicate, &value); err != nil {
+			return nil, err
+		}
+		if value.Valid {
+			result = append(result, &pb.CustomMetricDataPoint{Grouping: predicate, Value: float32(value.Float64)})
+		}
+	}
+	if err := res.Err(); err != nil {
+		return nil, err
+	}
+	return &pb.CustomMetricData{Metrics: result}, nil
 }

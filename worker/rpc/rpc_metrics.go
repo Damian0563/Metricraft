@@ -55,5 +55,8 @@ func (s *Server) GetHotHours(ctx context.Context, req *pb.Timeframe) (*pb.Simple
 }
 
 func (s *Server) GetCustomMetricData(ctx context.Context, req *pb.CustomMetricRequest) (*pb.CustomMetricData, error) {
-	return db.GetCustomMetricData(ctx, req.Metric, req.Rules, req.Start.AsTime(), req.Resolution, req.Timezone)
+	if req.Metric.ChartType == "pie" {
+		return db.GetCustomMetricDataCummulative(ctx, req.Metric, req.Rules, req.Start.AsTime(), req.Timezone)
+	}
+	return db.GetCustomMetricDataBuckets(ctx, req.Metric, req.Rules, req.Start.AsTime(), req.Resolution, req.Timezone)
 }
