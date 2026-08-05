@@ -133,7 +133,7 @@ func CustomMetricFetch(w http.ResponseWriter, r *http.Request) {
 			defer wg.Done()
 			standardizedTimeframe := standardizeTimeframe(metric.Timeframe)
 			start, resolution := convertTimeframe(standardizedTimeframe, timezone)
-			resp, err := client.GetCustomMetricData(ctx, &pb.CustomMetricRequest{
+			metricRpc := &pb.CustomMetricRequest{
 				Metric: &pb.CustomMetric{
 					Name:        metric.Name,
 					Method:      metric.Method,
@@ -150,10 +150,10 @@ func CustomMetricFetch(w http.ResponseWriter, r *http.Request) {
 				Resolution: resolution.Days,
 				Timezone:   timezone,
 				Rules:      ruleInput,
-			})
+			}
+			resp, err := client.GetCustomMetricData(ctx, metricRpc)
 			if err != nil {
-				fmt.Println(err)
-				return
+				w.Write([]byte(err.Error()))
 			}
 			fmt.Println(resp)
 			mu.Lock()
@@ -174,24 +174,6 @@ func CustomMetricFetch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write(httpresponse)
-}
-
-func customMetricDataFromProto(resp *pb.CustomMetricData) []types.MetricAggregatorResolutionMapping {
-	if resp == nil {
-		return nil
-	}
-	mappings := make([]types.MetricAggregatorResolutionMapping, 0, len(resp.Metrics))
-	for _, mapping := range resp.Metrics {
-		data := make([]types.MetricAggregatorData, 0, len(mapping.Data))
-		for _, point := range mapping.Data {
-			data = append(data, types.MetricAggregatorData{
-				Timerange: point.Timerange,
-				Data:      float64(point.Value),
-			})
-		}
-		mappings = append(mappings, types.MetricAggregatorResolutionMapping{Data: data})
-	}
-	return mappings
 }
 
 func SaveWorker(w http.ResponseWriter, r *http.Request) {

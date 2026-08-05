@@ -1,10 +1,10 @@
 package types
 
 type MetricData struct {
-	Name          string                              `json:"name"`
-	Metrics       []MetricAggregatorResolutionMapping `json:"metrics"`
-	Timeframe     string                              `json:"timeframe"`
-	CustomMetrics bool                                `json:"customMetrics"`
+	Name          string            `json:"name"`
+	Metrics       []MetricDataItems `json:"metrics"`
+	Timeframe     string            `json:"timeframe"`
+	CustomMetrics bool              `json:"customMetrics"`
 }
 
 type Rule struct {
@@ -30,11 +30,7 @@ type Metric struct {
 	Timeframe string `json:"timeframe"`
 }
 
-type MetricAggregatorResolutionMapping struct {
-	Data []MetricAggregatorData `json:"data"`
-}
-
-type MetricAggregatorData struct {
-	Timerange string  `json:"timerange"`
-	Data      float64 `json:"value"`
+type MetricDataItems struct {
+	Grouping string  `json:"grouping"`
+	Value    float64 `json:"value"`
 }

@@ -2,6 +2,7 @@ package api
 
 import (
 	"backend/types"
+	pb "metricraft/proto/metricraft/proto"
 	"strconv"
 	"strings"
 	"time"
@@ -28,6 +29,17 @@ func standardizeTimeframe(inputTimeframe string) string {
 		return val
 	}
 	return "7d"
+}
+
+func customMetricDataFromProto(resp *pb.CustomMetricData) []types.MetricDataItems {
+	if resp == nil {
+		return nil
+	}
+	mappings := make([]types.MetricDataItems, 0, len(resp.Metrics))
+	for _, mapping := range resp.Metrics {
+		mappings = append(mappings, types.MetricDataItems{Grouping: mapping.Grouping, Value: float64(mapping.Value)})
+	}
+	return mappings
 }
 
 func convertTimeframe(inputTimeframe string, timezone string) (time.Time, types.ResolutionDays) {
