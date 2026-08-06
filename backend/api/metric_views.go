@@ -127,6 +127,7 @@ func CustomMetricFetch(w http.ResponseWriter, r *http.Request) {
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 	metricData := make([]types.MetricData, 0, len(metrics))
+	var errors []string
 	for _, metric := range metrics {
 		wg.Add(1)
 		go func(metric db.CustomMetric) {
@@ -152,11 +153,10 @@ func CustomMetricFetch(w http.ResponseWriter, r *http.Request) {
 				Rules:      ruleInput,
 			}
 			resp, err := client.GetCustomMetricData(ctx, metricRpc)
-			if err != nil {
-				w.Write([]byte(err.Error()))
-			}
-			fmt.Println(resp)
 			mu.Lock()
+			if err != nil {
+				errors = append(errors, err.Error()+"\n")
+			}
 			metricData = append(metricData, types.MetricData{
 				Name:          metric.Name,
 				Metrics:       customMetricDataFromProto(resp),
@@ -168,7 +168,8 @@ func CustomMetricFetch(w http.ResponseWriter, r *http.Request) {
 	}
 	wg.Wait()
 	w.Header().Set("Content-Type", "application/json")
-	httpresponse, err := json.Marshal(metricData)
+	response := types.MetricDataResponse{Metrics: metricData, Errors: errors}
+	httpresponse, err := json.Marshal(response)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

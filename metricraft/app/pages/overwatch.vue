@@ -326,7 +326,7 @@ const formatMetricLastUpdate = (iso: string | Date) => {
 	return `${get('month')} ${get('day')}, ${get('year')} at ${get('hour')}:${get('minute')}${get('dayPeriod').toLowerCase()}`
 }
 
-const { data: fetchedMetrics, error: errorFetchMetrics } = await useAsyncData('getCustomMetrics', () => getCustomMetrics(), { default: () => [] })
+const { data: fetchedMetrics, error: errorFetchMetrics } = await useAsyncData('getCustomMetrics', () => getCustomMetrics(), { default: () => [] as CustomMetric[] })
 watch(fetchedMetrics, (val) => {
 	metrics.value = val ? [...val] : []
 }, { immediate: true })

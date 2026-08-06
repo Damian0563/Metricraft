@@ -22,7 +22,8 @@
 import { fetchMetric, fetchCustomMetrics } from "~/calls/dashboard";
 import { topojson } from 'chartjs-chart-geo';
 import { timeframeValueFor } from '@/composables/helpers';
-import type { WorldData, MetricData } from '@/composables/types/metrics';
+import type { MetricData } from '@/composables/types/additional';
+import type { WorldData } from '@/composables/types/metrics';
 import { motion, AnimatePresence } from 'motion-v';
 const props = defineProps<{
 	metrics: Record<string, { enabled: boolean, timeframe: string }>
