@@ -1,41 +1,35 @@
-# Review — custom metric error envelope + workers parallel load
+# Review — aggregation/chart filters, workers SSR load, cumulative metric SQL
 
-Scope: `backend/api/metric_views.go`, `backend/types/metric_types.go`, `metricraft/app/calls/dashboard.ts`, `metricraft/app/composables/types/additional.ts`, `metricraft/app/composables/types/metrics.ts`, `metricraft/app/components/GraphGrid.vue`, `metricraft/app/pages/overwatch.vue`, `metricraft/app/pages/workers.vue`, `worker/db/metrics.go`.
-
-Fixes prior concurrent `w.Write` / corrupt-body bugs in `CustomMetricFetch`.
-
-## backend/api/metric_views.go
-
-- `L158`: 🟡 risk: error string has no metric name. Prefix with `metric.Name` before append.
-- `L160-165`: 🟡 risk: on gRPC error still appends metric with empty `Metrics` via `customMetricDataFromProto(resp)`. Skip failed metrics or include per-metric failure flag.
-- `L177`: 🔵 nit: partial failures return HTTP 200 with `errors` array; fine if intentional — document contract.
-
-## backend/types/metric_types.go
-
-- `L10-13`: 🟡 risk: response shape changed from bare `MetricData[]` to `{metrics,errors}`. Confirm no other API consumers before deploy.
+Scope: `metricraft/app/calls/dashboard.ts`, `metricraft/app/pages/overwatch.vue`, `metricraft/app/pages/workers.vue`, `worker/db/metrics.go`, `worker/db/utils.go`.
 
 ## metricraft/app/calls/dashboard.ts
 
-- `L59-60`: 🟡 risk: `errorMessage.value = response.errors.join('')` overwrites standard-metric errors set earlier in same `fetchAllMetrics` pass. Append or accumulate.
-- `L63`: 🔵 nit: removed `console.error`; loses dev diagnostics on hard failure.
-
-## metricraft/app/composables/types/additional.ts
-
-- `L23`: 🔵 nit: extra blank line before `CustomMetricResponse`.
-- `L29-34`: 🔵 nit: `MetricData` moved here from `metrics.ts`; name collides conceptually with `CustomMetric` — consider `FetchedMetricData` or keep in `metrics.ts`.
+- `L32-33`: 🔵 nit: removed `console.error(e)` in `getUrls`; silent `[]` on failure loses dev signal.
 
 ## metricraft/app/pages/overwatch.vue
 
-- `L329`: ❓ q: `as CustomMetric[]` default-only change — intentional drive-by unrelated to error envelope?
+- `L106`: 🟡 risk: filtered `<option>` list can be empty while `v-model="aggregation"` still holds invalid combo (e.g. pie + `p50`).
+- `L357`: 🔵 nit: typo `aggregaationTypesPerChartType` (triple `a`); rename before it spreads.
+- `L363-367`: 🔴 bug: `watch(valueType)` only checks value-type allowlist, not chart-type; boolean on pie keeps `p50`.
+- `L369-373`: 🟡 risk: `watch(chartType)` resets agg but not coordinated with value-type watch order; intersect both allowlists in one place.
 
 ## metricraft/app/pages/workers.vue
 
-- `L208-214`: 🟡 risk: one `getWorkerUptime` failure rejects entire `fetchWorkers` via `Promise.all`. Use `allSettled` per worker.
-- `L217-244`: 🟡 risk: `loading.value = false` not in `finally`; spinner sticks if handler throws.
-- `L247-248`: 🟡 risk: page data still loads only in `onMounted`; initial render empty until client mount (SSR flash).
+- `L5`: 🟡 risk: dropped `loading` from `<Spinner>`; no full-page load indicator while uptimes fetch in background.
+- `L191`: 🔴 bug: `watch(teamUsersError)` sets `errorMessage` to `''` when error clears — wipes `'Failed to load workers.'` from `fetchError`.
+- `L191`: 🟡 risk: team-users error overwrites workers error; lost prior dual-failure combined message.
+- `L209-218`: 🟡 risk: failed `getWorkerUptime` rows silently dropped via `allSettled`; no partial-failure notice.
+- `L182,L209`: 🔵 nit: `workersList` mirrors `existingWorkers` then diverges on local CRUD; consider single source or refresh `existingWorkers` after mutations.
 
 ## worker/db/metrics.go
 
-- `L514,L571,L578,L585`: 🟡 risk: `fmt.Errorf(...)` drops root cause. Use `%w` with underlying `err`.
-- `L578,L585`: 🔵 nit: Scan error and `res.Err()` share identical message. Differentiate stage in text.
-- `L590-593`: 🔵 nit: `GetCustomMetricDataCummulative` still returns bare `err`; wrap consistently with buckets fn.
+- `L628-630`: 🔴 bug: inner SELECT has trailing comma (`%s AS value,`) — invalid SQL syntax.
+- `L625,L629`: 🔴 bug: outer SELECT references `predicate` but inner never defines it; query fails at runtime for pie charts.
+- `L623-636`: 🔴 bug: cumulative query needs inner `%s AS predicate, %s AS value` (like buckets fn), not one column.
+- `L593,L639,L647,L654`: 🟡 risk: `fmt.Errorf(...)` drops root `err`. Use `%w`.
+- `L653-654`: 🔵 nit: Scan vs `res.Err()` share identical message; tag stage in text.
+
+## worker/db/utils.go
+
+- `L85-86`: 🟡 risk: removed empty-`selectorParam` guard; `jsonb_path_query_first(%s, ::jsonpath)` breaks if selector omitted server-side.
+- `L87-88`: 🟡 risk: url/query branch always uses `substring(...)`; old empty-selector path returned `url`/`NULL`.

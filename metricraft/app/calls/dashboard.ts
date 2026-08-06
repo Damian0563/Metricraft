@@ -30,7 +30,6 @@ export const getUrls = async (): Promise<string[]> => {
 			responseType: "json",
 		})
 	} catch (e) {
-		console.error(e)
 		return []
 	}
 }

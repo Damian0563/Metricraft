@@ -75,26 +75,17 @@ func resolveFieldName(customMetricSrc string) string {
 		return "payload"
 	case "header":
 		return "headers"
-	case "query":
+	default:
 		return "url"
 	}
-	return ""
 }
 
-func customMetricValueExpr(inspectedField, selectorParam string) string {
+func customMetricExpr(inspectedField, selectorParam string) string {
 	switch inspectedField {
 	case "payload", "headers":
-		if selectorParam == "" {
-			return "NULL"
-		}
 		return fmt.Sprintf("jsonb_path_query_first(%s, %s::jsonpath)#>>'{}'", inspectedField, selectorParam)
-	case "url":
-		if selectorParam == "" {
-			return "url"
-		}
-		return fmt.Sprintf("substring(url from '[?&]' || %s || '=([^&]*)')", selectorParam)
 	default:
-		return "NULL"
+		return fmt.Sprintf("substring(url from '[?&]' || %s || '=([^&]*)')", selectorParam)
 	}
 }
 
