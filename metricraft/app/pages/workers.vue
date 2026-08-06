@@ -2,7 +2,7 @@
 	<div>
 		<Notice :message="errorMessage ?? ''" @close="errorMessage = null" />
 		<Popup :message="cleanMessage" @close="cleanMessage = ''" />
-		<Spinner :loading="loading || saving" />
+		<Spinner :loading="saving" />
 		<WorkerEditor :open="showWorkerEditor" :worker="editingWorker" @close="closeWorkerEditor"
 			@save="handleWorkerUpdate" />
 		<div class="relative flex items-center justify-center mb-6">
@@ -178,17 +178,18 @@ import { getExistingWorkers, saveWorker, updateWorker, deleteWorkerEntry, getWor
 import type { Worker, WorkerUptimeData, TeamUser } from '@/composables/types/additional'
 const errorMessage = ref<string | null>(null)
 const cleanMessage = ref<string>('')
+const { data: existingWorkers, error: fetchError } = await useAsyncData<Worker[]>('existingWorkers', () => getExistingWorkers(), { default: () => [] })
 const workersList = ref<Worker[]>([])
 const showWorkerEditor = ref(false)
 const editingWorker = ref<Worker | null>(null)
 const originalWorkerUrl = ref<string | null>(null)
 const saving = ref(false)
-const loading = ref(false)
 const workerUptimes = ref<{ url: string, data: WorkerUptimeData }[]>([])
 const newWorkerFormRef = ref<{ resetForm: () => void } | null>(null)
 const newWorkerStatusCodes = ref<Record<string, number>>({})
-const teamUsers = ref<TeamUser[]>([])
-const users = computed(() => teamUsers.value.filter(user => user.status))
+const { data: teamUsers, error: teamUsersError } = await useAsyncData<TeamUser[]>('teamUsers', () => getTeamUsers(), { default: () => [] })
+watch(teamUsersError, () => errorMessage.value = teamUsersError.value?.message ?? '')
+const users = computed(() => teamUsers.value?.filter(user => user.status) ?? [])
 const selectedRecipients = ref<string[]>([])
 const recipientSelectionInitialized = ref(false)
 watch(users, (availableUsers) => {
@@ -205,48 +206,22 @@ watch(users, (availableUsers) => {
 	selectedRecipients.value = selectedRecipients.value.filter(mail => notificationEnabledMails.has(mail))
 }, { immediate: true })
 
-const fetchWorkers = async () => {
-	const workers = await getExistingWorkers()
-	const uptimes = await Promise.all(workers.map(async (worker) => {
-		const res: WorkerUptimeData = await getWorkerUptime(worker.url, worker.pollInterval)
-		return { url: worker.url, data: res }
-	}))
-	return { workers, uptimes }
+watch(existingWorkers, async (workers) => {
+	if (workers) {
+		workersList.value = workers
+		const results = await Promise.allSettled(workers.map(async (worker) => {
+			const res: WorkerUptimeData = await getWorkerUptime(worker.url, worker.pollInterval)
+			return { url: worker.url, data: res }
+		}))
+		workerUptimes.value = results
+			.filter((result): result is PromiseFulfilledResult<{ url: string, data: WorkerUptimeData }> => result.status === 'fulfilled')
+			.map(result => result.value)
+	}
+}, { immediate: true })
+
+if (fetchError.value) {
+	errorMessage.value = 'Failed to load workers.'
 }
-
-const loadPageData = async () => {
-	loading.value = true
-	errorMessage.value = null
-	const errors: string[] = []
-	const [workersResult, teamUsersResult] = await Promise.allSettled([
-		fetchWorkers(),
-		getTeamUsers(),
-	])
-	if (workersResult.status === 'fulfilled') {
-		workersList.value = workersResult.value.workers
-		workerUptimes.value = workersResult.value.uptimes
-	} else {
-		errors.push('Failed to load workers.')
-	}
-
-	if (teamUsersResult.status === 'fulfilled') {
-		teamUsers.value = teamUsersResult.value
-	} else {
-		const reason = teamUsersResult.reason
-		errors.push(reason instanceof Error ? reason.message : 'Failed to load notification recipients.')
-	}
-	if (errors.length === 2) {
-		errorMessage.value = 'Failed to load workers and notification recipients. Please refresh the page.'
-	} else if (errors.length === 1) {
-		errorMessage.value = errors[0]!
-	}
-
-	loading.value = false
-}
-
-onMounted(() => {
-	loadPageData()
-})
 
 const isRecipientSelected = (mail: string): boolean => selectedRecipients.value.includes(mail)
 const toggleRecipient = (mail: string) => {
