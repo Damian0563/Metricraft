@@ -1,12 +1,6 @@
 import type { Chart } from "chart.js";
 import type { ChoroplethChart } from 'chartjs-chart-geo';
 
-export type MetricData = {
-	name: string;
-	metrics: any;
-	timeframe: string;
-	customMetrics?: boolean;
-};
 
 export type WorldData = {
 	countries: any;

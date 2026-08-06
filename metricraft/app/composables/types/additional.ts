@@ -20,6 +20,19 @@ export type CustomMetric = {
 	lastUpdate?: string
 }
 
+
+export type CustomMetricResponse = {
+	metrics: MetricData[];
+	errors: string[];
+};
+
+export type MetricData = {
+	name: string;
+	metrics: any;
+	timeframe: string;
+	customMetrics?: boolean;
+};
+
 export type Rule = {
 	rule: string,
 	matches: string[],

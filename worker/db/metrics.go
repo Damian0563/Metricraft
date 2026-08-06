@@ -511,7 +511,7 @@ func GetHotHours(ctx context.Context, rules []*pb.Rule, start time.Time, timezon
 func GetCustomMetricDataBuckets(ctx context.Context, metric *pb.CustomMetric, rules []*pb.Rule, start time.Time, resolution int32, timezone string) (*pb.CustomMetricData, error) {
 	conn, err := getLogsPool()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get established connection to database while fetching %s", metric.Name)
 	}
 	tz := validTimezone(timezone)
 	loc := loadLocation(tz)
@@ -568,21 +568,21 @@ func GetCustomMetricDataBuckets(ctx context.Context, metric *pb.CustomMetric, ru
 	`, aggregationExpr, valueExpr, customMetricInnerWhere(pathParam, methodParam, groupingParam, applyRules), customMetricLogicMatch(inspectedField, selectorParam), blacklistFilterSQL("$7"))
 	res, err := conn.Query(ctx, query, args...)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to query custom metric data: %s", metric.Name)
 	}
 	defer res.Close()
 	for res.Next() {
 		var bucket int
 		var count sql.NullFloat64
 		if err = res.Scan(&bucket, &count); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to scan custom metric data: %s", metric.Name)
 		}
 		if bucket >= 0 && bucket < len(buckets) && count.Valid {
 			buckets[bucket].Value = float32(count.Float64)
 		}
 	}
 	if err := res.Err(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to scan custom metric data: %s", metric.Name)
 	}
 	return &pb.CustomMetricData{Metrics: buckets}, nil
 }

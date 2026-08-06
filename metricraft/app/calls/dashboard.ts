@@ -1,5 +1,5 @@
 import type { dashboardInitPayload } from '@/composables/types/views'
-import type { MetricData } from '@/composables/types/metrics'
+import type { CustomMetricResponse, MetricData } from '@/composables/types/additional'
 
 export const getDashboard = async (): Promise<dashboardInitPayload> => {
 	try {
@@ -52,12 +52,15 @@ export const fetchMetric = async (metric: string, timeframe: string, errorMessag
 export const fetchCustomMetrics = async (errorMessage: Ref<string>): Promise<MetricData[]> => {
 	const userZone = Intl.DateTimeFormat().resolvedOptions().timeZone
 	try {
-		return await useApi()<MetricData[]>(`/dashboard/custom/fetch?timezone=${encodeURIComponent(userZone)}`, {
+		const response = await useApi()<CustomMetricResponse>(`/dashboard/custom/fetch?timezone=${encodeURIComponent(userZone)}`, {
 			method: "GET",
 			responseType: "json",
 		})
-	} catch (e) {
-		console.error(e)
+		if (response.errors?.length) {
+			errorMessage.value = response.errors.join('')
+		}
+		return response.metrics ?? []
+	} catch (_) {
 		errorMessage.value = `Something went wrong while fetching custom metrics.`
 		return []
 	}

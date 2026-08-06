@@ -2,7 +2,7 @@
 	<div>
 		<Notice :message="errorMessage ?? ''" @close="errorMessage = null" />
 		<Popup :message="cleanMessage" @close="cleanMessage = ''" />
-		<Spinner :loading="saving" />
+		<Spinner :loading="loading || saving" />
 		<WorkerEditor :open="showWorkerEditor" :worker="editingWorker" @close="closeWorkerEditor"
 			@save="handleWorkerUpdate" />
 		<div class="relative flex items-center justify-center mb-6">
@@ -183,6 +183,7 @@ const showWorkerEditor = ref(false)
 const editingWorker = ref<Worker | null>(null)
 const originalWorkerUrl = ref<string | null>(null)
 const saving = ref(false)
+const loading = ref(false)
 const workerUptimes = ref<{ url: string, data: WorkerUptimeData }[]>([])
 const newWorkerFormRef = ref<{ resetForm: () => void } | null>(null)
 const newWorkerStatusCodes = ref<Record<string, number>>({})
@@ -204,28 +205,47 @@ watch(users, (availableUsers) => {
 	selectedRecipients.value = selectedRecipients.value.filter(mail => notificationEnabledMails.has(mail))
 }, { immediate: true })
 
-const loadWorkers = async () => {
-	try {
-		const workers = await getExistingWorkers()
-		workersList.value = workers
-		workerUptimes.value = await Promise.all(workers.map(async (worker) => {
-			const res: WorkerUptimeData = await getWorkerUptime(worker.url, worker.pollInterval)
-			return { url: worker.url, data: res }
-		}))
-	} catch (_) {
-		errorMessage.value = 'Failed to load workers.'
-	}
+const fetchWorkers = async () => {
+	const workers = await getExistingWorkers()
+	const uptimes = await Promise.all(workers.map(async (worker) => {
+		const res: WorkerUptimeData = await getWorkerUptime(worker.url, worker.pollInterval)
+		return { url: worker.url, data: res }
+	}))
+	return { workers, uptimes }
 }
-const loadTeamUsers = async () => {
-	try {
-		teamUsers.value = await getTeamUsers()
-	} catch (e: unknown) {
-		errorMessage.value = e instanceof Error ? e.message : 'Failed to load team users.'
+
+const loadPageData = async () => {
+	loading.value = true
+	errorMessage.value = null
+	const errors: string[] = []
+	const [workersResult, teamUsersResult] = await Promise.allSettled([
+		fetchWorkers(),
+		getTeamUsers(),
+	])
+	if (workersResult.status === 'fulfilled') {
+		workersList.value = workersResult.value.workers
+		workerUptimes.value = workersResult.value.uptimes
+	} else {
+		errors.push('Failed to load workers.')
 	}
+
+	if (teamUsersResult.status === 'fulfilled') {
+		teamUsers.value = teamUsersResult.value
+	} else {
+		const reason = teamUsersResult.reason
+		errors.push(reason instanceof Error ? reason.message : 'Failed to load notification recipients.')
+	}
+	if (errors.length === 2) {
+		errorMessage.value = 'Failed to load workers and notification recipients. Please refresh the page.'
+	} else if (errors.length === 1) {
+		errorMessage.value = errors[0]!
+	}
+
+	loading.value = false
 }
+
 onMounted(() => {
-	loadWorkers()
-	loadTeamUsers()
+	loadPageData()
 })
 
 const isRecipientSelected = (mail: string): boolean => selectedRecipients.value.includes(mail)

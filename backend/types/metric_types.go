@@ -7,6 +7,11 @@ type MetricData struct {
 	CustomMetrics bool              `json:"customMetrics"`
 }
 
+type MetricDataResponse struct {
+	Metrics []MetricData `json:"metrics"`
+	Errors  []string     `json:"errors"`
+}
+
 type Rule struct {
 	Rule    string   `json:"rule"`
 	Matches []string `json:"matches"`
