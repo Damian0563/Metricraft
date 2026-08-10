@@ -67,7 +67,6 @@ func main() {
 	MODE = os.Getenv("MODE")
 	if MODE == "local" {
 		os.Setenv("host", "http://localhost")
-		os.Setenv("ws", "ws://localhost")
 		os.Setenv("redis", "127.0.0.1:6379")
 		os.Setenv("grpc", "127.0.0.1:50051")
 		os.Setenv("frontend", "http://localhost")
@@ -75,7 +74,6 @@ func main() {
 	} else {
 		os.Setenv("frontend", "http://localhost")
 		os.Setenv("worker", "http://localhost")
-		os.Setenv("ws", "ws://localhost")
 		os.Setenv("redis", "127.0.0.1:6379")
 		os.Setenv("grpc", "127.0.0.1:50051")
 	}
@@ -104,7 +102,6 @@ func main() {
 	})
 	router.Get("/dashboard/init", api.DashboardInit)
 	router.Get("/dashboard/urls", api.DashboardUrls)
-	router.Post("/settings/realtime", api.ToggleRealtime)
 	router.Post("/settings/retention", api.ChangeRetention)
 	router.Post("/settings/metrics", api.ChangeMetricsHandler)
 	router.Get("/dashboard/fetch", api.Navigator) //?persist=boolean

@@ -9,7 +9,6 @@ export type dashboardInitPayload = {
 export type config = {
 	secret: string,
 	httphost: string,
-	wsshost: string,
 	port: number,
 }
 

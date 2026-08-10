@@ -27,7 +27,6 @@ type DashboardInitPayload struct {
 }
 
 type Settings struct {
-	Realtime  bool                     `json:"realtime"`
 	Enabled   map[string]EnabledMetric `json:"enabled"`
 	Retention int                      `json:"retention"`
 }
