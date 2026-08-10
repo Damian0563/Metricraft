@@ -6,7 +6,6 @@ export const useBackendUrl = (): config => {
 	return {
 		secret: config.public.secret,
 		httphost: config.public.httphost,
-		wsshost: config.public.wsshost,
 		port: config.public.backendPort,
 	}
 }

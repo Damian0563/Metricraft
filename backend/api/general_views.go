@@ -31,27 +31,6 @@ func Welcome(w http.ResponseWriter, r *http.Request) {
 	w.Write(response)
 }
 
-func ToggleRealtime(w http.ResponseWriter, r *http.Request) {
-	token := auth.NewToken(r.Header.Get("Session-Token"))
-	authed := token.ValidateRequest(&w, true)
-	if !authed {
-		return
-	}
-	type realtimePayload struct {
-		Enabled bool `json:"enabled"`
-	}
-	var payload realtimePayload
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	if err := db.ChangeRealtime(payload.Enabled); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-}
-
 func ChangeMetricsHandler(w http.ResponseWriter, r *http.Request) {
 
 	token := auth.NewToken(r.Header.Get("Session-Token"))

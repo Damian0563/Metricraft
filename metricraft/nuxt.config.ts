@@ -7,15 +7,12 @@ const getConfig = (): config => {
 		if (mode === undefined) {
 			throw new Error("no config file");
 		}
-		let config: config = { "secret": import.meta.env.SECRET || "", "httphost": "", "wsshost": "", "port": 0 };
+		let config: config = { "secret": import.meta.env.SECRET || "", "httphost": "", "port": 0 };
 		const httpHost = import.meta.env.NUXT_PUBLIC_HTTPHOST;
-		const wsHost = import.meta.env.NUXT_PUBLIC_WSSHOST;
 		if (httpHost) {
 			config.httphost = httpHost;
-			config.wsshost = wsHost || httpHost.replace(/^http/, "ws");
 		} else if (mode === "local") {
 			config.httphost = "http://localhost:8080";
-			config.wsshost = "ws://localhost:8080";
 		}
 		else {
 			throw new Error("invalid mode");
@@ -23,7 +20,7 @@ const getConfig = (): config => {
 		return config;
 	} catch (e) {
 		console.log(e);
-		return { "port": 0, "httphost": "", "wsshost": "", "secret": "" };
+		return { "port": 0, "httphost": "", "secret": "" };
 	}
 };
 
@@ -37,7 +34,6 @@ export default defineNuxtConfig({
 		public: {
 			backendPort: 8080,
 			secret: getConfig().secret,
-			wsshost: getConfig().wsshost,
 			httphost: getConfig().httphost,
 		},
 		secret: getConfig().secret,

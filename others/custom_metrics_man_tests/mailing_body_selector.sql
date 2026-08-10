@@ -5,7 +5,7 @@
 --    "valueType":"string","applyRules":false,"chartType":"line"}
 --
 -- With source=body the worker turns the selector into the jsonpath $."users"."gmail"
--- and keeps a row only when jsonb_path_exists(payload::jsonb, ...) is true.
+-- and keeps a row only when payload @? that jsonpath is true.
 -- applyRules=false means the url has to match exactly (no prefix/grouping rules)
 -- and blacklisting is skipped.
 --
@@ -34,8 +34,8 @@ SELECT
     '/api/auth/login',
     '198.51.100.200',
     'Poland',
-    format('{"users":{"gmail":"user%s@gmail.com","id":%s},"remember":true}', day_offset, day_offset),
-    '{"X-Real-IP":"198.51.100.200","User-Agent":"Mozilla/5.0","Accept":"application/json","Content-Type":"application/json"}',
+    format('{"users":{"gmail":"user%s@gmail.com","id":%s},"remember":true}', day_offset, day_offset)::jsonb,
+    '{"X-Real-IP":"198.51.100.200","User-Agent":"Mozilla/5.0","Accept":"application/json","Content-Type":"application/json"}'::jsonb,
     'POST',
     200
 FROM generate_series(0, 360, 3) AS day_offset
@@ -49,8 +49,8 @@ INSERT INTO logs (date, responseTime, url, "user", country, payload, headers, me
     '/api/auth/login',
     '198.51.100.201',
     'Germany',
-    '{"users":{"gmail":"fresh@gmail.com","outlook":"fresh@outlook.com"},"meta":{"source":"web"}}',
-    '{"X-Real-IP":"198.51.100.201","User-Agent":"Mozilla/5.0","Accept":"application/json"}',
+    '{"users":{"gmail":"fresh@gmail.com","outlook":"fresh@outlook.com"},"meta":{"source":"web"}}'::jsonb,
+    '{"X-Real-IP":"198.51.100.201","User-Agent":"Mozilla/5.0","Accept":"application/json"}'::jsonb,
     'POST',
     200
 ),
@@ -60,8 +60,8 @@ INSERT INTO logs (date, responseTime, url, "user", country, payload, headers, me
     '/api/auth/login',
     '198.51.100.201',
     'Germany',
-    '{"users":{"gmail":""}}',
-    '{"X-Real-IP":"198.51.100.201","User-Agent":"curl/8.5.0","Accept":"*/*"}',
+    '{"users":{"gmail":""}}'::jsonb,
+    '{"X-Real-IP":"198.51.100.201","User-Agent":"curl/8.5.0","Accept":"*/*"}'::jsonb,
     'POST',
     401
 ),
@@ -71,8 +71,8 @@ INSERT INTO logs (date, responseTime, url, "user", country, payload, headers, me
     '/api/auth/login',
     '198.51.100.201',
     'Germany',
-    '{"users":{"gmail":null}}',
-    '{"X-Real-IP":"198.51.100.201","User-Agent":"Mozilla/5.0","Accept":"application/json"}',
+    '{"users":{"gmail":null}}'::jsonb,
+    '{"X-Real-IP":"198.51.100.201","User-Agent":"Mozilla/5.0","Accept":"application/json"}'::jsonb,
     'POST',
     200
 );
@@ -91,8 +91,8 @@ INSERT INTO logs (date, responseTime, url, "user", country, payload, headers, me
     '/api/auth/login',
     '198.51.100.202',
     'Spain',
-    '{"users":{"email":"nogmail@example.com"}}',
-    '{"X-Real-IP":"198.51.100.202","User-Agent":"Mozilla/5.0","Accept":"application/json"}',
+    '{"users":{"email":"nogmail@example.com"}}'::jsonb,
+    '{"X-Real-IP":"198.51.100.202","User-Agent":"Mozilla/5.0","Accept":"application/json"}'::jsonb,
     'POST',
     200
 ),
@@ -103,8 +103,8 @@ INSERT INTO logs (date, responseTime, url, "user", country, payload, headers, me
     '/api/auth/login',
     '198.51.100.202',
     'Spain',
-    '{"gmail":"toplevel@gmail.com"}',
-    '{"X-Real-IP":"198.51.100.202","User-Agent":"Mozilla/5.0","Accept":"application/json"}',
+    '{"gmail":"toplevel@gmail.com"}'::jsonb,
+    '{"X-Real-IP":"198.51.100.202","User-Agent":"Mozilla/5.0","Accept":"application/json"}'::jsonb,
     'POST',
     200
 ),
@@ -115,8 +115,8 @@ INSERT INTO logs (date, responseTime, url, "user", country, payload, headers, me
     '/api/auth/login',
     '198.51.100.202',
     'Spain',
-    '{"users":[{"gmail":"inarray@gmail.com"}]}',
-    '{"X-Real-IP":"198.51.100.202","User-Agent":"Mozilla/5.0","Accept":"application/json"}',
+    '{"users":[{"gmail":"inarray@gmail.com"}]}'::jsonb,
+    '{"X-Real-IP":"198.51.100.202","User-Agent":"Mozilla/5.0","Accept":"application/json"}'::jsonb,
     'POST',
     200
 ),
@@ -127,20 +127,20 @@ INSERT INTO logs (date, responseTime, url, "user", country, payload, headers, me
     '/api/auth/login',
     '198.51.100.202',
     'Spain',
-    '{"users":{"Gmail":"casing@gmail.com"}}',
-    '{"X-Real-IP":"198.51.100.202","User-Agent":"Mozilla/5.0","Accept":"application/json"}',
+    '{"users":{"Gmail":"casing@gmail.com"}}'::jsonb,
+    '{"X-Real-IP":"198.51.100.202","User-Agent":"Mozilla/5.0","Accept":"application/json"}'::jsonb,
     'POST',
     200
 ),
--- empty body and NULL body: NULLIF + cast must yield no match instead of an error
+-- empty body and NULL body: must yield no match instead of an error
 (
     (NOW() AT TIME ZONE 'UTC') - INTERVAL '7 days',
     75,
     '/api/auth/login',
     '198.51.100.203',
     'France',
-    '',
-    '{"X-Real-IP":"198.51.100.203","User-Agent":"Mozilla/5.0","Accept":"application/json"}',
+    NULL,
+    '{"X-Real-IP":"198.51.100.203","User-Agent":"Mozilla/5.0","Accept":"application/json"}'::jsonb,
     'POST',
     400
 ),
@@ -151,7 +151,7 @@ INSERT INTO logs (date, responseTime, url, "user", country, payload, headers, me
     '198.51.100.203',
     'France',
     NULL,
-    '{"X-Real-IP":"198.51.100.203","User-Agent":"Mozilla/5.0","Accept":"application/json"}',
+    '{"X-Real-IP":"198.51.100.203","User-Agent":"Mozilla/5.0","Accept":"application/json"}'::jsonb,
     'POST',
     400
 ),
@@ -162,8 +162,8 @@ INSERT INTO logs (date, responseTime, url, "user", country, payload, headers, me
     '/api/auth/login',
     '198.51.100.204',
     'Italy',
-    '{"users":{"gmail":"wrongmethod@gmail.com"}}',
-    '{"X-Real-IP":"198.51.100.204","User-Agent":"Mozilla/5.0","Accept":"application/json"}',
+    '{"users":{"gmail":"wrongmethod@gmail.com"}}'::jsonb,
+    '{"X-Real-IP":"198.51.100.204","User-Agent":"Mozilla/5.0","Accept":"application/json"}'::jsonb,
     'GET',
     200
 ),
@@ -174,8 +174,8 @@ INSERT INTO logs (date, responseTime, url, "user", country, payload, headers, me
     '/api/auth/login/refresh',
     '198.51.100.204',
     'Italy',
-    '{"users":{"gmail":"subpath@gmail.com"}}',
-    '{"X-Real-IP":"198.51.100.204","User-Agent":"Mozilla/5.0","Accept":"application/json"}',
+    '{"users":{"gmail":"subpath@gmail.com"}}'::jsonb,
+    '{"X-Real-IP":"198.51.100.204","User-Agent":"Mozilla/5.0","Accept":"application/json"}'::jsonb,
     'POST',
     200
 ),
@@ -186,8 +186,8 @@ INSERT INTO logs (date, responseTime, url, "user", country, payload, headers, me
     '/api/auth/login?redirect=/dashboard',
     '198.51.100.204',
     'Italy',
-    '{"users":{"gmail":"query@gmail.com"}}',
-    '{"X-Real-IP":"198.51.100.204","User-Agent":"Mozilla/5.0","Accept":"application/json"}',
+    '{"users":{"gmail":"query@gmail.com"}}'::jsonb,
+    '{"X-Real-IP":"198.51.100.204","User-Agent":"Mozilla/5.0","Accept":"application/json"}'::jsonb,
     'POST',
     200
 ),
@@ -198,8 +198,8 @@ INSERT INTO logs (date, responseTime, url, "user", country, payload, headers, me
     '/api/auth/login',
     '198.51.100.205',
     'Norway',
-    '{"users":{"gmail":"tooold@gmail.com"}}',
-    '{"X-Real-IP":"198.51.100.205","User-Agent":"Mozilla/5.0","Accept":"application/json"}',
+    '{"users":{"gmail":"tooold@gmail.com"}}'::jsonb,
+    '{"X-Real-IP":"198.51.100.205","User-Agent":"Mozilla/5.0","Accept":"application/json"}'::jsonb,
     'POST',
     200
 );
@@ -215,7 +215,7 @@ WHERE date >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '365 days'
   AND date < (NOW() AT TIME ZONE 'UTC')
   AND url = '/api/auth/login'
   AND method = 'POST'
-  AND jsonb_path_exists(NULLIF(payload, '')::jsonb, '$."users"."gmail"'::jsonpath);
+  AND payload @? '$."users"."gmail"'::jsonpath;
 
 -- Per bucket breakdown, roughly what the 13 chart points should look like.
 SELECT
@@ -226,15 +226,14 @@ WHERE date >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '365 days'
   AND date < (NOW() AT TIME ZONE 'UTC')
   AND url = '/api/auth/login'
   AND method = 'POST'
-  AND jsonb_path_exists(NULLIF(payload, '')::jsonb, '$."users"."gmail"'::jsonpath)
+  AND payload @? '$."users"."gmail"'::jsonpath
 GROUP BY bucket
 ORDER BY bucket;
 
 -- ---------------------------------------------------------------------------
 -- Optional: malformed body on the tracked endpoint.
--- payload is TEXT, so a row that is not valid JSON makes the ::jsonb cast raise
--- "invalid input syntax for type json" and the whole metric query fails. Run
--- this only when you want to reproduce that failure mode.
+-- payload is JSONB, so invalid JSON cannot be inserted; the worker still fails if
+-- legacy TEXT rows contain non-JSON text. Run only when testing that path.
 -- ---------------------------------------------------------------------------
 
 -- INSERT INTO logs (date, responseTime, url, "user", country, payload, headers, method, status) VALUES
@@ -244,8 +243,8 @@ ORDER BY bucket;
 --     '/api/auth/login',
 --     '198.51.100.206',
 --     'Unknown',
---     'not-json',
---     '{"X-Real-IP":"198.51.100.206","User-Agent":"curl/8.5.0","Accept":"*/*"}',
+--     '{"broken":}'::jsonb,
+--     '{"X-Real-IP":"198.51.100.206","User-Agent":"curl/8.5.0","Accept":"*/*"}'::jsonb,
 --     'POST',
 --     500
 -- );

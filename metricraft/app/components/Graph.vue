@@ -1,50 +1,41 @@
 <template>
-	<div
-		:class="[
-			'relative flex flex-col overflow-hidden rounded-xl w-full text-black h-96 md:h-[26rem] lg:h-[30rem] transition-shadow duration-300',
-			props.custom
-				? 'bg-white shadow-[0_10px_40px_-8px_rgba(0,243,118,0.16),0_4px_14px_-4px_rgba(15,23,42,0.07)] ring-1 ring-[#00F376]/25'
-				: 'bg-white shadow-lg ring-1 ring-slate-100',
-		]">
-		<div
-			v-if="props.custom"
+	<div :class="[
+		'relative flex flex-col overflow-hidden rounded-xl w-full text-black h-96 md:h-[26rem] lg:h-[30rem] transition-shadow duration-300',
+		props.custom
+			? 'bg-white shadow-[0_10px_40px_-8px_rgba(0,243,118,0.16),0_4px_14px_-4px_rgba(15,23,42,0.07)] ring-1 ring-[#00F376]/25'
+			: 'bg-white shadow-lg ring-1 ring-slate-100',
+	]">
+		<div v-if="props.custom"
 			class="pointer-events-none absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-[#00F376] to-[#00B35C]"
 			aria-hidden="true" />
 		<div class="shrink-0 px-5 pt-6 pb-2 text-center">
-			<p
-				v-if="props.custom"
-				class="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#00B35C]">
+			<p v-if="props.custom" class="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#00B35C]">
 				Overwatch · Custom
 			</p>
-			<h1
-				:class="[
-					'text-2xl font-bold text-slate-800',
-					props.custom && 'tracking-tight text-slate-900',
-				]">
+			<h1 :class="[
+				'text-2xl font-bold text-slate-800',
+				props.custom && 'tracking-tight text-slate-900',
+			]">
 				{{ props.name }}
 			</h1>
 		</div>
 		<div class="flex flex-col flex-1 min-h-0 px-5 pb-5 gap-3">
 			<CustomGraphHeader :data="{ metric: props.name, data: props.data }" />
-			<div
-				:class="[
-					'relative flex-1 min-h-0 rounded-lg',
-					props.custom && 'bg-slate-50/70 ring-1 ring-inset ring-[#00F376]/12',
-				]">
+			<div :class="[
+				'relative flex-1 min-h-0 rounded-lg',
+				props.custom && 'bg-slate-50/70 ring-1 ring-inset ring-[#00F376]/12',
+			]">
 				<canvas ref="chartRef"></canvas>
 			</div>
 			<div ref="additionalDataRef" class="hidden" aria-hidden="true"></div>
 			<div class="flex justify-between shrink-0">
 				<div class="flex justify-start gap-2">
-					<button
-						:class="controlClass"
-						@click="openDetails">
+					<button :class="controlClass" @click="openDetails">
 						View details
 					</button>
 					<button
 						v-if="props.name === 'Status code distribution' || props.name === 'HTTP method distribution' || props.name === 'Traffic congestion trends'"
-						:class="controlClass"
-						@click="toggleDetailed">
+						:class="controlClass" @click="toggleDetailed">
 						{{ detailedMode ? 'Grouped view' : 'Detailed view' }}
 					</button>
 				</div>
@@ -142,6 +133,7 @@ const openDetails = (): void => {
 }
 
 const populateChart = async (data: any): Promise<void> => {
+	if (props.custom) console.log(data);
 	const picker = colorPicker.value;
 	if (props.name === "Traffic congestion trends" && chartRef.value && picker) {
 		const { chart, additionalData }: ChartData = createTrafficCongestionTrends(chartRef.value, toRaw(data), picker, props.timeframe, detailedMode.value);

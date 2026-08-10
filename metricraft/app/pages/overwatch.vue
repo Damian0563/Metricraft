@@ -102,10 +102,7 @@
 								<label for="metric-agg" class="block text-sm font-medium text-gray-700 mb-2">Aggregation</label>
 								<select id="metric-agg" v-model="aggregation"
 									class="w-full px-4 py-2 rounded-lg border border-gray-200 text-gray-800 focus:outline-none focus:border-[#00F376] transition-colors cursor-pointer">
-									<option
-										v-for="agg in aggregationTypesPerValueType[valueType]?.filter(x => aggregaationTypesPerChartType[chartType]?.includes(x))"
-										:key="agg" :value="agg">{{
-											agg }}</option>
+									<option v-for="agg in allowedAggregations" :key="agg" :value="agg">{{ agg }}</option>
 								</select>
 							</div>
 							<div class="flex-1 min-w-0">
@@ -354,20 +351,19 @@ const aggregationTypesPerValueType: { [key: string]: string[] } = {
 	'string': ['count', 'unique'],
 	'boolean': ['count', 'p50'],
 }
-const aggregaationTypesPerChartType: { [key: string]: string[] } = {
+const aggregationTypesPerChartType: { [key: string]: string[] } = {
 	'line': ['count', 'sum', 'avg', 'min', 'max', 'p95', 'unique'],
 	'bar': ['count', 'sum', 'avg', 'min', 'max', 'p95', 'unique'],
 	'pie': ['count', 'unique'],
 }
 const valueTypes = ['number', 'string', 'boolean'] as const
-watch(valueType, (t) => {
-	const allowed = aggregationTypesPerValueType[t]!
-	if (!allowed.includes(aggregation.value)) {
-		aggregation.value = allowed[0]!
-	}
+const allowedAggregations = computed(() => {
+	const byValue = aggregationTypesPerValueType[valueType.value] ?? []
+	const byChart = aggregationTypesPerChartType[chartType.value] ?? []
+	return byValue.filter(x => byChart.includes(x))
 })
-watch(chartType, (t) => {
-	const allowed = aggregaationTypesPerChartType[t]!
+watch([valueType, chartType], () => {
+	const allowed = allowedAggregations.value
 	if (!allowed.includes(aggregation.value)) {
 		aggregation.value = allowed[0]!
 	}

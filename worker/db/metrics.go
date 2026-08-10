@@ -539,13 +539,14 @@ func GetCustomMetricDataBuckets(ctx context.Context, metric *pb.CustomMetric, ru
 		args, groupingParam = appendQueryParam(args, grouping)
 	}
 	inspectedField := resolveFieldName(metric.Source)
+	var valueExpr string
 	if selector := strings.TrimSpace(metric.Selector); selector != "" {
 		if inspectedField == "payload" || inspectedField == "headers" {
 			selector = jsonPathSelector(selector)
 		}
 		args, selectorParam = appendQueryParam(args, selector)
+		valueExpr = customMetricExpr(inspectedField, selectorParam)
 	}
-	valueExpr := customMetricExpr(inspectedField, selectorParam)
 	aggregationExpr := resolveAggregationType(metric.Aggregation, metric.ValueType)
 	query := fmt.Sprintf(`
 		SELECT
@@ -610,15 +611,16 @@ func GetCustomMetricDataCummulative(ctx context.Context, metric *pb.CustomMetric
 		args, groupingParam = appendQueryParam(args, grouping)
 	}
 	inspectedField := resolveFieldName(metric.Source)
+	var valueExpr string
 	if selector := strings.TrimSpace(metric.Selector); selector != "" {
 		if inspectedField == "payload" || inspectedField == "headers" {
 			selector = jsonPathSelector(selector)
 		}
 		args, selectorParam = appendQueryParam(args, selector)
+		valueExpr = customMetricExpr(inspectedField, selectorParam)
 	}
 	args = append(args, blacklisted)
 	blacklistParam := fmt.Sprintf("$%d", len(args))
-	valueExpr := customMetricExpr(inspectedField, selectorParam)
 	aggregationExpr := resolveAggregationType(metric.Aggregation, metric.ValueType)
 	query := fmt.Sprintf(`
 		SELECT
@@ -626,14 +628,16 @@ func GetCustomMetricDataCummulative(ctx context.Context, metric *pb.CustomMetric
 			%s AS value
 		FROM (
 			SELECT
-				%s AS value,
+				date,
+				%s AS predicate,
+				%s AS value
 			FROM logs
 			WHERE %s AND %s AND %s
 		) filtered
 		WHERE date >= $1 AND date < $2
 		GROUP BY predicate
 		ORDER BY value DESC
-	`, aggregationExpr, valueExpr, customMetricInnerWhere(pathParam, methodParam, groupingParam, applyRules), customMetricLogicMatch(inspectedField, selectorParam), blacklistFilterSQL(blacklistParam))
+	`, aggregationExpr, valueExpr, valueExpr, customMetricInnerWhere(pathParam, methodParam, groupingParam, applyRules), customMetricLogicMatch(inspectedField, selectorParam), blacklistFilterSQL(blacklistParam))
 	res, err := conn.Query(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query custom metric data: %s", metric.Name)
@@ -641,13 +645,13 @@ func GetCustomMetricDataCummulative(ctx context.Context, metric *pb.CustomMetric
 	defer res.Close()
 	result := make([]*pb.CustomMetricDataPoint, 0)
 	for res.Next() {
-		var predicate string
+		var predicate sql.NullString
 		var value sql.NullFloat64
 		if err = res.Scan(&predicate, &value); err != nil {
 			return nil, fmt.Errorf("failed to scan custom metric data: %s", metric.Name)
 		}
-		if value.Valid {
-			result = append(result, &pb.CustomMetricDataPoint{Grouping: predicate, Value: float32(value.Float64)})
+		if value.Valid && predicate.Valid {
+			result = append(result, &pb.CustomMetricDataPoint{Grouping: predicate.String, Value: float32(value.Float64)})
 		}
 	}
 	if err := res.Err(); err != nil {

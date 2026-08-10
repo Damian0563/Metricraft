@@ -1,35 +1,82 @@
-# Review — aggregation/chart filters, workers SSR load, cumulative metric SQL
+# Review — realtime removal, custom-metric SQL, workers/overwatch fixes
 
-Scope: `metricraft/app/calls/dashboard.ts`, `metricraft/app/pages/overwatch.vue`, `metricraft/app/pages/workers.vue`, `worker/db/metrics.go`, `worker/db/utils.go`.
+Scope: unstaged diff on `master` (backend settings/WS cleanup, frontend realtime removal, worker metric SQL, overwatch aggregation, workers error handling, SQL test fixtures).
 
-## metricraft/app/calls/dashboard.ts
+## Cross-cutting (realtime removal incomplete)
 
-- `L32-33`: 🔵 nit: removed `console.error(e)` in `getUrls`; silent `[]` on failure loses dev signal.
+- `metricraft/app/composables/helpers.ts`:L9: 🔴 bug: returns `wsshost` but `config` type dropped it — `nuxi typecheck` fails (TS2353).
+- `metricraft/app/calls/settings.ts`:L1-10: 🔵 nit: dead `toggleRealtime` still POSTs removed `/settings/realtime`.
+- `metricraft/app/composables/types/views.ts`:L6: 🔵 nit: `dashboardInitPayload.settings.realtime` still typed; backend no longer sends it.
+- `metricraft/app/calls/dashboard.ts`:L17: 🔵 nit: error fallback still sets `realtime: false`.
+
+## backend/api/general_views.go
+
+- (removed `ToggleRealtime`) — clean; no findings.
+
+## backend/cmd/main.go
+
+- (removed route + `ws` env) — clean; WS server still starts via `StartWebSocketServer` elsewhere.
+
+## backend/db/settings.go
+
+- `L62`: 🔵 nit: existing DBs still have `realtime` column; no migration/drop. Harmless orphan column.
+
+## backend/types/special_types.go
+
+- (removed `Settings.Realtime`) — clean.
+
+## metricraft/app/components/Dashboard.vue
+
+- (WS/realtime props removed) — clean.
+
+## metricraft/app/components/Graph.vue
+
+- `L136`: 🔵 nit: debug `console.log(data)` in `populateChart` when `props.custom`; remove before ship.
+
+## metricraft/app/components/Settings.vue
+
+- `L12-29`: 🔴 bug: "Real-time updates" label + tooltip remain but toggle/checkbox removed — dead, misleading UI block.
+
+## metricraft/app/pages/dashboard.vue
+
+- (realtime state removed) — clean given backend change.
 
 ## metricraft/app/pages/overwatch.vue
 
-- `L106`: 🟡 risk: filtered `<option>` list can be empty while `v-model="aggregation"` still holds invalid combo (e.g. pie + `p50`).
-- `L357`: 🔵 nit: typo `aggregaationTypesPerChartType` (triple `a`); rename before it spreads.
-- `L363-367`: 🔴 bug: `watch(valueType)` only checks value-type allowlist, not chart-type; boolean on pie keeps `p50`.
-- `L369-373`: 🟡 risk: `watch(chartType)` resets agg but not coordinated with value-type watch order; intersect both allowlists in one place.
+- `L360-364`: ✅ fixed prior bug: `allowedAggregations` intersects value-type + chart-type allowlists.
+- `L365-369`: 🟡 risk: watch has no `{ immediate: true }`; invalid agg combo on first paint not reset until `valueType`/`chartType` changes.
+- `L368`: 🟡 risk: empty `allowedAggregations` sets `aggregation` to `undefined` (`allowed[0]!`); guard with fallback e.g. `'count'`.
 
 ## metricraft/app/pages/workers.vue
 
-- `L5`: 🟡 risk: dropped `loading` from `<Spinner>`; no full-page load indicator while uptimes fetch in background.
-- `L191`: 🔴 bug: `watch(teamUsersError)` sets `errorMessage` to `''` when error clears — wipes `'Failed to load workers.'` from `fetchError`.
-- `L191`: 🟡 risk: team-users error overwrites workers error; lost prior dual-failure combined message.
-- `L209-218`: 🟡 risk: failed `getWorkerUptime` rows silently dropped via `allSettled`; no partial-failure notice.
-- `L182,L209`: 🔵 nit: `workersList` mirrors `existingWorkers` then diverges on local CRUD; consider single source or refresh `existingWorkers` after mutations.
+- `L182-184,L193-195`: 🟡 risk: sequential `if (fetchError)` then `if (teamUsersError)` — second clobbers first dual-failure message.
+- `L215`: 🔵 nit: `workersList.value = workers` inside `watch(workersList)` is noop; drop line.
+- `L223-224,L227-228`: 🔴 bug: catch returns `{ data: undefined }` but filter keeps fulfilled rows; `WorkerUptimeGraph` gets `undefined` data. Filter `result.value.data != null` or omit failed workers.
+- `L229-232`: 🟡 risk: uptime fetch errors overwrite workers/team-users init errors; append or prefer first non-empty.
+
+## metricraft/nuxt.config.ts
+
+- (removed `wsshost` from runtime config) — clean; pair with `helpers.ts` fix.
+
+## metricraft/app/ws/visitors.ts
+
+- (deleted) — clean.
+
+## worker/db/db.go
+
+- `L25`: 🟡 risk: `CREATE TABLE IF NOT EXISTS` drops `realtime` only on fresh DB; existing installs keep old schema — document or migrate.
 
 ## worker/db/metrics.go
 
-- `L628-630`: 🔴 bug: inner SELECT has trailing comma (`%s AS value,`) — invalid SQL syntax.
-- `L625,L629`: 🔴 bug: outer SELECT references `predicate` but inner never defines it; query fails at runtime for pie charts.
-- `L623-636`: 🔴 bug: cumulative query needs inner `%s AS predicate, %s AS value` (like buckets fn), not one column.
-- `L593,L639,L647,L654`: 🟡 risk: `fmt.Errorf(...)` drops root `err`. Use `%w`.
-- `L653-654`: 🔵 nit: Scan vs `res.Err()` share identical message; tag stage in text.
+- `L542-549,L614-621`: 🟡 risk: empty selector leaves `valueExpr` `""` — inner SELECT becomes ` AS value` / ` AS predicate`; invalid SQL for no-selector metrics.
+- `L626-640`: ✅ fixes prior cumulative pie bug: inner query now defines `predicate` + `value`, `Scan` uses `sql.NullString`.
+- `L572,L643,L651,L658`: 🔵 nit: `fmt.Errorf(...)` drops root `err`; use `%w`.
 
-## worker/db/utils.go
+## others/custom_metrics_man_tests/mailing_body_selector.sql
 
-- `L85-86`: 🟡 risk: removed empty-`selectorParam` guard; `jsonb_path_query_first(%s, ::jsonpath)` breaks if selector omitted server-side.
-- `L87-88`: 🟡 risk: url/query branch always uses `substring(...)`; old empty-selector path returned `url`/`NULL`.
+- (jsonb casts + `@?` operator) — aligns with worker jsonb path; no findings.
+
+## Noise / out of scope
+
+- `backend/cmd/tmp/build-errors.log`, `worker/cmd/tmp/build-errors.log`: 🔵 nit: tmp build logs in diff; exclude from commit.
+- `?? others/custom_metrics_man_tests/checkout_status_pie.sql`: untracked; not reviewed.

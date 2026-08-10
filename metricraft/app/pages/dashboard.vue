@@ -2,9 +2,8 @@
 	<div>
 		<Popup :message="errorMessage" @close="errorMessage = ''" />
 		<Spinner :loading="loading || localLoading" />
-		<Dashboard :realtimeEnabled="realtimeEnabled" :logRetention="logRetention" :derivedMetrics="derivedMetrics"
-			@load="handleLoad" @updateMetrics="handleUpdateMetrics" @changeRetention="handleRetentionChange"
-			@changeRealtime="handleRealtimeChange" />
+		<Dashboard :logRetention="logRetention" :derivedMetrics="derivedMetrics" @load="handleLoad"
+			@updateMetrics="handleUpdateMetrics" @changeRetention="handleRetentionChange" />
 	</div>
 </template>
 
@@ -16,7 +15,6 @@ const errorMessage = ref("");
 const appName = useState<string>('appName', () => "");
 const urls = useState<string[]>('urls', () => []);
 const derivedMetrics = ref<Record<string, { enabled: boolean, timeframe: string }>>({})
-const realtimeEnabled = ref(false);
 const logRetention = ref(30);
 const timeout = ref(0)
 const { data: payload, pending: loading, error } = await useAsyncData<dashboardInitPayload>('dashboard', () => getDashboard())
@@ -26,7 +24,6 @@ const initialize = ((newVal: dashboardInitPayload | undefined) => {
 	}
 	if (newVal && newVal.error === '') {
 		appName.value = newVal.appName
-		realtimeEnabled.value = newVal.settings.realtime
 		logRetention.value = newVal.settings.retention
 		const raw = newVal.settings.enabled as Record<string, { enabled: boolean, timeframe: string }>
 		derivedMetrics.value = raw
@@ -54,9 +51,7 @@ const handleUpdateMetrics = (changes: { name: string; enabled: boolean; timefram
 	}
 	derivedMetrics.value = next
 };
-const handleRealtimeChange = (val: boolean) => {
-	realtimeEnabled.value = val
-}
+
 const handleRetentionChange = (retention: number) => {
 	logRetention.value = retention
 }

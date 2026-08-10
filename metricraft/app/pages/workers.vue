@@ -178,8 +178,10 @@ import { getExistingWorkers, saveWorker, updateWorker, deleteWorkerEntry, getWor
 import type { Worker, WorkerUptimeData, TeamUser } from '@/composables/types/additional'
 const errorMessage = ref<string | null>(null)
 const cleanMessage = ref<string>('')
-const { data: existingWorkers, error: fetchError } = await useAsyncData<Worker[]>('existingWorkers', () => getExistingWorkers(), { default: () => [] })
-const workersList = ref<Worker[]>([])
+const { data: workersList, error: fetchError } = await useAsyncData<Worker[]>('existingWorkers', () => getExistingWorkers(), { default: () => [] })
+if (fetchError.value) {
+	errorMessage.value = 'Failed to load workers.'
+}
 const showWorkerEditor = ref(false)
 const editingWorker = ref<Worker | null>(null)
 const originalWorkerUrl = ref<string | null>(null)
@@ -188,7 +190,9 @@ const workerUptimes = ref<{ url: string, data: WorkerUptimeData }[]>([])
 const newWorkerFormRef = ref<{ resetForm: () => void } | null>(null)
 const newWorkerStatusCodes = ref<Record<string, number>>({})
 const { data: teamUsers, error: teamUsersError } = await useAsyncData<TeamUser[]>('teamUsers', () => getTeamUsers(), { default: () => [] })
-watch(teamUsersError, () => errorMessage.value = teamUsersError.value?.message ?? '')
+if (teamUsersError.value) {
+	errorMessage.value = teamUsersError.value?.message ?? ''
+}
 const users = computed(() => teamUsers.value?.filter(user => user.status) ?? [])
 const selectedRecipients = ref<string[]>([])
 const recipientSelectionInitialized = ref(false)
@@ -206,22 +210,29 @@ watch(users, (availableUsers) => {
 	selectedRecipients.value = selectedRecipients.value.filter(mail => notificationEnabledMails.has(mail))
 }, { immediate: true })
 
-watch(existingWorkers, async (workers) => {
+watch(workersList, async (workers: Worker[]) => {
 	if (workers) {
 		workersList.value = workers
+		let errorBuffer: string[] = []
 		const results = await Promise.allSettled(workers.map(async (worker) => {
-			const res: WorkerUptimeData = await getWorkerUptime(worker.url, worker.pollInterval)
-			return { url: worker.url, data: res }
+			try {
+				const res: WorkerUptimeData = await getWorkerUptime(worker.url, worker.pollInterval)
+				return { url: worker.url, data: res }
+			} catch (e) {
+				errorBuffer.push("Error during fetching worker uptime for " + worker.url)
+				return { url: worker.url, data: undefined }
+			}
 		}))
 		workerUptimes.value = results
 			.filter((result): result is PromiseFulfilledResult<{ url: string, data: WorkerUptimeData }> => result.status === 'fulfilled')
 			.map(result => result.value)
+		if (errorBuffer.length > 0 && errorBuffer.length < 2) {
+			errorMessage.value = errorBuffer[0]!
+		} else if (errorBuffer.length >= 2) {
+			errorMessage.value = "Multiple errors occured during fetching worker uptimes: \n" + errorBuffer.join(", ")
+		}
 	}
 }, { immediate: true })
-
-if (fetchError.value) {
-	errorMessage.value = 'Failed to load workers.'
-}
 
 const isRecipientSelected = (mail: string): boolean => selectedRecipients.value.includes(mail)
 const toggleRecipient = (mail: string) => {

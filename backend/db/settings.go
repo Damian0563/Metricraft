@@ -33,24 +33,6 @@ func repairEnabledMetrics(ctx context.Context, conn *pgxpool.Pool, metrics map[s
 	_, _ = conn.Exec(ctx, "UPDATE settings SET enabled = $1 WHERE TRUE", string(fixed))
 }
 
-func ChangeRealtime(enabled bool) error {
-	ctx := context.Background()
-	conn, err := GetLogsPool()
-	if err != nil {
-		return err
-	}
-	tx, err := conn.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(ctx)
-	_, err = tx.Exec(ctx, "UPDATE settings SET realtime = $1 WHERE TRUE", enabled)
-	if err != nil {
-		return err
-	}
-	return tx.Commit(ctx)
-}
-
 func ChangeLogsRetention(retention int) error {
 	ctx := context.Background()
 	conn, err := GetLogsPool()
@@ -77,7 +59,7 @@ func GetSettings() (types.Settings, error) {
 		return types.Settings{}, err
 	}
 	var enabled string
-	err = conn.QueryRow(ctx, "SELECT realtime,enabled,retention FROM settings WHERE TRUE").Scan(&settings.Realtime, &enabled, &settings.Retention)
+	err = conn.QueryRow(ctx, "SELECT enabled,retention FROM settings WHERE TRUE").Scan(&enabled, &settings.Retention)
 	if err != nil {
 		return types.Settings{}, err
 	}
