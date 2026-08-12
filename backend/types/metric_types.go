@@ -5,6 +5,7 @@ type MetricData struct {
 	Metrics       []MetricDataItems `json:"metrics"`
 	Timeframe     string            `json:"timeframe"`
 	CustomMetrics bool              `json:"customMetrics"`
+	Accumulate    bool              `json:"accumulate"`
 }
 
 type MetricDataResponse struct {

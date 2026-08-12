@@ -123,8 +123,13 @@ message customMetricDataPoint {
   float value = 2;
 }
 
-message customMetricData {
+message customMetricDataItems {
+  //this can be expanded to add metadata
   repeated customMetricDataPoint metrics = 1;
+}
+
+message customMetricData {
+  customMetricDataItems metrics = 1;
 }
 
 message customMetricRequest {

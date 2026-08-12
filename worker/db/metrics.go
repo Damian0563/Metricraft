@@ -585,7 +585,7 @@ func GetCustomMetricDataBuckets(ctx context.Context, metric *pb.CustomMetric, ru
 	if err := res.Err(); err != nil {
 		return nil, fmt.Errorf("failed to scan custom metric data: %s", metric.Name)
 	}
-	return &pb.CustomMetricData{Metrics: buckets}, nil
+	return &pb.CustomMetricData{Metrics: &pb.CustomMetricDataItems{Metrics: buckets}}, nil
 }
 
 func GetCustomMetricDataCummulative(ctx context.Context, metric *pb.CustomMetric, rules []*pb.Rule, start time.Time, timezone string) (*pb.CustomMetricData, error) {
@@ -657,5 +657,5 @@ func GetCustomMetricDataCummulative(ctx context.Context, metric *pb.CustomMetric
 	if err := res.Err(); err != nil {
 		return nil, fmt.Errorf("failed to scan custom metric data: %s", metric.Name)
 	}
-	return &pb.CustomMetricData{Metrics: result}, nil
+	return &pb.CustomMetricData{Metrics: &pb.CustomMetricDataItems{Metrics: result}}, nil
 }

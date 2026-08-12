@@ -74,14 +74,17 @@ import { onMounted, toRaw } from "vue";
 import { useColorPicker } from "~/composables/colorpicker";
 import { createTrafficCongestionTrends, createHotHours, createRouteCongestion, createHttpMethodMix, createUniqueVisitors, createThroughput, createStatusCodeDistribution, createGeographicalTraffic, createGeographicPerformance, createP95Latency, createUptimeScore } from "~/composables/charts/charts";
 import type { ChartData, WorldData } from '@/composables/types/metrics'
+import type { MetricData } from '@/composables/types/additional'
 const props = withDefaults(defineProps<{
 	name: string;
 	timeframe: string;
 	data: any;
 	worldData: WorldData | undefined;
 	custom?: boolean;
+	accumulate?: boolean;
 }>(), {
 	custom: false,
+	accumulate: false,
 });
 
 const controlClass = computed(() =>
@@ -133,7 +136,6 @@ const openDetails = (): void => {
 }
 
 const populateChart = async (data: any): Promise<void> => {
-	if (props.custom) console.log(data);
 	const picker = colorPicker.value;
 	if (props.name === "Traffic congestion trends" && chartRef.value && picker) {
 		const { chart, additionalData }: ChartData = createTrafficCongestionTrends(chartRef.value, toRaw(data), picker, props.timeframe, detailedMode.value);
@@ -179,6 +181,14 @@ const populateChart = async (data: any): Promise<void> => {
 		const { chart, additionalData }: ChartData = createHotHours(chartRef.value, toRaw(data))
 		chartInstance = chart;
 		mutateAdditionalData(additionalData);
+	} else if (props.custom) {
+		const data: MetricData = toRaw(props.data);
+		console.log(data);
+		if (props.accumulate) {
+			console.log(props.name, 'is accumulated')
+		} else {
+			console.log(props.name, 'is not accumulated')
+		}
 	}
 }
 </script>

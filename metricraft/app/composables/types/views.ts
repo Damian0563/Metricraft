@@ -3,7 +3,7 @@ export type dashboardInitPayload = {
 	urls: string[];
 	signedSecret: string;
 	error: string;
-	settings: { realtime: boolean, retention: number, enabled: Record<string, { enabled: boolean, timeframe: string }> };
+	settings: { retention: number, enabled: Record<string, { enabled: boolean, timeframe: string }> };
 }
 
 export type config = {

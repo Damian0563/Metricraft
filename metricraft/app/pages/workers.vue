@@ -212,7 +212,6 @@ watch(users, (availableUsers) => {
 
 watch(workersList, async (workers: Worker[]) => {
 	if (workers) {
-		workersList.value = workers
 		let errorBuffer: string[] = []
 		const results = await Promise.allSettled(workers.map(async (worker) => {
 			try {
@@ -224,7 +223,7 @@ watch(workersList, async (workers: Worker[]) => {
 			}
 		}))
 		workerUptimes.value = results
-			.filter((result): result is PromiseFulfilledResult<{ url: string, data: WorkerUptimeData }> => result.status === 'fulfilled')
+			.filter((result): result is PromiseFulfilledResult<{ url: string, data: WorkerUptimeData }> => result.status === 'fulfilled' && result.value.data !== null)
 			.map(result => result.value)
 		if (errorBuffer.length > 0 && errorBuffer.length < 2) {
 			errorMessage.value = errorBuffer[0]!

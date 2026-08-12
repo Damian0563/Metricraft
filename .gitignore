@@ -10,3 +10,5 @@ Dockerfile.*
 !/Dockerfile
 **/cmd/tmp/main
 **/cmd/tmp/*.log
+backend/cmd/tmp/build-errors.log
+worker/cmd/tmp/build-errors.log
