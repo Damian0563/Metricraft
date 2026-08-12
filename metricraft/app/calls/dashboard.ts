@@ -14,7 +14,6 @@ export const getDashboard = async (): Promise<dashboardInitPayload> => {
 			error: "Something went wrong, Check your internet connection and try again.",
 			urls: [],
 			settings: {
-				realtime: false,
 				retention: 30,
 				enabled: {},
 			},

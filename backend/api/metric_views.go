@@ -157,11 +157,16 @@ func CustomMetricFetch(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				errors = append(errors, err.Error()+"\n")
 			}
+			accumulate := false
+			if metric.ChartType == "pie" {
+				accumulate = true
+			}
 			metricData = append(metricData, types.MetricData{
 				Name:          metric.Name,
 				Metrics:       customMetricDataFromProto(resp),
 				Timeframe:     metric.Timeframe,
 				CustomMetrics: true,
+				Accumulate:    accumulate,
 			})
 			mu.Unlock()
 		}(metric)

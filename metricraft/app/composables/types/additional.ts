@@ -31,6 +31,7 @@ export type MetricData = {
 	metrics: any;
 	timeframe: string;
 	customMetrics?: boolean;
+	accumulate?: boolean;
 };
 
 export type Rule = {

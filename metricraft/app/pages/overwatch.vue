@@ -365,9 +365,9 @@ const allowedAggregations = computed(() => {
 watch([valueType, chartType], () => {
 	const allowed = allowedAggregations.value
 	if (!allowed.includes(aggregation.value)) {
-		aggregation.value = allowed[0]!
+		aggregation.value = allowed[0] ?? 'count'
 	}
-})
+}, { immediate: true })
 
 const namingError = computed(() => customMetricNamingError(metricName.value))
 const timeframes = new Map<string, string>([['Last 12 hours', "0.5d"], ['Last 24 hours', "1d"], ['Last 7 days', "7d"], ['Last 30 days', "30d"], ['Last 90 days', "90d"], ['Last 180 days', "180d"], ['Last 365 days', "365d"], ['This week', '7t'], ['This month', "30t"], ['This year', "365t"]])

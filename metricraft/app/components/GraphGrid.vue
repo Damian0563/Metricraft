@@ -9,9 +9,9 @@
 					:animate="{ opacity: 1, height: 'auto' }"
 					:exit="{ opacity: 0, height: 0, x: 32, transition: { duration: 0.22, ease: 'easeIn' } }"
 					:transition="{ type: 'spring', stiffness: 480, damping: 34, delay: Math.min(i * 0.045, 0.27) }">
-					<Graph :name="entry.name" :custom="!!entry.customMetrics" :data="entry.metrics" :timeframe="entry.timeframe"
-						:worldData="worldData" @timeframe-change="handleTimeframeChange($event)"
-						@see-details="handleDetails($event)" />
+					<Graph :name="entry.name" :custom="!!entry.customMetrics" :accumulate="!!entry.accumulate"
+						:data="entry.metrics" :timeframe="entry.timeframe" :worldData="worldData"
+						@timeframe-change="handleTimeframeChange($event)" @see-details="handleDetails($event)" />
 				</motion.div>
 			</AnimatePresence>
 		</ClientOnly>
