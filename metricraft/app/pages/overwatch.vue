@@ -238,28 +238,32 @@
 									:transition="{ type: 'spring', stiffness: 480, damping: 34, delay: Math.min(index * 0.045, 0.27) }">
 									<div
 										class="flex items-center justify-between gap-3 px-6 py-4 transition-colors duration-200 hover:bg-[#00F376]/[0.04]">
-										<motion.div
-											class="min-w-0 flex-1 border-l-2 border-transparent pl-3 transition-[border-color] duration-200 group-hover:border-[#00F376]/70"
-											:initial="{ opacity: 0, x: -10 }" :animate="{ opacity: 1, x: 0 }"
-											:transition="{ delay: Math.min(index * 0.045, 0.27) + 0.08, duration: 0.28, ease: 'easeOut' }">
-											<p class="text-sm font-semibold text-gray-900 transition-colors group-hover:text-[#00B35C]">
-												{{ metric.name }}
-											</p>
-											<p class="mt-1 font-mono text-xs text-gray-600 break-all">
-												<span class="text-[#00B35C] font-semibold">{{ metric.method }}</span>
-												{{ ' ' + metric.path }}
-											</p>
-											<p class="mt-2 text-xs text-gray-500">
-												<span class="font-medium text-gray-700">{{ metric.aggregation }}</span>
-												of {{ metric.source }} <span class="font-mono text-gray-700">{{ metric.selector }}</span>
-												· {{ metric.valueType }} · {{ timeframeLabelFor(metric.timeframe).toLowerCase() }} · {{
-													metric.chartType
-												}}
-											</p>
-											<p v-if="metric.lastUpdate" class="mt-1 text-xs text-gray-400">
-												Last updated {{ formatMetricLastUpdate(metric.lastUpdate) }}
-											</p>
-										</motion.div>
+										<button type="button"
+											class="min-w-0 flex-1 cursor-pointer border-0 bg-transparent p-0 text-left"
+											@click="editingMetric = metric">
+											<motion.div
+												class="border-l-2 border-transparent pl-3 transition-[border-color] duration-200 group-hover:border-[#00F376]/70"
+												:initial="{ opacity: 0, x: -10 }" :animate="{ opacity: 1, x: 0 }"
+												:transition="{ delay: Math.min(index * 0.045, 0.27) + 0.08, duration: 0.28, ease: 'easeOut' }">
+												<p class="text-sm font-semibold text-gray-900 transition-colors group-hover:text-[#00B35C]">
+													{{ metric.name }}
+												</p>
+												<p class="mt-1 font-mono text-xs text-gray-600 break-all">
+													<span class="text-[#00B35C] font-semibold">{{ metric.method }}</span>
+													{{ ' ' + metric.path }}
+												</p>
+												<p class="mt-2 text-xs text-gray-500">
+													<span class="font-medium text-gray-700">{{ metric.aggregation }}</span>
+													of {{ metric.source }} <span class="font-mono text-gray-700">{{ metric.selector }}</span>
+													· {{ metric.valueType }} · {{ timeframeLabelFor(metric.timeframe).toLowerCase() }} · {{
+														metric.chartType
+													}}
+												</p>
+												<p v-if="metric.lastUpdate" class="mt-1 text-xs text-gray-400">
+													Last updated {{ formatMetricLastUpdate(metric.lastUpdate) }}
+												</p>
+											</motion.div>
+										</button>
 										<motion.div class="flex shrink-0 items-center gap-3" :initial="{ opacity: 0, scale: 0.9 }"
 											:animate="{ opacity: 1, scale: 1 }"
 											:transition="{ type: 'spring', stiffness: 420, damping: 26, delay: Math.min(index * 0.045, 0.27) + 0.12 }">

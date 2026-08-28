@@ -95,7 +95,7 @@
 											class="mb-1.5 block text-sm font-medium text-gray-700">Aggregation</label>
 										<select :id="`${idPrefix}-agg`" v-model="aggregation"
 											class="w-full cursor-pointer rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 transition-colors focus:border-[#00F376] focus:outline-none">
-											<option v-for="agg in aggregationTypes[valueType]" :key="agg" :value="agg">{{ agg }}</option>
+											<option v-for="agg in allowedAggregations" :key="agg" :value="agg">{{ agg }}</option>
 										</select>
 									</div>
 									<div>
@@ -103,7 +103,7 @@
 											class="mb-1.5 block text-sm font-medium text-gray-700">Timeframe</label>
 										<select :id="`${idPrefix}-timeframe`" v-model="timeframe"
 											class="w-full cursor-pointer rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 transition-colors focus:border-[#00F376] focus:outline-none">
-											<option v-for="tf in timeframes" :key="tf" :value="tf">{{ tf }}</option>
+											<option v-for="[label, value] in timeframes" :key="value" :value="value">{{ label }}</option>
 										</select>
 									</div>
 									<div>
@@ -149,7 +149,7 @@
 <script setup lang="ts">
 import { AnimatePresence, motion } from 'motion-v'
 import type { ChartType, CustomMetric, MetricSource } from '@/composables/types/additional'
-import { customMetricNamingError } from '@/composables/helpers'
+import { customMetricNamingError, timeframeValueFor } from '@/composables/helpers'
 
 const props = defineProps<{
 	open: boolean
@@ -165,11 +165,27 @@ const emit = defineEmits<{
 const methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const
 const valueTypes = ['number', 'string', 'boolean'] as const
 const chartTypes = ['line', 'bar', 'pie'] as const
-const timeframes = ['Last hour', 'Last 12 hours', 'Last 24 hours', 'Last 7 days', 'Last 30 days', 'Last 90 days', 'Last 365 days', 'This month', 'This year'] as const
-const aggregationTypes: Record<string, string[]> = {
+const timeframes = [
+	['Last 12 hours', '0.5d'],
+	['Last 24 hours', '1d'],
+	['Last 7 days', '7d'],
+	['Last 30 days', '30d'],
+	['Last 90 days', '90d'],
+	['Last 180 days', '180d'],
+	['Last 365 days', '365d'],
+	['This week', '7t'],
+	['This month', '30t'],
+	['This year', '365t'],
+] as const
+const aggregationTypesPerValueType: Record<string, string[]> = {
 	number: ['count', 'sum', 'avg', 'min', 'max', 'p95', 'unique'],
 	string: ['count', 'unique'],
 	boolean: ['count', 'p50'],
+}
+const aggregationTypesPerChartType: Record<string, string[]> = {
+	line: ['count', 'sum', 'avg', 'min', 'max', 'p95', 'unique'],
+	bar: ['count', 'sum', 'avg', 'min', 'max', 'p95', 'unique'],
+	pie: ['count', 'unique'],
 }
 const sources: { id: MetricSource; label: string; icon: string }[] = [
 	{
@@ -202,9 +218,15 @@ const source = ref<MetricSource>('body')
 const selector = ref('')
 const aggregation = ref('avg')
 const valueType = ref('number')
-const timeframe = ref('Last hour')
+const timeframe = ref('7d')
 const chartType = ref<ChartType>('line')
 const applyRules = ref(false)
+
+const allowedAggregations = computed(() => {
+	const byValue = aggregationTypesPerValueType[valueType.value] ?? []
+	const byChart = aggregationTypesPerChartType[chartType.value] ?? []
+	return byValue.filter(x => byChart.includes(x))
+})
 
 const syncFromMetric = (metric: CustomMetric) => {
 	metricName.value = metric.name
@@ -214,7 +236,7 @@ const syncFromMetric = (metric: CustomMetric) => {
 	selector.value = metric.selector
 	aggregation.value = metric.aggregation
 	valueType.value = metric.valueType
-	timeframe.value = metric.timeframe
+	timeframe.value = timeframeValueFor(metric.timeframe)
 	chartType.value = metric.chartType
 	applyRules.value = metric.applyRules
 	pathError.value = ''
@@ -224,10 +246,10 @@ watch(() => props.metric, (metric) => {
 	if (metric) syncFromMetric(metric)
 }, { immediate: true, deep: true })
 
-watch(valueType, (t) => {
-	const allowed = aggregationTypes[t]!
+watch([valueType, chartType], () => {
+	const allowed = allowedAggregations.value
 	if (!allowed.includes(aggregation.value)) {
-		aggregation.value = allowed[0]!
+		aggregation.value = allowed[0] ?? 'count'
 	}
 })
 
