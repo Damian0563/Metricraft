@@ -35,6 +35,9 @@ func customMetricDataFromProto(resp *pb.CustomMetricData) []types.MetricDataItem
 	if resp == nil {
 		return nil
 	}
+	if resp.Metrics == nil {
+		return nil
+	}
 	mappings := make([]types.MetricDataItems, 0, len((*resp.Metrics).Metrics))
 	for _, mapping := range (*resp.Metrics).Metrics {
 		mappings = append(mappings, types.MetricDataItems{Grouping: mapping.Grouping, Value: float64(mapping.Value)})

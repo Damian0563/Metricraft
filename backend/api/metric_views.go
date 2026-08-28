@@ -167,6 +167,19 @@ func CustomMetricFetch(w http.ResponseWriter, r *http.Request) {
 				Timeframe:     metric.Timeframe,
 				CustomMetrics: true,
 				Accumulate:    accumulate,
+				Definition: &types.CustomMetricDefinition{
+					Name:        metric.Name,
+					Method:      metric.Method,
+					Path:        metric.Path,
+					Source:      metric.Source,
+					Selector:    metric.Selector,
+					Aggregation: metric.Aggregation,
+					Timeframe:   metric.Timeframe,
+					ValueType:   metric.ValueType,
+					ApplyRules:  metric.ApplyRules,
+					ChartType:   metric.ChartType,
+					LastUpdate:  metric.LastUpdate,
+				},
 			})
 			mu.Unlock()
 		}(metric)

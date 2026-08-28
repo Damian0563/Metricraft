@@ -9,15 +9,31 @@
 			class="pointer-events-none absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-[#00F376] to-[#00B35C]"
 			aria-hidden="true" />
 		<div class="shrink-0 px-5 pt-6 pb-2 text-center">
-			<p v-if="props.custom" class="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#00B35C]">
-				Overwatch · Custom
-			</p>
-			<h1 :class="[
-				'text-2xl font-bold text-slate-800',
-				props.custom && 'tracking-tight text-slate-900',
-			]">
-				{{ props.name }}
-			</h1>
+			<button v-if="props.custom && props.definition" type="button"
+				class="group mx-auto block w-full cursor-pointer rounded-lg px-2 py-1 text-center transition-colors hover:bg-[#00F376]/[0.06] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00F376]/40"
+				:aria-label="`Edit ${props.name}`" @click="openEdit">
+				<p class="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#00B35C]">
+					Overwatch · Custom
+					<span
+						class="ml-1.5 font-medium normal-case tracking-normal text-[#00B35C]/70 opacity-0 transition-opacity group-hover:opacity-100">
+						· click to edit
+					</span>
+				</p>
+				<h1 class="text-2xl font-bold tracking-tight text-slate-900 transition-colors group-hover:text-[#00B35C]">
+					{{ props.name }}
+				</h1>
+			</button>
+			<template v-else>
+				<p v-if="props.custom" class="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#00B35C]">
+					Overwatch · Custom
+				</p>
+				<h1 :class="[
+					'text-2xl font-bold text-slate-800',
+					props.custom && 'tracking-tight text-slate-900',
+				]">
+					{{ props.name }}
+				</h1>
+			</template>
 		</div>
 		<div class="flex flex-col flex-1 min-h-0 px-5 pb-5 gap-3">
 			<CustomGraphHeader :data="{ metric: props.name, data: props.data }" />
@@ -63,6 +79,8 @@
 				</div>
 			</div>
 		</div>
+		<UpdateMetricForm :open="editing" :metric="editingMetric" :saving="saving" @close="closeEdit"
+			@update="onMetricUpdate" />
 	</div>
 </template>
 
@@ -73,8 +91,10 @@ import { ChoroplethChart } from 'chartjs-chart-geo';
 import { onMounted, toRaw } from "vue";
 import { useColorPicker } from "~/composables/colorpicker";
 import { createTrafficCongestionTrends, createHotHours, createRouteCongestion, createHttpMethodMix, createUniqueVisitors, createThroughput, createStatusCodeDistribution, createGeographicalTraffic, createGeographicPerformance, createP95Latency, createUptimeScore } from "~/composables/charts/charts";
+import { genericAccumulatedChart, genericGranularChart } from "~/composables/charts/generics";
+import { updateCustomMetric } from "@/calls/overwatch";
 import type { ChartData, WorldData } from '@/composables/types/metrics'
-import type { MetricData } from '@/composables/types/additional'
+import type { CustomMetric, MetricData } from '@/composables/types/additional'
 const props = withDefaults(defineProps<{
 	name: string;
 	timeframe: string;
@@ -82,9 +102,11 @@ const props = withDefaults(defineProps<{
 	worldData: WorldData | undefined;
 	custom?: boolean;
 	accumulate?: boolean;
+	definition?: CustomMetric | null;
 }>(), {
 	custom: false,
 	accumulate: false,
+	definition: null,
 });
 
 const controlClass = computed(() =>
@@ -95,12 +117,17 @@ const controlClass = computed(() =>
 const emit = defineEmits<{
 	timeframeChange: [{ metric: string, timeframe: string }];
 	seeDetails: [{ metric: string, additionalData: HTMLDivElement | null }];
+	metricUpdated: [metric: CustomMetric];
+	error: [message: string];
 }>();
 const chartRef = ref<HTMLCanvasElement | null>(null);
 const additionalDataRef = ref<HTMLDivElement | null>(null);
 const seeDetails = ref<boolean>(false);
 const colorPicker = useColorPicker();
 const detailedMode = ref<boolean>(false);
+const editing = ref(false);
+const editingMetric = ref<CustomMetric | null>(null);
+const saving = ref(false);
 let chartInstance: Chart | ChoroplethChart | null = null;
 Chart.register(PointElement, TimeScale, LineController, LineElement, CategoryScale, LinearScale, BarController, BarElement, Tooltip, Legend, PieController, ArcElement, ChoroplethController, GeoFeature, ColorScale, ProjectionScale);
 onMounted((): void => {
@@ -135,60 +162,65 @@ const openDetails = (): void => {
 	});
 }
 
+const openEdit = (): void => {
+	if (!props.definition) return;
+	editingMetric.value = { ...props.definition };
+	editing.value = true;
+}
+
+const closeEdit = (): void => {
+	editing.value = false;
+	editingMetric.value = null;
+}
+
+const onMetricUpdate = async (updated: CustomMetric) => {
+	const original = editingMetric.value;
+	if (!original) return;
+	saving.value = true;
+	try {
+		await updateCustomMetric(original, updated);
+		emit('metricUpdated', updated);
+	} catch (_) {
+		emit('error', 'Failed to update custom metric.');
+	} finally {
+		saving.value = false;
+		closeEdit();
+	}
+}
+
 const populateChart = async (data: any): Promise<void> => {
 	const picker = colorPicker.value;
+	let res: ChartData | undefined;
 	if (props.name === "Traffic congestion trends" && chartRef.value && picker) {
-		const { chart, additionalData }: ChartData = createTrafficCongestionTrends(chartRef.value, toRaw(data), picker, props.timeframe, detailedMode.value);
-		chartInstance = chart;
-		mutateAdditionalData(additionalData);
+		res = createTrafficCongestionTrends(chartRef.value, toRaw(data), picker, props.timeframe, detailedMode.value);
 	} else if (props.name === "Geographical traffic" && chartRef.value) {
-		const { chart, additionalData }: ChartData = createGeographicalTraffic(chartRef.value, toRaw(data), props.worldData);
-		chartInstance = chart;
-		mutateAdditionalData(additionalData);
+		res = createGeographicalTraffic(chartRef.value, toRaw(data), props.worldData);
 	} else if (props.name === "P95 Latency" && chartRef.value && picker) {
-		const { chart, additionalData }: ChartData = createP95Latency(chartRef.value, toRaw(data), picker)
-		chartInstance = chart;
-		mutateAdditionalData(additionalData);
+		res = createP95Latency(chartRef.value, toRaw(data), picker);
 	} else if (props.name === "Uptime Score" && chartRef.value && picker) {
-		const { chart, additionalData }: ChartData = createUptimeScore(chartRef.value, toRaw(data), picker)
-		chartInstance = chart;
-		mutateAdditionalData(additionalData);
+		res = createUptimeScore(chartRef.value, toRaw(data), picker);
 	} else if (props.name === "Throughput" && chartRef.value) {
-		const { chart, additionalData }: ChartData = createThroughput(chartRef.value, toRaw(data), props.timeframe)
-		chartInstance = chart;
-		mutateAdditionalData(additionalData);
+		res = createThroughput(chartRef.value, toRaw(data), props.timeframe);
 	} else if (props.name === "Geographic performance" && chartRef.value) {
-		const { chart, additionalData }: ChartData = createGeographicPerformance(chartRef.value, toRaw(data), props.worldData)
-		chartInstance = chart;
-		mutateAdditionalData(additionalData);
+		res = createGeographicPerformance(chartRef.value, toRaw(data), props.worldData);
 	} else if (props.name === "Status code distribution" && chartRef.value) {
-		const { chart, additionalData }: ChartData = createStatusCodeDistribution(chartRef.value, toRaw(data), detailedMode.value)
-		chartInstance = chart;
-		mutateAdditionalData(additionalData);
+		res = createStatusCodeDistribution(chartRef.value, toRaw(data), detailedMode.value);
 	} else if (props.name === "Route congestion" && chartRef.value && picker) {
-		const { chart, additionalData }: ChartData = createRouteCongestion(chartRef.value, toRaw(data), picker)
-		chartInstance = chart;
-		mutateAdditionalData(additionalData);
+		res = createRouteCongestion(chartRef.value, toRaw(data), picker);
 	} else if (props.name === "HTTP method distribution" && chartRef.value) {
-		const { chart, additionalData }: ChartData = createHttpMethodMix(chartRef.value, toRaw(data), props.timeframe, detailedMode.value)
-		chartInstance = chart;
-		mutateAdditionalData(additionalData);
+		res = createHttpMethodMix(chartRef.value, toRaw(data), props.timeframe, detailedMode.value);
 	} else if (props.name === "Unique visitors" && chartRef.value) {
-		const { chart, additionalData }: ChartData = createUniqueVisitors(chartRef.value, toRaw(data), props.timeframe)
-		chartInstance = chart;
-		mutateAdditionalData(additionalData);
+		res = createUniqueVisitors(chartRef.value, toRaw(data), props.timeframe);
 	} else if (props.name === "Hot hours" && chartRef.value) {
-		const { chart, additionalData }: ChartData = createHotHours(chartRef.value, toRaw(data))
-		chartInstance = chart;
-		mutateAdditionalData(additionalData);
-	} else if (props.custom) {
-		const data: MetricData = toRaw(props.data);
-		console.log(data);
-		if (props.accumulate) {
-			console.log(props.name, 'is accumulated')
-		} else {
-			console.log(props.name, 'is not accumulated')
-		}
+		res = createHotHours(chartRef.value, toRaw(data));
+	} else if (props.custom && chartRef.value) {
+		const metricData: MetricData = toRaw(props.data);
+		res = props.accumulate
+			? genericAccumulatedChart(chartRef.value, metricData)
+			: genericGranularChart(chartRef.value, metricData);
 	}
+	if (!res) return;
+	chartInstance = res.chart;
+	mutateAdditionalData(res.additionalData);
 }
 </script>

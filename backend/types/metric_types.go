@@ -1,11 +1,26 @@
 package types
 
+type CustomMetricDefinition struct {
+	Name        string `json:"name"`
+	Method      string `json:"method"`
+	Path        string `json:"path"`
+	Source      string `json:"source"`
+	Selector    string `json:"selector"`
+	Aggregation string `json:"aggregation"`
+	Timeframe   string `json:"timeframe"`
+	ValueType   string `json:"valueType"`
+	ApplyRules  bool   `json:"applyRules"`
+	ChartType   string `json:"chartType"`
+	LastUpdate  string `json:"lastUpdate,omitempty"`
+}
+
 type MetricData struct {
-	Name          string            `json:"name"`
-	Metrics       []MetricDataItems `json:"metrics"`
-	Timeframe     string            `json:"timeframe"`
-	CustomMetrics bool              `json:"customMetrics"`
-	Accumulate    bool              `json:"accumulate"`
+	Name          string                   `json:"name"`
+	Metrics       []MetricDataItems        `json:"metrics"`
+	Timeframe     string                   `json:"timeframe"`
+	CustomMetrics bool                     `json:"customMetrics"`
+	Accumulate    bool                     `json:"accumulate"`
+	Definition    *CustomMetricDefinition  `json:"definition,omitempty"`
 }
 
 type MetricDataResponse struct {
