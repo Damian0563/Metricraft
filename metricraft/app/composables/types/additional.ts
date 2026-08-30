@@ -5,7 +5,7 @@ export type Worker = {
 }
 
 export type MetricSource = 'body' | 'header' | 'query'
-export type ChartType = 'line' | 'bar' | 'pie' | 'geographic'
+export type ChartType = 'line' | 'bar' | 'pie'
 export type CustomMetric = {
 	name: string
 	method: string

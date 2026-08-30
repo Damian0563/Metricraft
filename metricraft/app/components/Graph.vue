@@ -55,7 +55,7 @@
 						{{ detailedMode ? 'Grouped view' : 'Detailed view' }}
 					</button>
 				</div>
-				<div class="justify-end">
+				<div class="justify-end" v-if="!props.custom">
 					<div class="relative">
 						<select :value="props.timeframe"
 							@change="emit('timeframeChange', { metric: props.name, timeframe: ($event.target as HTMLSelectElement).value as string })"

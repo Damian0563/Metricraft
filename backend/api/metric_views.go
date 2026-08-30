@@ -132,8 +132,7 @@ func CustomMetricFetch(w http.ResponseWriter, r *http.Request) {
 		wg.Add(1)
 		go func(metric db.CustomMetric) {
 			defer wg.Done()
-			standardizedTimeframe := standardizeTimeframe(metric.Timeframe)
-			start, resolution := convertTimeframe(standardizedTimeframe, timezone)
+			start, resolution := convertTimeframe(metric.Timeframe, timezone)
 			metricRpc := &pb.CustomMetricRequest{
 				Metric: &pb.CustomMetric{
 					Name:        metric.Name,

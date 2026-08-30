@@ -28,11 +28,16 @@ func standardizeTimeframe(inputTimeframe string) string {
 	if val, ok := mapping[inputTimeframe]; ok {
 		return val
 	}
+	for _, code := range mapping {
+		if code == inputTimeframe {
+			return inputTimeframe
+		}
+	}
 	return "7d"
 }
 
 func customMetricDataFromProto(resp *pb.CustomMetricData) []types.MetricDataItems {
-	if resp == nil {
+	if resp == nil || resp.Metrics == nil {
 		return nil
 	}
 	if resp.Metrics == nil {
@@ -46,14 +51,15 @@ func customMetricDataFromProto(resp *pb.CustomMetricData) []types.MetricDataItem
 }
 
 func convertTimeframe(inputTimeframe string, timezone string) (time.Time, types.ResolutionDays) {
-	if inputTimeframe == "" {
-		inputTimeframe = "7d"
-	}
+	inputTimeframe = standardizeTimeframe(inputTimeframe)
 	numFloat := float32(7)
-	timeframe := strings.ReplaceAll(inputTimeframe, "d", "")
-	timeframe = strings.ReplaceAll(timeframe, "t", "")
-	if num64, err := strconv.ParseFloat(timeframe, 32); err == nil {
-		numFloat = float32(num64)
+	if len(inputTimeframe) > 1 {
+		unit := inputTimeframe[len(inputTimeframe)-1]
+		if unit == 'd' || unit == 't' {
+			if num64, err := strconv.ParseFloat(inputTimeframe[:len(inputTimeframe)-1], 32); err == nil {
+				numFloat = float32(num64)
+			}
+		}
 	}
 	loc := time.UTC
 	if timezone != "" {
