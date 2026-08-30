@@ -204,7 +204,7 @@ export const createRouteCongestion = (
 		const mapped = new Map<string, number>(entries);
 		const labels: string[] = Array.from(mapped.keys());
 		const values: number[] = Array.from(mapped.values());
-		const colors: string[] = labels.map(url => colorPicker.getColorForUrl(url));
+		const colors: string[] = labels.map(url => colorPicker.getColorForInstance(url));
 		type RouteCongestionChart = Chart & { $hoveredIndex?: number | null };
 		const chart: Chart = new Chart(canvas, {
 			type: 'bar',
@@ -770,7 +770,7 @@ export const createP95Latency = (
 		const mapped: Map<string, number> = new Map(entries);
 		const labels: string[] = entries.map(([url]) => url);
 		const latencies: number[] = entries.map(([, value]) => value);
-		const colors: string[] = labels.map((url) => colorPicker.getColorForUrl(url));
+		const colors: string[] = labels.map((url) => colorPicker.getColorForInstance(url));
 		type P95Chart = Chart & { $hoveredIndex?: number | null };
 		const chart = new Chart(canvas, {
 			type: 'bar',
@@ -1249,7 +1249,7 @@ export const createTrafficCongestionTrends = (
 			const sortedMap = new Map<string, number>(entries);
 			const labels: string[] = entries.map(([url]) => url);
 			const values: number[] = entries.map(([, count]) => count);
-			const colors: string[] = labels.map(url => colorPicker.getColorForUrl(url));
+			const colors: string[] = labels.map(url => colorPicker.getColorForInstance(url));
 			const total: number = values.reduce((sum, value) => sum + value, 0);
 			chart = new Chart(canvas, {
 				type: 'pie',
@@ -1353,7 +1353,7 @@ export const createTrafficCongestionTrends = (
 					stepSize = 3;
 			}
 			const datasets = Array.from(urlDataMap.entries()).map(([url, dataArray]) => {
-				const color = colorPicker.getColorForUrl(url);
+				const color = colorPicker.getColorForInstance(url);
 				return {
 					label: url,
 					data: dataArray,

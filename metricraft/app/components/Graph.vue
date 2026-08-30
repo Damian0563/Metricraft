@@ -55,7 +55,7 @@
 						{{ detailedMode ? 'Grouped view' : 'Detailed view' }}
 					</button>
 				</div>
-				<div class="justify-end">
+				<div class="justify-end" v-if="!props.custom">
 					<div class="relative">
 						<select :value="props.timeframe"
 							@change="emit('timeframeChange', { metric: props.name, timeframe: ($event.target as HTMLSelectElement).value as string })"
@@ -94,7 +94,7 @@ import { createTrafficCongestionTrends, createHotHours, createRouteCongestion, c
 import { genericAccumulatedChart, genericGranularChart } from "~/composables/charts/generics";
 import { updateCustomMetric } from "@/calls/overwatch";
 import type { ChartData, WorldData } from '@/composables/types/metrics'
-import type { CustomMetric, MetricData } from '@/composables/types/additional'
+import type { CustomMetric } from '@/composables/types/additional'
 const props = withDefaults(defineProps<{
 	name: string;
 	timeframe: string;
@@ -214,10 +214,10 @@ const populateChart = async (data: any): Promise<void> => {
 	} else if (props.name === "Hot hours" && chartRef.value) {
 		res = createHotHours(chartRef.value, toRaw(data));
 	} else if (props.custom && chartRef.value) {
-		const metricData: MetricData = toRaw(props.data);
+		const metricData: Array<{ grouping: string, value: number }> | undefined = toRaw(props.data);
 		res = props.accumulate
 			? genericAccumulatedChart(chartRef.value, metricData)
-			: genericGranularChart(chartRef.value, metricData);
+			: genericGranularChart(chartRef.value, metricData, props.definition?.chartType, props.timeframe);
 	}
 	if (!res) return;
 	chartInstance = res.chart;

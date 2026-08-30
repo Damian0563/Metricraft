@@ -10,21 +10,21 @@ const hash = (str: string): number => {
 };
 
 export class ColorPicker {
-	private urls_color: Map<string, string> = new Map();
-	constructor(urls: string[]) {
-		this.urls_color = this.setColors(urls);
+	private colors: Map<string, string> = new Map();
+	constructor(instance: string[]) {
+		this.colors = this.setColors(instance);
 	}
-	setColors(urls: string[]): Map<string, string> {
+	setColors(instance: string[]): Map<string, string> {
 		let entry = new Map<string, string>();
-		urls.forEach((url: string) => {
-			const slot = hash(url)
+		instance.forEach((occ: string) => {
+			const slot = hash(occ)
 			const hue = (slot * 137.508) % 360;
-			entry.set(url, formatHex(oklch({ mode: 'oklch', l: 0.78, c: 0.14, h: hue })));
+			entry.set(occ, formatHex(oklch({ mode: 'oklch', l: 0.78, c: 0.14, h: hue })));
 		});
 		return entry;
 	}
-	getColorForUrl(url: string): string {
-		return this.urls_color.get(url) ?? '#000000';
+	getColorForInstance(occ: string): string {
+		return this.colors.get(occ) ?? '#000000';
 	}
 	destroy() {
 	}

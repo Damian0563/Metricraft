@@ -25,7 +25,7 @@ export const createAdditionalData = (
 			.map(([url, sum]) => ({
 				utterance: url,
 				value: sum,
-				color: colorPicker?.getColorForUrl(url) ?? null,
+				color: colorPicker?.getColorForInstance(url) ?? null,
 			}))
 			.sort((a, b) => b.value - a.value);
 	} else if (data instanceof Array) {
@@ -33,7 +33,7 @@ export const createAdditionalData = (
 		rows = data.map(({ timerange, value, color }) => ({
 			utterance: timerange,
 			value,
-			color: color ?? colorPicker?.getColorForUrl(timerange) ?? null,
+			color: color ?? colorPicker?.getColorForInstance(timerange) ?? null,
 		}));
 		rows.reverse();
 	} else {
