@@ -1,7 +1,6 @@
 import type { Chart } from "chart.js";
 import type { ChoroplethChart } from 'chartjs-chart-geo';
 
-
 export type WorldData = {
 	countries: any;
 }

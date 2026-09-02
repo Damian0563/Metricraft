@@ -94,7 +94,7 @@ import { createTrafficCongestionTrends, createHotHours, createRouteCongestion, c
 import { genericAccumulatedChart, genericGranularChart } from "~/composables/charts/generics";
 import { updateCustomMetric } from "@/calls/overwatch";
 import type { ChartData, WorldData } from '@/composables/types/metrics'
-import type { CustomMetric, MetricData } from '@/composables/types/additional'
+import type { CustomMetric, GenericChartData } from '@/composables/types/additional'
 const props = withDefaults(defineProps<{
 	name: string;
 	timeframe: string;
@@ -214,10 +214,15 @@ const populateChart = async (data: any): Promise<void> => {
 	} else if (props.name === "Hot hours" && chartRef.value) {
 		res = createHotHours(chartRef.value, toRaw(data));
 	} else if (props.custom && chartRef.value) {
-		const metricData: MetricData = toRaw(props.data);
+		const metrics = toRaw(data) as GenericChartData;
 		res = props.accumulate
-			? genericAccumulatedChart(chartRef.value, metricData)
-			: genericGranularChart(chartRef.value, metricData);
+			? genericAccumulatedChart(chartRef.value, metrics)
+			: genericGranularChart(
+				chartRef.value,
+				metrics,
+				props.definition?.chartType === 'pie' ? undefined : props.definition?.chartType,
+				props.timeframe,
+			);
 	}
 	if (!res) return;
 	chartInstance = res.chart;

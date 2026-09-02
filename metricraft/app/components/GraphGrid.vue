@@ -54,7 +54,7 @@ const fetchAllMetrics = async (enabled: Record<string, { enabled: boolean, timef
 		const customMetrics: MetricData[] = await fetchCustomMetrics(errorMessage)
 		const standardMetrics: MetricData[] = enabledEntries.map(([name, config], index) => ({
 			name,
-			metrics: results[index],
+			metrics: results[index] ?? new Map(),
 			timeframe: config.timeframe,
 			customMetrics: false,
 		}));
