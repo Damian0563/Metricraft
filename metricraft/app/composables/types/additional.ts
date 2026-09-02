@@ -28,12 +28,20 @@ export type CustomMetricResponse = {
 
 export type MetricData = {
 	name: string;
-	metrics: any;
+	metrics: GenericChartData | Map<string, number>;
 	timeframe: string;
 	customMetrics?: boolean;
 	accumulate?: boolean;
 	definition?: CustomMetric;
 };
+
+
+export type GenericChartDataPoint = {
+	grouping: string;
+	value: number;
+}
+
+export type GenericChartData = GenericChartDataPoint[];
 
 export type Rule = {
 	rule: string,
