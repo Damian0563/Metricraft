@@ -1,5 +1,6 @@
 <template>
 	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mx-4 md:mx-8 p-2 mb-16">
+		<DisplayViewCustomizer v-if="props.showView" :metrics="customizableMetrics" @close="emit('close')" />
 		<Popup :message="errorMessage" @close="errorMessage = ''" />
 		<AdditionalData :show="viewingDetails" :data="additionalData" :metric="additionalDataName"
 			@close="viewingDetails = false" />
@@ -12,8 +13,7 @@
 					<Graph :name="entry.name" :custom="!!entry.customMetrics" :accumulate="!!entry.accumulate"
 						:definition="entry.definition ?? null" :data="entry.metrics" :timeframe="entry.timeframe"
 						:worldData="worldData" @timeframe-change="handleTimeframeChange($event)"
-						@see-details="handleDetails($event)" @metric-updated="loadMetrics"
-						@error="errorMessage = $event" />
+						@see-details="handleDetails($event)" @metric-updated="loadMetrics" @error="errorMessage = $event" />
 				</motion.div>
 			</AnimatePresence>
 		</ClientOnly>
@@ -26,12 +26,15 @@ import { topojson } from 'chartjs-chart-geo';
 import { timeframeValueFor } from '@/composables/helpers';
 import type { MetricData } from '@/composables/types/additional';
 import type { WorldData } from '@/composables/types/metrics';
+import type { CustomizableMetric } from '@/composables/types/views';
 import { motion, AnimatePresence } from 'motion-v';
 const props = defineProps<{
 	metrics: Record<string, { enabled: boolean, timeframe: string }>
+	showView: boolean
 }>();
 const emit = defineEmits<{
 	load: [value: void]
+	close: [value: void]
 }>();
 const enabledMetrics = ref<MetricData[] | undefined>([]);
 const errorMessage = ref<string>('');
@@ -65,6 +68,23 @@ const fetchAllMetrics = async (enabled: Record<string, { enabled: boolean, timef
 		emit('load')
 	}
 };
+
+const customizableMetrics = computed<CustomizableMetric[]>(() => [
+	...Object.entries(props.metrics ?? {}).map(([name, config]) => ({
+		name,
+		timeframe: config?.timeframe ?? '7d',
+		enabled: config?.enabled === true,
+		custom: false,
+	})),
+	...(enabledMetrics.value ?? [])
+		.filter((entry) => entry.customMetrics)
+		.map((entry) => ({
+			name: entry.name,
+			timeframe: entry.timeframe,
+			enabled: true,
+			custom: true,
+		})),
+]);
 
 const handleDetails = (event: { metric: string, additionalData: HTMLDivElement | null }) => {
 	const { metric, additionalData: detailsEl } = event;

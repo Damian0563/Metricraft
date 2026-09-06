@@ -57,8 +57,8 @@
 					<div v-else class="grid grid-cols-1 items-start gap-4 md:grid-cols-2 lg:grid-cols-3">
 						<template v-for="(card, index) in placed" :key="card.id">
 							<div v-if="dropIndex === index" class="drop-marker"
-								:class="[spanClass[draggedShape.span], heightClass[draggedShape.height]]" />
-							<article draggable="true" :class="[spanClass[card.span], heightClass[card.height]]"
+								:class="[widthClass[draggedShape.span], heightClass[draggedShape.height]]" />
+							<article draggable="true" :class="[widthClass[card.span], heightClass[card.height]]"
 								class="group relative flex flex-col overflow-hidden rounded-xl bg-white text-slate-900 shadow-xl ring-1 ring-slate-100 transition-[height,opacity] duration-200"
 								:style="{ opacity: dragging?.id === card.id ? 0.4 : 1 }" @dragstart="startCardDrag($event, card)"
 								@dragend="endDrag" @dragover.prevent.stop="onCardDragOver($event, index)">
@@ -74,6 +74,10 @@
 										<circle cx="15" cy="18" r="1.6" />
 									</svg>
 									<h2 class="min-w-0 flex-1 truncate text-sm font-semibold">{{ card.name }}</h2>
+									<span v-if="card.custom"
+										class="shrink-0 rounded-full bg-[#00C263]/12 px-2 py-0.5 text-[11px] font-semibold text-[#00A854]">
+										Custom
+									</span>
 									<span
 										class="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium tabular-nums text-slate-500">
 										{{ card.timeframe }}
@@ -96,7 +100,7 @@
 									<div class="flex items-center gap-1" role="group" aria-label="Width">
 										<span class="text-[10px] font-semibold tracking-wide text-slate-600">Width</span>
 										<div class="flex items-center rounded-lg bg-slate-100 p-0.5">
-											<button v-for="opt in spanOptions" :key="opt.span" type="button" @click="card.span = opt.span"
+											<button v-for="opt in widthOptions" :key="opt.span" type="button" @click="card.span = opt.span"
 												:aria-label="`${opt.label} width`" :aria-pressed="card.span === opt.span"
 												class="rounded-md px-2 py-0.5 text-[11px] font-semibold transition-colors" :class="card.span === opt.span
 													? 'bg-white text-slate-800 shadow-sm'
@@ -122,7 +126,7 @@
 							</article>
 						</template>
 						<div v-if="dropIndex === placed.length" class="drop-marker"
-							:class="[spanClass[draggedShape.span], heightClass[draggedShape.height]]" />
+							:class="[widthClass[draggedShape.span], heightClass[draggedShape.height]]" />
 					</div>
 				</main>
 
@@ -158,7 +162,13 @@
 								<GraphPreview :kind="metric.kind" compact />
 							</span>
 							<span class="min-w-0 flex-1">
-								<span class="block truncate text-sm font-medium text-white/90">{{ metric.name }}</span>
+								<span class="flex min-w-0 items-center gap-1.5">
+									<span class="truncate text-sm font-medium text-white/90">{{ metric.name }}</span>
+									<span v-if="metric.custom"
+										class="shrink-0 rounded-full bg-[#00F376]/15 px-1.5 py-0.5 text-[10px] font-semibold text-[#00F376]">
+										Custom
+									</span>
+								</span>
 								<span class="block text-[11px] text-white/40">
 									{{ metric.enabled ? `${metric.timeframe} window` : 'Disabled in Settings' }}
 								</span>
@@ -182,28 +192,29 @@
 <script setup lang="ts">
 import { motion } from 'motion-v';
 import { timeframeLabelFor } from '@/composables/helpers'
+import type { CustomizableMetric, DisplayViewCard } from '@/composables/types/views';
 
 type PreviewKind = 'map' | 'line' | 'bars' | 'donut' | 'gauge';
-type PaletteEntry = { name: string; timeframe: string; enabled: boolean; kind: PreviewKind };
+type PaletteEntry = { name: string; timeframe: string; enabled: boolean; custom: boolean; kind: PreviewKind };
 type PlacedCard = {
-	id: string; name: string; timeframe: string; kind: PreviewKind;
+	id: string; name: string; timeframe: string; kind: PreviewKind; custom: boolean;
 	span: 1 | 2 | 3; height: 1 | 2 | 3;
 };
 
 const props = defineProps<{
-	metrics: Record<string, { enabled: boolean; timeframe: string }>;
+	metrics: CustomizableMetric[];
 }>();
 const emit = defineEmits<{
 	close: [];
-	save: [value: { name: string; span: number; height: number }[]];
+	save: [value: DisplayViewCard[]];
 }>();
 
-const spanOptions = [
+const widthOptions = [
 	{ span: 1 as const, label: 'S' },
 	{ span: 2 as const, label: 'M' },
 	{ span: 3 as const, label: 'L' },
 ];
-const spanClass: Record<1 | 2 | 3, string> = {
+const widthClass: Record<1 | 2 | 3, string> = {
 	1: 'col-span-1',
 	2: 'md:col-span-2 lg:col-span-2',
 	3: 'md:col-span-2 lg:col-span-3',
@@ -229,11 +240,12 @@ const kindFor = (name: string): PreviewKind => {
 };
 
 const available = computed<PaletteEntry[]>(() =>
-	Object.entries(props.metrics ?? {}).map(([name, config]) => ({
-		name,
-		timeframe: config?.timeframe ?? '7d',
-		enabled: config?.enabled === true,
-		kind: kindFor(name),
+	(props.metrics ?? []).map((metric) => ({
+		name: metric.name,
+		timeframe: metric.timeframe || '7d',
+		enabled: metric.enabled,
+		custom: metric.custom,
+		kind: kindFor(metric.name),
 	})).sort((a, b) => Number(b.enabled) - Number(a.enabled) || a.name.localeCompare(b.name))
 );
 
@@ -257,13 +269,13 @@ const cardFrom = (metric: PaletteEntry): PlacedCard => ({
 	name: metric.name,
 	timeframe: timeframeLabelFor(metric.timeframe),
 	kind: metric.kind,
+	custom: metric.custom,
 	span: 1,
 	height: 1,
 });
 
 const dragging = ref<{ origin: 'palette' | 'canvas'; metric?: PaletteEntry; id?: string } | null>(null);
 const dropIndex = ref<number | null>(null);
-/* The placeholder mirrors whatever is in flight, so the gap matches what will land in it. */
 const draggedShape = computed<{ span: 1 | 2 | 3; height: 1 | 2 | 3 }>(() => {
 	const held = dragging.value?.id
 		? placed.value.find((card) => card.id === dragging.value?.id)
@@ -344,6 +356,7 @@ const saveLayout = () => emit('save', placed.value.map((card) => ({
 	name: card.name,
 	span: card.span,
 	height: card.height,
+	custom: card.custom,
 })));
 const close = () => emit('close');
 

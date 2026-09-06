@@ -2,12 +2,12 @@
 	<div class="min-h-screen pl-20">
 		<DashboardNav />
 		<div class="min-w-0 mt-4">
-			<GraphGrid v-if="!settings" :metrics="derivedMetrics" @load="emit('load')" />
+			<GraphGrid v-if="!settings" :metrics="derivedMetrics" :showView="displayView" @load="emit('load')"
+				@close="displayView = false" />
 			<Settings v-if="settings" :logRetention="logRetention" :derivedMetrics="derivedMetrics"
-				@customize-view="displayView = true" @load="emit('load')" @update-metrics="emit('updateMetrics', $event)"
-				@change-retention=" emit('changeRetention',
+				@customize-view="(displayView = true, navigateTo('/dashboard'))" @load="emit('load')"
+				@update-metrics="emit('updateMetrics', $event)" @change-retention=" emit('changeRetention',
 					$event)" />
-			<DisplayViewCustomizer v-if="displayView" :metrics="derivedMetrics" @close="displayView = false" />
 		</div>
 	</div>
 </template>
