@@ -4,9 +4,10 @@
 		<div class="min-w-0 mt-4">
 			<GraphGrid v-if="!settings" :metrics="derivedMetrics" @load="emit('load')" />
 			<Settings v-if="settings" :logRetention="logRetention" :derivedMetrics="derivedMetrics"
-				@customize-view="handleCustomizeView" @load="emit('load')" @update-metrics="emit('updateMetrics', $event)"
+				@customize-view="displayView = true" @load="emit('load')" @update-metrics="emit('updateMetrics', $event)"
 				@change-retention=" emit('changeRetention',
 					$event)" />
+			<DisplayViewCustomizer v-if="displayView" :metrics="derivedMetrics" @close="displayView = false" />
 		</div>
 	</div>
 </template>
@@ -23,10 +24,9 @@ const emit = defineEmits<{
 }>();
 const derivedMetrics = toRef(props, 'derivedMetrics');
 const logRetention = ref(props.logRetention);
+const displayView = ref(false);
 const route = useRoute()
 const settings = computed(() => 'settings' in route.query)
+watch(settings, (on) => { if (!on) displayView.value = false })
 watch(() => props.logRetention, (val) => logRetention.value = val);
-const handleCustomizeView = (val: boolean) => {
-	console.log(val);
-};
 </script>
