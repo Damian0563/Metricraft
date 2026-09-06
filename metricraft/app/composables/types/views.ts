@@ -27,3 +27,19 @@ export type verifyResponse = {
 	err?: string;
 	status?: number;
 }
+
+/* What the display-view customizer needs to list a metric in its palette:
+   the enabled flag comes from dashboard settings, custom metrics are always live. */
+export type CustomizableMetric = {
+	name: string;
+	timeframe: string;
+	enabled: boolean;
+	custom: boolean;
+}
+
+export type DisplayViewCard = {
+	name: string;
+	span: number;
+	height: number;
+	custom: boolean;
+}
