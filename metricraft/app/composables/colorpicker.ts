@@ -1,13 +1,8 @@
 import { oklch, formatHex } from 'culori';
 
-const hash = (str: string): number => {
-	const formatted = str.slice(str.lastIndexOf('/'))
-	let h = 5381;
-	for (let i = 0; i < formatted.length; i++) {
-		h = ((h << 5) + h + formatted.charCodeAt(i)) >>> 0;
-	}
-	return h;
-};
+const GOLDEN_ANGLE = 137.508;
+const LIGHTNESS = [0.78, 0.66, 0.86];
+const CHROMA = [0.14, 0.19, 0.10];
 
 export class ColorPicker {
 	private colors: Map<string, string> = new Map();
@@ -16,10 +11,11 @@ export class ColorPicker {
 	}
 	setColors(instance: string[]): Map<string, string> {
 		let entry = new Map<string, string>();
-		instance.forEach((occ: string) => {
-			const slot = hash(occ)
-			const hue = (slot * 137.508) % 360;
-			entry.set(occ, formatHex(oklch({ mode: 'oklch', l: 0.78, c: 0.14, h: hue })));
+		const ordered = [...new Set(instance)].sort();
+		ordered.forEach((occ: string, index: number) => {
+			const hue = (index * GOLDEN_ANGLE) % 360;
+			const tier = index % LIGHTNESS.length;
+			entry.set(occ, formatHex(oklch({ mode: 'oklch', l: LIGHTNESS[tier]!, c: CHROMA[tier]!, h: hue })));
 		});
 		return entry;
 	}

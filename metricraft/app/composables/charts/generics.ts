@@ -35,7 +35,7 @@ const parseData = (data: GenericChartData) => {
 	const labels: string[] = [];
 	const values: number[] = [];
 	for (const entry of data) {
-		if (entry.grouping === '' || !entry.value) continue;
+		if (entry.grouping === '' || (!entry.value && entry.value !== 0)) continue;
 		labels.push(entry.grouping);
 		values.push(Number(entry.value));
 	}
