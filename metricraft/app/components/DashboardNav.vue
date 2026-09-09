@@ -95,8 +95,9 @@
 </template>
 
 <script setup lang="ts">
-import { invalidateCookie } from "~/composables/helpers"
+import { invalidateCookie, useDisplayView } from "~/composables/helpers"
 const options = ref(false)
+const displayView = useDisplayView()
 const signOut = () => {
 	invalidateCookie()
 	navigateTo('/')
@@ -104,6 +105,7 @@ const signOut = () => {
 const router = useRouter()
 const getBack = () => {
 	options.value = false
+	displayView.value = false
 	if (router.currentRoute.value.name === 'dashboard') {
 		router.replace({ query: {} })
 	} else {
@@ -111,7 +113,9 @@ const getBack = () => {
 	}
 }
 const onKeydown = (e: KeyboardEvent) => {
-	if (e.key === 'Escape') options.value = false
+	if (e.key !== 'Escape') return
+	if (options.value) options.value = false
+	else displayView.value = false
 }
 onMounted(() => window.addEventListener('keydown', onKeydown))
 onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))

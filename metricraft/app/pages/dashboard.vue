@@ -2,7 +2,7 @@
 	<div>
 		<Popup :message="errorMessage" @close="errorMessage = ''" />
 		<Spinner :loading="loading || localLoading" />
-		<Dashboard :logRetention="logRetention" :derivedMetrics="derivedMetrics" @load="handleLoad"
+		<Dashboard :logRetention="logRetention" :derivedMetrics="derivedMetrics" :layout="layout" @load="handleLoad"
 			@updateMetrics="handleUpdateMetrics" @changeRetention="handleRetentionChange" />
 	</div>
 </template>
@@ -15,6 +15,7 @@ const errorMessage = ref("");
 const appName = useState<string>('appName', () => "");
 const urls = useState<string[]>('urls', () => []);
 const derivedMetrics = ref<Record<string, { enabled: boolean, timeframe: string }>>({})
+const layout = ref<{ name: string, span: number, height: number, custom: boolean }[]>([])
 const logRetention = ref(30);
 const timeout = ref(0)
 const { data: payload, pending: loading, error } = await useAsyncData<dashboardInitPayload>('dashboard', () => getDashboard())
@@ -22,19 +23,20 @@ const initialize = ((newVal: dashboardInitPayload | undefined) => {
 	if (!newVal || newVal === undefined) {
 		return
 	}
-	if (newVal && newVal.error === '') {
+	if (newVal.error === '') {
 		appName.value = newVal.appName
 		logRetention.value = newVal.settings.retention
 		const raw = newVal.settings.enabled as Record<string, { enabled: boolean, timeframe: string }>
 		derivedMetrics.value = raw
 		urls.value = newVal.urls
-	} else {
-		errorMessage.value = newVal.error
-		if (import.meta.client) {
-			timeout.value = setTimeout(() => {
-				navigateTo("/")
-			}, 5200)
-		}
+		layout.value = newVal.layout ?? []
+		return
+	}
+	errorMessage.value = newVal.error
+	if (import.meta.client) {
+		timeout.value = setTimeout(() => {
+			navigateTo("/")
+		}, 5200)
 	}
 })
 

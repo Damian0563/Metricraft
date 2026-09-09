@@ -1,6 +1,7 @@
 <template>
 	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mx-4 md:mx-8 p-2 mb-16">
-		<DisplayViewCustomizer v-if="props.showView" :metrics="customizableMetrics" @close="emit('close')" />
+		<DisplayViewCustomizer v-if="props.showView" :metrics="customizableMetrics" :layout="layout" @close="emit('close')"
+			@save="save_layout($event)" />
 		<Popup :message="errorMessage" @close="errorMessage = ''" />
 		<AdditionalData :show="viewingDetails" :data="additionalData" :metric="additionalDataName"
 			@close="viewingDetails = false" />
@@ -10,10 +11,15 @@
 					:animate="{ opacity: 1, height: 'auto' }"
 					:exit="{ opacity: 0, height: 0, x: 32, transition: { duration: 0.22, ease: 'easeIn' } }"
 					:transition="{ type: 'spring', stiffness: 480, damping: 34, delay: Math.min(i * 0.045, 0.27) }">
-					<Graph :name="entry.name" :custom="!!entry.customMetrics" :accumulate="!!entry.accumulate"
-						:definition="entry.definition ?? null" :data="entry.metrics" :timeframe="entry.timeframe"
-						:worldData="worldData" @timeframe-change="handleTimeframeChange($event)"
-						@see-details="handleDetails($event)" @metric-updated="loadMetrics" @error="errorMessage = $event" />
+					<div v-if="layout.length === 0">
+						<Graph :name="entry.name" :custom="!!entry.customMetrics" :accumulate="!!entry.accumulate"
+							:definition="entry.definition ?? null" :data="entry.metrics" :timeframe="entry.timeframe"
+							:worldData="worldData" @timeframe-change="handleTimeframeChange($event)"
+							@see-details="handleDetails($event)" @metric-updated="loadMetrics" @error="errorMessage = $event" />
+					</div>
+					<div v-else>
+						CUSTOM LAYOUT ENABLED
+					</div>
 				</motion.div>
 			</AnimatePresence>
 		</ClientOnly>
@@ -21,7 +27,7 @@
 </template>
 
 <script setup lang="ts">
-import { fetchMetric, fetchCustomMetrics } from "~/calls/dashboard";
+import { fetchMetric, fetchCustomMetrics, saveDashboardLayout } from "~/calls/dashboard";
 import { topojson } from 'chartjs-chart-geo';
 import { timeframeValueFor } from '@/composables/helpers';
 import type { MetricData } from '@/composables/types/additional';
@@ -31,11 +37,13 @@ import { motion, AnimatePresence } from 'motion-v';
 const props = defineProps<{
 	metrics: Record<string, { enabled: boolean, timeframe: string }>
 	showView: boolean
+	layout: { name: string, span: number, height: number, custom: boolean }[]
 }>();
 const emit = defineEmits<{
 	load: [value: void]
 	close: [value: void]
 }>();
+const layout = ref<{ name: string, span: number, height: number }[]>([])
 const enabledMetrics = ref<MetricData[] | undefined>([]);
 const errorMessage = ref<string>('');
 const viewingDetails = ref<boolean>(false);
@@ -68,6 +76,17 @@ const fetchAllMetrics = async (enabled: Record<string, { enabled: boolean, timef
 		emit('load')
 	}
 };
+
+const save_layout = async (layout: { name: string, span: number, height: number, custom: boolean }[]) => {
+	emit('load')
+	try {
+		await saveDashboardLayout(layout)
+	} catch {
+		errorMessage.value = 'Something went wrong, Check your internet connection and try again.'
+	} finally {
+		emit('load')
+	}
+}
 
 const customizableMetrics = computed<CustomizableMetric[]>(() => [
 	...Object.entries(props.metrics ?? {}).map(([name, config]) => ({
@@ -117,4 +136,9 @@ const loadMetrics = async () => {
 
 onMounted(loadMetrics);
 watch(() => props.metrics, loadMetrics);
+watch(() => props.layout, (newLayout: { name: string, span: number, height: number }[] | undefined) => {
+	if (!newLayout) return
+	layout.value = newLayout
+}, { immediate: true });
+onBeforeUnmount(() => emit('close'));
 </script>

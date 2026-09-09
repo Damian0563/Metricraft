@@ -21,6 +21,13 @@ export const getDashboard = async (): Promise<dashboardInitPayload> => {
 	}
 }
 
+export const saveDashboardLayout = async (layout: { name: string, span: number, height: number, custom: boolean }[]): Promise<void> => {
+	await useApi()<void>("/dashboard/layout", {
+		method: "POST",
+		body: JSON.stringify(layout),
+	})
+}
+
 
 export const getUrls = async (): Promise<string[]> => {
 	try {
