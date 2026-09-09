@@ -31,8 +31,15 @@ func Welcome(w http.ResponseWriter, r *http.Request) {
 	w.Write(response)
 }
 
-func ChangeMetricsHandler(w http.ResponseWriter, r *http.Request) {
+func ChangeLayout(w http.ResponseWriter, r *http.Request) {
+	token := auth.NewToken(r.Header.Get("Session-Token"))
+	authed := token.ValidateRequest(&w, true)
+	if !authed {
+		return
+	}
+}
 
+func ChangeMetricsHandler(w http.ResponseWriter, r *http.Request) {
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, true)
 	if !authed {

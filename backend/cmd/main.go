@@ -102,6 +102,7 @@ func main() {
 	})
 	router.Get("/dashboard/init", api.DashboardInit)
 	router.Get("/dashboard/urls", api.DashboardUrls)
+	router.Post("/dashboard/layout", api.ChangeLayout)
 	router.Post("/settings/retention", api.ChangeRetention)
 	router.Post("/settings/metrics", api.ChangeMetricsHandler)
 	router.Get("/dashboard/fetch", api.Navigator) //?persist=boolean

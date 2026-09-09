@@ -15,11 +15,12 @@
 					{{ placed.length }} {{ placed.length === 1 ? 'graph' : 'graphs' }} placed
 				</span>
 				<div class="ml-auto flex shrink-0 items-center gap-2">
-					<button type="button" @click="resetLayout" :disabled="!placed.length"
+					<button type="button" @click="resetLayout" :disabled="placed.length !== metricsCount"
 						class="rounded-lg px-3 py-2 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent">
 						Reset
 					</button>
-					<button type="button" @click="saveLayout" :disabled="!placed.length"
+					<button type="button" @click="saveLayout" :disabled="placed.length !== metricsCount"
+						:title="placed.length !== metricsCount ? 'You must place all metrics before saving' : ''"
 						class="rounded-lg bg-[#00F376] px-4 py-2 text-sm font-semibold text-gray-900 transition-colors hover:bg-[#00D96A] disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-[#00F376]">
 						Save view
 					</button>
@@ -203,11 +204,14 @@ type PlacedCard = {
 
 const props = defineProps<{
 	metrics: CustomizableMetric[];
+	layout: { name: string, span: number, height: number }[];
 }>();
 const emit = defineEmits<{
 	close: [];
 	save: [value: DisplayViewCard[]];
 }>();
+
+const metricsCount = computed(() => props.metrics.length);
 
 const widthOptions = [
 	{ span: 1 as const, label: 'S' },
@@ -246,7 +250,7 @@ const available = computed<PaletteEntry[]>(() =>
 		enabled: metric.enabled,
 		custom: metric.custom,
 		kind: kindFor(metric.name),
-	})).sort((a, b) => Number(b.enabled) - Number(a.enabled) || a.name.localeCompare(b.name))
+	})).sort((a, b) => Number(b.enabled) - Number(a.enabled) || a.name.localeCompare(b.name)).filter((m) => !placed.value.find((p) => p.name === m.name))
 );
 
 const query = ref('');

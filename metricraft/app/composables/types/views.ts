@@ -4,6 +4,7 @@ export type dashboardInitPayload = {
 	signedSecret: string;
 	error: string;
 	settings: { retention: number, enabled: Record<string, { enabled: boolean, timeframe: string }> };
+	layout?: { name: string, span: number, height: number, custom: boolean }[];
 }
 
 export type config = {
@@ -28,8 +29,6 @@ export type verifyResponse = {
 	status?: number;
 }
 
-/* What the display-view customizer needs to list a metric in its palette:
-   the enabled flag comes from dashboard settings, custom metrics are always live. */
 export type CustomizableMetric = {
 	name: string;
 	timeframe: string;
