@@ -51,21 +51,48 @@ func ChangeLogsRetention(retention int) error {
 	return tx.Commit(ctx)
 }
 
-func GetSettings() (types.Settings, error) {
-	var settings types.Settings
+func ChangeLayout(payload []types.LayoutEntry) error {
 	ctx := context.Background()
 	conn, err := GetLogsPool()
 	if err != nil {
-		return types.Settings{}, err
+		return err
+	}
+	var encoded []byte
+	encoded, err = json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	_, err = conn.Exec(ctx, "UPDATE settings SET layout = $1 WHERE TRUE", string(encoded))
+	return err
+}
+
+func GetLayout(layout *[]types.LayoutEntry, errChan chan error) {
+	ctx := context.Background()
+	conn, err := GetLogsPool()
+	if err != nil {
+		errChan <- err
+		return
+	}
+	errChan <- conn.QueryRow(ctx, "SELECT layout FROM settings WHERE TRUE").Scan(layout)
+}
+
+func GetSettings(settings *types.Settings, errChan chan error) {
+	ctx := context.Background()
+	conn, err := GetLogsPool()
+	if err != nil {
+		errChan <- err
+		return
 	}
 	var enabled string
 	err = conn.QueryRow(ctx, "SELECT enabled,retention FROM settings WHERE TRUE").Scan(&enabled, &settings.Retention)
 	if err != nil {
-		return types.Settings{}, err
+		errChan <- err
+		return
 	}
 	allSettings, repaired, err := unmarshalEnabledMetrics(enabled)
 	if err != nil {
-		return types.Settings{}, err
+		errChan <- err
+		return
 	}
 	if repaired {
 		repairEnabledMetrics(ctx, conn, allSettings)
@@ -76,7 +103,7 @@ func GetSettings() (types.Settings, error) {
 			settings.Enabled[name] = metric
 		}
 	}
-	return settings, nil
+	errChan <- nil
 }
 
 func PersistTimeframeSelection(persistChan chan error, metric string, timeframe string) {
@@ -120,26 +147,30 @@ func PersistTimeframeSelection(persistChan chan error, metric string, timeframe 
 	persistChan <- tx.Commit(ctx)
 }
 
-func GetUrls() ([]string, error) {
+func GetUrls(urlRes *[]string, errChan chan error) {
 	ctx := context.Background()
 	conn, err := GetLogsPool()
 	if err != nil {
-		return nil, err
+		errChan <- err
+		return
 	}
 	res, err := conn.Query(ctx, "SELECT DISTINCT url FROM logs ORDER BY url")
 	if err != nil {
-		return nil, err
+		errChan <- err
+		return
 	}
 	urls := make([]string, 0)
 	for res.Next() {
 		var url string
 		err = res.Scan(&url)
 		if err != nil {
-			return nil, err
+			errChan <- err
+			return
 		}
 		urls = append(urls, url)
 	}
-	return urls, nil
+	*urlRes = urls
+	errChan <- nil
 }
 
 func ChangeMetrics(metrics []types.Metric) error {

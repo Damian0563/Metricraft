@@ -36,6 +36,18 @@ export type CustomizableMetric = {
 	custom: boolean;
 }
 
+export type PreviewKind = 'map' | 'line' | 'bars' | 'donut' | 'gauge';
+
+export type PlacedCard = {
+	id: string;
+	name: string;
+	timeframe: string;
+	kind: PreviewKind;
+	custom: boolean;
+	span: 1 | 2 | 3;
+	height: 1 | 2 | 3;
+}
+
 export type DisplayViewCard = {
 	name: string;
 	span: number;

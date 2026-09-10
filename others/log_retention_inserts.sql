@@ -11,8 +11,12 @@ CREATE TABLE IF NOT EXISTS settings (
     realtime BOOL,
     enabled TEXT,
     retention INTEGER,
-    appName TEXT
+    appName TEXT,
+    layout JSONB
 );
+
+-- For databases created before the layout column existed.
+ALTER TABLE settings ADD COLUMN IF NOT EXISTS layout JSONB DEFAULT '[]';
 
 CREATE TABLE IF NOT EXISTS logs (
     date TIMESTAMP,

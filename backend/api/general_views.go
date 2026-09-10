@@ -37,6 +37,16 @@ func ChangeLayout(w http.ResponseWriter, r *http.Request) {
 	if !authed {
 		return
 	}
+	var payload []types.LayoutEntry
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if err := db.ChangeLayout(payload); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }
 
 func ChangeMetricsHandler(w http.ResponseWriter, r *http.Request) {
@@ -260,7 +270,6 @@ func PendingInvites(w http.ResponseWriter, r *http.Request) {
 }
 
 func DashboardInit(w http.ResponseWriter, r *http.Request) {
-
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, false)
 	if !authed {
@@ -282,13 +291,15 @@ func DashboardInit(w http.ResponseWriter, r *http.Request) {
 		} else {
 			status := http.StatusOK
 			Response.SignedSecret = signed
-			if Response.Settings, err = db.GetSettings(); err != nil {
-				Response.Error = "Error occured during fetching settings. Please try again later."
-				status = http.StatusInternalServerError
-			}
-			if Response.Urls, err = db.GetUrls(); err != nil {
-				Response.Error = "Error occured during fetching urls. Please try again later."
-				status = http.StatusInternalServerError
+			errChan := make(chan error, 3)
+			go db.GetLayout(&Response.Layout, errChan)
+			go db.GetSettings(&Response.Settings, errChan)
+			go db.GetUrls(&Response.Urls, errChan)
+			for range 3 {
+				if err := <-errChan; err != nil && status == http.StatusOK {
+					Response.Error = "Error occured during dashboard initialization. Please try again later."
+					status = http.StatusInternalServerError
+				}
 			}
 			w.WriteHeader(status)
 		}
@@ -298,13 +309,14 @@ func DashboardInit(w http.ResponseWriter, r *http.Request) {
 }
 
 func DashboardUrls(w http.ResponseWriter, r *http.Request) {
-
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	if authed := token.ValidateRequest(&w, false); !authed {
 		return
 	}
-	urls, err := db.GetUrls()
-	if err != nil {
+	var urls []string
+	errChan := make(chan error, 1)
+	go db.GetUrls(&urls, errChan)
+	if err := <-errChan; err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

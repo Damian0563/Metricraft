@@ -15,9 +15,14 @@
 					{{ placed.length }} {{ placed.length === 1 ? 'graph' : 'graphs' }} placed
 				</span>
 				<div class="ml-auto flex shrink-0 items-center gap-2">
+					<button type="button" @click="hardResetLayout" aria-label="Hard reset layout" v-if="props.layout.length !== 0"
+						class="rounded-lg px-3 py-2 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent">
+						>
+						Restore Default Layout
+					</button>
 					<button type="button" @click="resetLayout" :disabled="placed.length !== metricsCount"
 						class="rounded-lg px-3 py-2 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent">
-						Reset
+						Reset Workspace
 					</button>
 					<button type="button" @click="saveLayout" :disabled="placed.length !== metricsCount"
 						:title="placed.length !== metricsCount ? 'You must place all metrics before saving' : ''"
@@ -153,12 +158,9 @@
 						<p v-if="!filtered.length" class="px-1 py-6 text-center text-xs text-white/35">
 							{{ available.length ? 'No metric matches that filter.' : 'No derived metrics available yet.' }}
 						</p>
-						<div v-for="metric in filtered" :key="metric.name" :draggable="metric.enabled"
-							@dragstart="startPaletteDrag($event, metric)" @dragend="endDrag" @click="metric.enabled && append(metric)"
-							class="group flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-3 transition-colors"
-							:class="metric.enabled
-								? 'cursor-grab hover:border-[#00F376]/60 hover:bg-white/10 active:cursor-grabbing'
-								: 'cursor-not-allowed opacity-40'">
+						<div v-for="metric in filtered" :key="metric.name" draggable="true"
+							@dragstart="startPaletteDrag($event, metric)" @dragend="endDrag" @click="append(metric)"
+							class="group flex cursor-grab items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-3 transition-colors hover:border-[#00F376]/60 hover:bg-white/10 active:cursor-grabbing">
 							<span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#00F376]/10 text-[#00F376]">
 								<GraphPreview :kind="metric.kind" compact />
 							</span>
@@ -171,7 +173,7 @@
 									</span>
 								</span>
 								<span class="block text-[11px] text-white/40">
-									{{ metric.enabled ? `${metric.timeframe} window` : 'Disabled in Settings' }}
+									{{ metric.timeframe }} window
 								</span>
 							</span>
 							<span v-if="usage[metric.name]"
@@ -192,22 +194,16 @@
 
 <script setup lang="ts">
 import { motion } from 'motion-v';
-import { timeframeLabelFor } from '@/composables/helpers'
-import type { CustomizableMetric, DisplayViewCard } from '@/composables/types/views';
-
-type PreviewKind = 'map' | 'line' | 'bars' | 'donut' | 'gauge';
-type PaletteEntry = { name: string; timeframe: string; enabled: boolean; custom: boolean; kind: PreviewKind };
-type PlacedCard = {
-	id: string; name: string; timeframe: string; kind: PreviewKind; custom: boolean;
-	span: 1 | 2 | 3; height: 1 | 2 | 3;
-};
-
+import { timeframeLabelFor, useDisplayCanvas } from '@/composables/helpers'
+import type { CustomizableMetric, DisplayViewCard, PlacedCard, PreviewKind } from '@/composables/types/views';
+type PaletteEntry = { name: string; timeframe: string; custom: boolean; kind: PreviewKind };
 const props = defineProps<{
 	metrics: CustomizableMetric[];
 	layout: { name: string, span: number, height: number }[];
 }>();
 const emit = defineEmits<{
 	close: [];
+	resetLayout: [];
 	save: [value: DisplayViewCard[]];
 }>();
 
@@ -243,14 +239,19 @@ const kindFor = (name: string): PreviewKind => {
 	return 'bars';
 };
 
-const available = computed<PaletteEntry[]>(() =>
+const entries = computed<PaletteEntry[]>(() =>
 	(props.metrics ?? []).map((metric) => ({
 		name: metric.name,
 		timeframe: metric.timeframe || '7d',
-		enabled: metric.enabled,
 		custom: metric.custom,
 		kind: kindFor(metric.name),
-	})).sort((a, b) => Number(b.enabled) - Number(a.enabled) || a.name.localeCompare(b.name)).filter((m) => !placed.value.find((p) => p.name === m.name))
+	}))
+);
+
+const available = computed<PaletteEntry[]>(() =>
+	entries.value
+		.filter((m) => !placed.value.find((p) => p.name === m.name))
+		.sort((a, b) => a.name.localeCompare(b.name))
 );
 
 const query = ref('');
@@ -259,7 +260,11 @@ const filtered = computed(() => {
 	return needle ? available.value.filter((m) => m.name.toLowerCase().includes(needle)) : available.value;
 });
 
-const placed = ref<PlacedCard[]>([]);
+const canvas = useDisplayCanvas();
+const placed = computed<PlacedCard[]>({
+	get: () => canvas.value ?? [],
+	set: (cards) => canvas.value = cards,
+});
 const usage = computed<Record<string, number>>(() =>
 	placed.value.reduce<Record<string, number>>((acc, card) => {
 		acc[card.name] = (acc[card.name] ?? 0) + 1;
@@ -267,7 +272,7 @@ const usage = computed<Record<string, number>>(() =>
 	}, {})
 );
 
-let seq = 0;
+let seq = placed.value.reduce((max, card) => Math.max(max, Number(card.id.slice('card-'.length)) || 0), 0);
 const cardFrom = (metric: PaletteEntry): PlacedCard => ({
 	id: `card-${++seq}`,
 	name: metric.name,
@@ -277,6 +282,20 @@ const cardFrom = (metric: PaletteEntry): PlacedCard => ({
 	span: 1,
 	height: 1,
 });
+
+const clampAxis = (value: number): 1 | 2 | 3 => (value === 2 || value === 3 ? value : 1);
+const seedFromLayout = () => (props.layout ?? []).flatMap((slot) => {
+	const metric = entries.value.find((entry) => entry.name === slot.name);
+	return metric ? [{ ...cardFrom(metric), span: clampAxis(slot.span), height: clampAxis(slot.height) }] : [];
+});
+const syncWithMetrics = () => {
+	if (!entries.value.length) return;
+	placed.value = canvas.value === null
+		? seedFromLayout()
+		: placed.value.filter((card) => entries.value.some((entry) => entry.name === card.name));
+};
+syncWithMetrics();
+watch(entries, syncWithMetrics, { immediate: true });
 
 const dragging = ref<{ origin: 'palette' | 'canvas'; metric?: PaletteEntry; id?: string } | null>(null);
 const dropIndex = ref<number | null>(null);
@@ -288,7 +307,6 @@ const draggedShape = computed<{ span: 1 | 2 | 3; height: 1 | 2 | 3 }>(() => {
 });
 
 const startPaletteDrag = (event: DragEvent, metric: PaletteEntry) => {
-	if (!metric.enabled) return event.preventDefault();
 	dragging.value = { origin: 'palette', metric };
 	dropIndex.value = placed.value.length;
 	if (event.dataTransfer) {
@@ -363,6 +381,12 @@ const saveLayout = () => emit('save', placed.value.map((card) => ({
 	custom: card.custom,
 })));
 const close = () => emit('close');
+
+const hardResetLayout = () => {
+	canvas.value = null
+	emit('resetLayout')
+	close()
+}
 
 const onKeydown = (event: KeyboardEvent) => {
 	if (event.key === 'Escape') close();
