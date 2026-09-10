@@ -17,7 +17,6 @@
 				<div class="ml-auto flex shrink-0 items-center gap-2">
 					<button type="button" @click="hardResetLayout" aria-label="Hard reset layout" v-if="props.layout.length !== 0"
 						class="rounded-lg px-3 py-2 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent">
-						>
 						Restore Default Layout
 					</button>
 					<button type="button" @click="resetLayout" :disabled="placed.length !== metricsCount"
@@ -63,8 +62,8 @@
 					<div v-else class="grid grid-cols-1 items-start gap-4 md:grid-cols-2 lg:grid-cols-3">
 						<template v-for="(card, index) in placed" :key="card.id">
 							<div v-if="dropIndex === index" class="drop-marker"
-								:class="[widthClass[draggedShape.span], heightClass[draggedShape.height]]" />
-							<article draggable="true" :class="[widthClass[card.span], heightClass[card.height]]"
+								:class="[layoutSpanClass[draggedShape.span], layoutPreviewHeightClass[draggedShape.height]]" />
+							<article draggable="true" :class="[layoutSpanClass[card.span], layoutPreviewHeightClass[card.height]]"
 								class="group relative flex flex-col overflow-hidden rounded-xl bg-white text-slate-900 shadow-xl ring-1 ring-slate-100 transition-[height,opacity] duration-200"
 								:style="{ opacity: dragging?.id === card.id ? 0.4 : 1 }" @dragstart="startCardDrag($event, card)"
 								@dragend="endDrag" @dragover.prevent.stop="onCardDragOver($event, index)">
@@ -132,7 +131,7 @@
 							</article>
 						</template>
 						<div v-if="dropIndex === placed.length" class="drop-marker"
-							:class="[widthClass[draggedShape.span], heightClass[draggedShape.height]]" />
+							:class="[layoutSpanClass[draggedShape.span], layoutPreviewHeightClass[draggedShape.height]]" />
 					</div>
 				</main>
 
@@ -194,7 +193,7 @@
 
 <script setup lang="ts">
 import { motion } from 'motion-v';
-import { timeframeLabelFor, useDisplayCanvas } from '@/composables/helpers'
+import { clampLayoutAxis, layoutPreviewHeightClass, layoutSpanClass, timeframeLabelFor, useDisplayCanvas } from '@/composables/helpers'
 import type { CustomizableMetric, DisplayViewCard, PlacedCard, PreviewKind } from '@/composables/types/views';
 type PaletteEntry = { name: string; timeframe: string; custom: boolean; kind: PreviewKind };
 const props = defineProps<{
@@ -214,21 +213,11 @@ const widthOptions = [
 	{ span: 2 as const, label: 'M' },
 	{ span: 3 as const, label: 'L' },
 ];
-const widthClass: Record<1 | 2 | 3, string> = {
-	1: 'col-span-1',
-	2: 'md:col-span-2 lg:col-span-2',
-	3: 'md:col-span-2 lg:col-span-3',
-};
 const heightOptions = [
 	{ height: 1 as const, label: 'S' },
 	{ height: 2 as const, label: 'M' },
 	{ height: 3 as const, label: 'L' },
 ];
-const heightClass: Record<1 | 2 | 3, string> = {
-	1: 'h-52',
-	2: 'h-80',
-	3: 'h-[27rem]',
-};
 
 const kindFor = (name: string): PreviewKind => {
 	const key = name.toLowerCase();
@@ -283,10 +272,9 @@ const cardFrom = (metric: PaletteEntry): PlacedCard => ({
 	height: 1,
 });
 
-const clampAxis = (value: number): 1 | 2 | 3 => (value === 2 || value === 3 ? value : 1);
 const seedFromLayout = () => (props.layout ?? []).flatMap((slot) => {
 	const metric = entries.value.find((entry) => entry.name === slot.name);
-	return metric ? [{ ...cardFrom(metric), span: clampAxis(slot.span), height: clampAxis(slot.height) }] : [];
+	return metric ? [{ ...cardFrom(metric), span: clampLayoutAxis(slot.span), height: clampLayoutAxis(slot.height) }] : [];
 });
 const syncWithMetrics = () => {
 	if (!entries.value.length) return;
@@ -294,7 +282,6 @@ const syncWithMetrics = () => {
 		? seedFromLayout()
 		: placed.value.filter((card) => entries.value.some((entry) => entry.name === card.name));
 };
-syncWithMetrics();
 watch(entries, syncWithMetrics, { immediate: true });
 
 const dragging = ref<{ origin: 'palette' | 'canvas'; metric?: PaletteEntry; id?: string } | null>(null);

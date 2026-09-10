@@ -109,7 +109,6 @@ export const parseApiError = (error: unknown, fallback: string): string => {
 				const parsed = JSON.parse(trimmed.slice(jsonStart)) as Record<string, unknown>
 				if (typeof parsed.err === 'string' && parsed.err.trim()) return parsed.err.trim()
 			} catch {
-				// fall through to plain-text handling
 			}
 		}
 		const firstLine = trimmed.split('\n').map((line) => line.trim()).find(Boolean)
@@ -117,4 +116,24 @@ export const parseApiError = (error: unknown, fallback: string): string => {
 	}
 
 	return fallback
+}
+
+export const clampLayoutAxis = (value: number): 1 | 2 | 3 => (value === 2 || value === 3 ? value : 1)
+
+export const layoutSpanClass: Record<1 | 2 | 3, string> = {
+	1: 'col-span-1',
+	2: 'md:col-span-2 lg:col-span-2',
+	3: 'md:col-span-2 lg:col-span-3',
+}
+
+export const layoutPreviewHeightClass: Record<1 | 2 | 3, string> = {
+	1: 'h-52',
+	2: 'h-80',
+	3: 'h-[27rem]',
+}
+
+export const layoutHeightClass: Record<1 | 2 | 3, string> = {
+	1: 'h-96 md:h-[26rem] lg:h-[30rem]',
+	2: 'h-[30rem] md:h-[34rem] lg:h-[38rem]',
+	3: 'h-[36rem] md:h-[42rem] lg:h-[46rem]',
 }
