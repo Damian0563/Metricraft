@@ -1,6 +1,7 @@
 <template>
 	<div :class="[
-		'relative flex flex-col overflow-hidden rounded-xl w-full text-black h-96 md:h-[26rem] lg:h-[30rem] transition-shadow duration-300',
+		'relative flex flex-col overflow-hidden rounded-xl w-full text-black transition-shadow duration-300',
+		heightClass,
 		props.custom
 			? 'bg-white shadow-[0_10px_40px_-8px_rgba(0,243,118,0.16),0_4px_14px_-4px_rgba(15,23,42,0.07)] ring-1 ring-[#00F376]/25'
 			: 'bg-white shadow-lg ring-1 ring-slate-100',
@@ -95,6 +96,7 @@ import { genericAccumulatedChart, genericGranularChart } from "~/composables/cha
 import { updateCustomMetric } from "@/calls/overwatch";
 import type { ChartData, WorldData } from '@/composables/types/metrics'
 import type { CustomMetric, GenericChartData } from '@/composables/types/additional'
+import { clampLayoutAxis, layoutHeightClass } from '@/composables/helpers'
 const props = withDefaults(defineProps<{
 	name: string;
 	timeframe: string;
@@ -103,11 +105,17 @@ const props = withDefaults(defineProps<{
 	custom?: boolean;
 	accumulate?: boolean;
 	definition?: CustomMetric | null;
+	styling?: { name: string, span: number, height: number, custom: boolean } | null;
 }>(), {
 	custom: false,
 	accumulate: false,
 	definition: null,
+	styling: null,
 });
+
+const heightClass = computed(() =>
+	layoutHeightClass[props.styling ? clampLayoutAxis(props.styling.height) : 1]
+);
 
 const controlClass = computed(() =>
 	props.custom
