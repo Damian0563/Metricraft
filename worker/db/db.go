@@ -27,6 +27,11 @@ func InitDB(ctx context.Context, errChannel chan error) {
 		errChannel <- err
 		return
 	}
+	_, err = conn.Exec(ctx, "ALTER TABLE settings ADD COLUMN IF NOT EXISTS layout JSONB DEFAULT '[]'")
+	if err != nil {
+		errChannel <- err
+		return
+	}
 	var count int
 	err = conn.QueryRow(ctx, "SELECT COUNT(*) FROM settings").Scan(&count)
 	if err != nil {

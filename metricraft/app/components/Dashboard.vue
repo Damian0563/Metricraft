@@ -3,7 +3,7 @@
 		<DashboardNav />
 		<div class="min-w-0 mt-4">
 			<GraphGrid v-if="!settings" :layout="layout" :metrics="derivedMetrics" :showView="displayView"
-				@load="emit('load')" @close="displayView = false" />
+				@load="emit('load')" @close="displayView = false" @resetLayout="displayView = false" />
 			<Settings v-if="settings" :logRetention="logRetention" :derivedMetrics="derivedMetrics"
 				@customize-view="(displayView = true, navigateTo('/dashboard'))" @load="emit('load')"
 				@update-metrics="emit('updateMetrics', $event)" @change-retention=" emit('changeRetention',

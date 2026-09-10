@@ -1,5 +1,5 @@
 import { zxcvbn } from "@zxcvbn-ts/core"
-import type { config } from '@/composables/types/views'
+import type { config, PlacedCard } from '@/composables/types/views'
 
 export const useBackendUrl = (): config => {
 	const config = useRuntimeConfig()
@@ -10,9 +10,9 @@ export const useBackendUrl = (): config => {
 	}
 }
 
-/* The display-view customizer renders inside GraphGrid, but the sidebar sits above it,
-   so the flag that opens it has to be reachable from outside GraphGrid to be dismissable. */
 export const useDisplayView = () => useState<boolean>('displayView', () => false)
+
+export const useDisplayCanvas = () => useState<PlacedCard[] | null>('displayCanvas', () => null)
 
 export const timeframeLabelFor = (tf: string,) => {
 	const timeframes = new Map<string, string>([['Last 12 hours', "0.5d"], ['Last 24 hours', "1d"], ['Last 7 days', "7d"], ['Last 30 days', "30d"], ['Last 90 days', "90d"], ['Last 180 days', "180d"], ['Last 365 days', "365d"], ['This week', '7t'], ['This month', "30t"], ['This year', "365t"]])

@@ -1,7 +1,8 @@
 <template>
 	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mx-4 md:mx-8 p-2 mb-16">
-		<DisplayViewCustomizer v-if="props.showView" :metrics="customizableMetrics" :layout="layout" @close="emit('close')"
-			@save="save_layout($event)" />
+		<DisplayViewCustomizer v-if="showView" :metrics="customizableMetrics" :layout="layout"
+			@close="(showView = false, emit('close'))" @save="(showView = false, save_layout($event), emit('close'))"
+			@resetLayout="(showView = false, save_layout([]), emit('close'))" />
 		<Popup :message="errorMessage" @close="errorMessage = ''" />
 		<AdditionalData :show="viewingDetails" :data="additionalData" :metric="additionalDataName"
 			@close="viewingDetails = false" />
@@ -29,7 +30,7 @@
 <script setup lang="ts">
 import { fetchMetric, fetchCustomMetrics, saveDashboardLayout } from "~/calls/dashboard";
 import { topojson } from 'chartjs-chart-geo';
-import { timeframeValueFor } from '@/composables/helpers';
+import { timeframeValueFor, useDisplayCanvas } from '@/composables/helpers';
 import type { MetricData } from '@/composables/types/additional';
 import type { WorldData } from '@/composables/types/metrics';
 import type { CustomizableMetric } from '@/composables/types/views';
@@ -43,8 +44,10 @@ const emit = defineEmits<{
 	load: [value: void]
 	close: [value: void]
 }>();
+const canvas = useDisplayCanvas()
 const layout = ref<{ name: string, span: number, height: number }[]>([])
 const enabledMetrics = ref<MetricData[] | undefined>([]);
+const showView = ref<boolean>(false)
 const errorMessage = ref<string>('');
 const viewingDetails = ref<boolean>(false);
 const additionalData = shallowRef<HTMLDivElement | null>(null);
@@ -77,10 +80,12 @@ const fetchAllMetrics = async (enabled: Record<string, { enabled: boolean, timef
 	}
 };
 
-const save_layout = async (layout: { name: string, span: number, height: number, custom: boolean }[]) => {
+const save_layout = async (next: { name: string, span: number, height: number, custom: boolean }[]) => {
 	emit('load')
 	try {
-		await saveDashboardLayout(layout)
+		await saveDashboardLayout(next)
+		canvas.value = null
+		await refreshNuxtData('dashboard')
 	} catch {
 		errorMessage.value = 'Something went wrong, Check your internet connection and try again.'
 	} finally {
@@ -88,22 +93,14 @@ const save_layout = async (layout: { name: string, span: number, height: number,
 	}
 }
 
-const customizableMetrics = computed<CustomizableMetric[]>(() => [
-	...Object.entries(props.metrics ?? {}).map(([name, config]) => ({
-		name,
-		timeframe: config?.timeframe ?? '7d',
-		enabled: config?.enabled === true,
-		custom: false,
-	})),
-	...(enabledMetrics.value ?? [])
-		.filter((entry) => entry.customMetrics)
-		.map((entry) => ({
-			name: entry.name,
-			timeframe: entry.timeframe,
-			enabled: true,
-			custom: true,
-		})),
-]);
+const customizableMetrics = computed<CustomizableMetric[]>(() =>
+	(enabledMetrics.value ?? []).map((entry) => ({
+		name: entry.name,
+		timeframe: entry.timeframe,
+		enabled: true,
+		custom: !!entry.customMetrics,
+	}))
+);
 
 const handleDetails = (event: { metric: string, additionalData: HTMLDivElement | null }) => {
 	const { metric, additionalData: detailsEl } = event;
@@ -136,6 +133,7 @@ const loadMetrics = async () => {
 
 onMounted(loadMetrics);
 watch(() => props.metrics, loadMetrics);
+watch(() => props.showView, (newShow: boolean | undefined) => newShow != undefined ? showView.value = newShow : null, { immediate: true })
 watch(() => props.layout, (newLayout: { name: string, span: number, height: number }[] | undefined) => {
 	if (!newLayout) return
 	layout.value = newLayout

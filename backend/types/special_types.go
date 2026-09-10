@@ -19,11 +19,19 @@ type User struct {
 }
 
 type DashboardInitPayload struct {
-	AppName      string   `json:"appName"`
-	SignedSecret string   `json:"signedSecret"`
-	Settings     Settings `json:"settings"`
-	Error        string   `json:"error"`
-	Urls         []string `json:"urls"`
+	AppName      string        `json:"appName"`
+	SignedSecret string        `json:"signedSecret"`
+	Settings     Settings      `json:"settings"`
+	Error        string        `json:"error"`
+	Urls         []string      `json:"urls"`
+	Layout       []LayoutEntry `json:"layout"`
+}
+
+type LayoutEntry struct {
+	Name   string `json:"name"`
+	Span   int    `json:"span"`
+	Height int    `json:"height"`
+	Custom bool   `json:"custom"`
 }
 
 type Settings struct {
