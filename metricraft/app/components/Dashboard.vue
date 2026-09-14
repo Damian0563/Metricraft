@@ -28,4 +28,6 @@ const layout = toRef(props, 'layout');
 const displayView = useDisplayView();
 const route = useRoute()
 const settings = computed(() => 'settings' in route.query)
+watch(settings, (on) => { if (!on) displayView.value = false })
+watch(() => props.logRetention, (val) => logRetention.value = val);
 </script>
