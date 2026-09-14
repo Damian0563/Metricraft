@@ -99,7 +99,6 @@ Create a `.env` file next to your Compose file:
 ```dotenv
 APPNAME=my-app
 METRICRAFT_PUBLIC_URL=http://localhost:8080
-METRICRAFT_WS_URL=ws://localhost:8080
 DEST_PORT=3000
 ```
 
@@ -113,7 +112,6 @@ services:
       APPNAME: ${APPNAME}
       DEST_PORT: ${DEST_PORT}
       NUXT_PUBLIC_HTTPHOST: ${METRICRAFT_PUBLIC_URL}
-      NUXT_PUBLIC_WSSHOST: ${METRICRAFT_WS_URL}
     ports:
       - "8000:8000"
       - "8080:8080"

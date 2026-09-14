@@ -33,24 +33,6 @@ func repairEnabledMetrics(ctx context.Context, conn *pgxpool.Pool, metrics map[s
 	_, _ = conn.Exec(ctx, "UPDATE settings SET enabled = $1 WHERE TRUE", string(fixed))
 }
 
-func ChangeLogsRetention(retention int) error {
-	ctx := context.Background()
-	conn, err := GetLogsPool()
-	if err != nil {
-		return err
-	}
-	tx, err := conn.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(ctx)
-	_, err = tx.Exec(ctx, "UPDATE settings SET retention = $1 WHERE TRUE", retention)
-	if err != nil {
-		return err
-	}
-	return tx.Commit(ctx)
-}
-
 func ChangeLayout(payload []types.LayoutEntry) error {
 	ctx := context.Background()
 	conn, err := GetLogsPool()
@@ -84,7 +66,7 @@ func GetSettings(settings *types.Settings, errChan chan error) {
 		return
 	}
 	var enabled string
-	err = conn.QueryRow(ctx, "SELECT enabled,retention FROM settings WHERE TRUE").Scan(&enabled, &settings.Retention)
+	err = conn.QueryRow(ctx, "SELECT enabled FROM settings WHERE TRUE").Scan(&enabled)
 	if err != nil {
 		errChan <- err
 		return

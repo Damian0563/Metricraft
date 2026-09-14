@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -67,30 +68,7 @@ func ChangeMetricsHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func ChangeRetention(w http.ResponseWriter, r *http.Request) {
-
-	token := auth.NewToken(r.Header.Get("Session-Token"))
-	authed := token.ValidateRequest(&w, false)
-	if !authed {
-		return
-	}
-	type retentionPayload struct {
-		Retention int `json:"retention"`
-	}
-	var payload retentionPayload
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	if err := db.ChangeLogsRetention(payload.Retention); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-}
-
 func TeamMembers(w http.ResponseWriter, r *http.Request) {
-
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, false)
 	if !authed {
@@ -118,8 +96,43 @@ func TeamMembers(w http.ResponseWriter, r *http.Request) {
 	w.Write(response)
 }
 
-func UploadUsersFromCSV(w http.ResponseWriter, r *http.Request) {
+func LogCapacity(w http.ResponseWriter, r *http.Request) {
+	token := auth.NewToken(r.Header.Get("Session-Token"))
+	authed := token.ValidateRequest(&w, false)
+	if !authed {
+		return
+	}
+	if capacity, err := db.GetLogCapacity(); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	} else {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(strconv.FormatFloat(capacity, 'f', 2, 64)))
+	}
+}
 
+func DeleteLogs(w http.ResponseWriter, r *http.Request) {
+	token := auth.NewToken(r.Header.Get("Session-Token"))
+	if authed := token.ValidateRequest(&w, false); !authed {
+		return
+	}
+	var body struct {
+		Mb float64 `json:"mb"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Mb <= 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	capacity, err := db.DeleteLogs(r.Context(), body.Mb)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(strconv.FormatFloat(capacity, 'f', 2, 64)))
+}
+
+func UploadUsersFromCSV(w http.ResponseWriter, r *http.Request) {
 	token := auth.NewToken(r.Header.Get("Session-Token"))
 	authed := token.ValidateRequest(&w, true)
 	if !authed {

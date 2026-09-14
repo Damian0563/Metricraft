@@ -4,10 +4,9 @@
 		<div class="min-w-0 mt-4">
 			<GraphGrid v-if="!settings" :layout="layout" :metrics="derivedMetrics" :showView="displayView"
 				@load="emit('load')" @close="displayView = false" @resetLayout="displayView = false" />
-			<Settings v-if="settings" :logRetention="logRetention" :derivedMetrics="derivedMetrics"
+			<Settings v-if="settings" :derivedMetrics="derivedMetrics"
 				@customize-view="(displayView = true, navigateTo('/dashboard'))" @load="emit('load')"
-				@update-metrics="emit('updateMetrics', $event)" @change-retention=" emit('changeRetention',
-					$event)" />
+				@update-metrics="emit('updateMetrics', $event)" />
 		</div>
 	</div>
 </template>
@@ -15,7 +14,6 @@
 <script setup lang="ts">
 import { useDisplayView } from "~/composables/helpers"
 const props = withDefaults(defineProps<{
-	logRetention: number;
 	derivedMetrics: Record<string, { enabled: boolean, timeframe: string }>;
 	layout?: { name: string, span: number, height: number, custom: boolean }[];
 }>(), {
@@ -24,13 +22,10 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
 	load: [value: void];
 	updateMetrics: [value: { name: string; enabled: boolean; timeframe?: string }[]];
-	changeRetention: [value: Number];
 }>();
 const derivedMetrics = toRef(props, 'derivedMetrics');
 const layout = toRef(props, 'layout');
-const logRetention = ref(props.logRetention);
 const displayView = useDisplayView();
 const route = useRoute()
 const settings = computed(() => 'settings' in route.query)
-watch(() => props.logRetention, (val) => logRetention.value = val);
 </script>
