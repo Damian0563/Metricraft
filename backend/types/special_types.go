@@ -35,6 +35,5 @@ type LayoutEntry struct {
 }
 
 type Settings struct {
-	Enabled   map[string]EnabledMetric `json:"enabled"`
-	Retention int                      `json:"retention"`
+	Enabled map[string]EnabledMetric `json:"enabled"`
 }

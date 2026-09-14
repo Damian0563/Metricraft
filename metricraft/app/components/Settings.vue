@@ -62,19 +62,20 @@
 				<div class="bg-white rounded-xl shadow-xl p-8 border border-gray-100">
 					<h3 class="text-xl font-semibold text-gray-800 mb-4">Log Retention Policy</h3>
 					<div class="flex flex-col gap-3">
-						<select v-model="logRetention"
-							@change="changeRetention(Number(logRetention)); emit('changeRetention', Number(logRetention))"
-							class="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 font-medium focus:outline-none focus:border-[#00F376] transition-colors duration-200">
-							<option value="7">7 days</option>
-							<option value="30">30 days</option>
-							<option value="90">90 days</option>
-							<option value="180">6 months</option>
-							<option value="365">1 year</option>
-						</select>
-						<p class="text-sm text-gray-500">Automatically delete logs older than the selected period to reduce
-							memory usage. The data of the derived metrics will be compacted and still available, but raw http
-							traffic logs will be deleted, you can export them at any time.</p>
+						<div class="flex items-center justify-between px-4 py-3 rounded-xl border border-gray-100 bg-gray-50">
+							<span class="text-sm font-medium text-gray-700">Current log storage</span>
+							<span class="text-sm font-semibold text-gray-900">
+								{{ logCapacity === null ? '—' : `${logCapacity.toFixed(2)} MB` }}
+							</span>
+						</div>
+						<button type="button" @click="showDeleteLogs = true" :disabled="!logCapacity"
+							class="w-full cursor-pointer text-left px-4 py-3 rounded-xl border border-gray-200 hover:border-red-400 hover:shadow-md transition-all duration-300 text-gray-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+							Delete logs
+						</button>
+						<p v-if="errorMessage" class="text-xs text-red-500">{{ errorMessage }}</p>
 					</div>
+					<DeleteLogsModal :show="showDeleteLogs" :capacity="logCapacity ?? 0" @close="showDeleteLogs = false"
+						@confirm="deleteLogs" />
 				</div>
 				<div class="bg-white rounded-xl shadow-xl p-8 border border-gray-100">
 					<h4 class="text-xl font-semibold text-gray-800 mb-4">Configure Rules</h4>
@@ -90,22 +91,22 @@
 </template>
 
 <script setup lang="ts">
-import { changeDerivedMetrics, changeRetention } from "@/calls/settings"
+import { changeDerivedMetrics } from "@/calls/settings"
+import { getLogCapacity, deleteLogCapacity } from "@/calls/dashboard"
 type Metric = { id: number; name: string; description: string; enabled: boolean, timeframe: string }
 type CompactMetric = { name: string; enabled: boolean; timeframe: string }
 const props = defineProps<{
-	logRetention: number;
 	derivedMetrics: Record<string, { enabled: boolean, timeframe: string }>;
 }>();
+const errorMessage = ref("")
 const emit = defineEmits<{
 	customizeView: [value: boolean];
 	load: [value: void];
 	updateMetrics: [value: CompactMetric[]];
-	changeRetention: [value: Number];
 }>();
 const customizeDashboard = ref(false)
-const logRetention = ref(props.logRetention)
-watch(() => props.logRetention, (val) => logRetention.value = val)
+const logCapacity: Ref<number | null> = ref(null)
+const showDeleteLogs = ref(false)
 const pendingMetrics = ref<Metric[]>([])
 const originalMetrics = ref<Metric[]>([
 	{ id: 1, name: 'Geographical traffic', description: 'Map of origins of http requests in a specified time interval.', enabled: true, timeframe: "7d" },
@@ -141,4 +142,28 @@ const applyMetricChanges = async () => {
 	emit('updateMetrics', changes)
 	emit('load')
 }
+
+const deleteLogs = async (toDeleteMbs: number) => {
+	showDeleteLogs.value = false
+	emit('load')
+	errorMessage.value = ""
+	try {
+		logCapacity.value = Number(await deleteLogCapacity(toDeleteMbs))
+	} catch {
+		errorMessage.value = "Something went wrong, when deleting logs. Check your internet connection and try again."
+	} finally {
+		emit('load')
+	}
+}
+
+onMounted(async () => {
+	emit('load')
+	try {
+		logCapacity.value = Number(await getLogCapacity())
+	} catch {
+		errorMessage.value = "Something went wrong, when fetching log capacity. Check your internet connection and try again."
+	} finally {
+		emit('load')
+	}
+})
 </script>

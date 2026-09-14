@@ -4,6 +4,7 @@ import (
 	"backend/types"
 	"context"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"math"
 	"slices"
 )
 
@@ -19,6 +20,43 @@ func VerifyAppName(appName string) bool {
 		return false
 	}
 	return exists
+}
+
+func GetLogCapacity() (float64, error) {
+	conn, err := GetLogsPool()
+	if err != nil {
+		return 0, err
+	}
+	var sizeBytes int64
+	err = conn.QueryRow(context.Background(), "SELECT pg_total_relation_size('logs')").Scan(&sizeBytes)
+	if err != nil {
+		return 0, err
+	}
+	return float64(sizeBytes) / 1024 / 1024, nil
+}
+
+func DeleteLogs(ctx context.Context, toDeleteMbs float64) (float64, error) {
+	conn, err := GetLogsPool()
+	if err != nil {
+		return 0, err
+	}
+	var sizeBytes, rowCount int64
+	if err = conn.QueryRow(ctx, "SELECT pg_total_relation_size('logs'), (SELECT COUNT(*) FROM logs)").Scan(&sizeBytes, &rowCount); err != nil {
+		return 0, err
+	}
+	if rowCount == 0 {
+		return float64(sizeBytes) / 1024 / 1024, nil
+	}
+	avgRowBytes := float64(sizeBytes) / float64(rowCount)
+	rowsToDelete := int64(math.Ceil(toDeleteMbs * 1024 * 1024 / avgRowBytes))
+	rowsToDelete = int64(math.Min(float64(rowCount), float64(rowsToDelete)))
+	if _, err = conn.Exec(ctx, "DELETE FROM logs WHERE ctid IN (SELECT ctid FROM logs ORDER BY date ASC NULLS FIRST LIMIT $1)", rowsToDelete); err != nil {
+		return 0, err
+	}
+	if _, err = conn.Exec(ctx, "VACUUM FULL logs"); err != nil {
+		return 0, err
+	}
+	return GetLogCapacity()
 }
 
 func AddRule(ctx context.Context, rule types.Rule) error {

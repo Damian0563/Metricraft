@@ -3,7 +3,7 @@
 		<Popup :message="errorMessage" @close="errorMessage = ''" />
 		<Spinner :loading="loading || localLoading" />
 		<Dashboard :logRetention="logRetention" :derivedMetrics="derivedMetrics" :layout="layout" @load="handleLoad"
-			@updateMetrics="handleUpdateMetrics" @changeRetention="handleRetentionChange" />
+			@updateMetrics="handleUpdateMetrics" />
 	</div>
 </template>
 
@@ -25,7 +25,6 @@ const initialize = ((newVal: dashboardInitPayload | undefined) => {
 	}
 	if (newVal.error === '') {
 		appName.value = newVal.appName
-		logRetention.value = newVal.settings.retention
 		const raw = newVal.settings.enabled as Record<string, { enabled: boolean, timeframe: string }>
 		derivedMetrics.value = raw
 		urls.value = newVal.urls
@@ -54,9 +53,6 @@ const handleUpdateMetrics = (changes: { name: string; enabled: boolean; timefram
 	derivedMetrics.value = next
 };
 
-const handleRetentionChange = (retention: number) => {
-	logRetention.value = retention
-}
 watch(() => payload.value, initialize, { immediate: true })
 localLoading.value = loading.value
 if (error.value) {

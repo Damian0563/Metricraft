@@ -103,9 +103,10 @@ func main() {
 	router.Get("/dashboard/init", api.DashboardInit)
 	router.Get("/dashboard/urls", api.DashboardUrls)
 	router.Post("/dashboard/layout", api.ChangeLayout)
-	router.Post("/settings/retention", api.ChangeRetention)
 	router.Post("/settings/metrics", api.ChangeMetricsHandler)
 	router.Get("/dashboard/fetch", api.Navigator) //?persist=boolean
+	router.Get("/dashboard/log-capacity", api.LogCapacity)
+	router.Delete("/dashboard/log-capacity", api.DeleteLogs)
 	router.Get("/dashboard/custom/fetch", api.CustomMetricFetch)
 	router.Get("/dashboard/worker/list", api.ListWorkers)
 	router.Post("/dashboard/worker/new", api.SaveWorker)

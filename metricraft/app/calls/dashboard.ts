@@ -14,11 +14,23 @@ export const getDashboard = async (): Promise<dashboardInitPayload> => {
 			error: "Something went wrong, Check your internet connection and try again.",
 			urls: [],
 			settings: {
-				retention: 30,
 				enabled: {},
 			},
 		}
 	}
+}
+
+export const getLogCapacity = async (): Promise<number> => {
+	return await useApi()<number>("/dashboard/log-capacity", {
+		method: "GET",
+	})
+}
+
+export const deleteLogCapacity = async (mb: number): Promise<number> => {
+	return await useApi()<number>("/dashboard/log-capacity", {
+		method: "DELETE",
+		body: { mb },
+	})
 }
 
 export const saveDashboardLayout = async (layout: { name: string, span: number, height: number, custom: boolean }[]): Promise<void> => {
