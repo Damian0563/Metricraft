@@ -12,8 +12,6 @@ import (
 )
 
 const (
-	fromAddress = "noreply.metricraft@gmail.com"
-	fromHeader  = "Metricraft <" + fromAddress + ">"
 	smtpAddress = "smtp.gmail.com:587"
 	smtpHost    = "smtp.gmail.com"
 )
@@ -96,6 +94,10 @@ func sendMany(recipients []string, subject, body string) error {
 	if apiKey == "" {
 		return errors.New("GOOGLE_APP_PASSWORD")
 	}
+	fromAddress := sanitizeHeaderValue(strings.TrimSpace(os.Getenv("GOOGLE_MAIL_ADDRESS")))
+	if !ValidateMail(fromAddress) {
+		return errors.New("GOOGLE_MAIL_ADDRESS")
+	}
 	var to []string
 	for _, recipient := range recipients {
 		recipient = strings.TrimSpace(recipient)
@@ -112,11 +114,11 @@ func sendMany(recipients []string, subject, body string) error {
 		return nil
 	}
 	auth := smtp.PlainAuth("", fromAddress, apiKey, smtpHost)
-	return smtp.SendMail(smtpAddress, auth, fromAddress, to, buildMessage(strings.Join(to, ", "), subject, body))
+	return smtp.SendMail(smtpAddress, auth, fromAddress, to, buildMessage(fromAddress, strings.Join(to, ", "), subject, body))
 }
 
-func buildMessage(to, subject, body string) []byte {
-	headers := "From: " + fromHeader + "\r\n" +
+func buildMessage(from, to, subject, body string) []byte {
+	headers := "From: Metricraft <" + from + ">\r\n" +
 		"To: " + sanitizeHeaderValue(to) + "\r\n" +
 		"Subject: " + sanitizeHeaderValue(subject) + "\r\n" +
 		"MIME-Version: 1.0\r\n" +

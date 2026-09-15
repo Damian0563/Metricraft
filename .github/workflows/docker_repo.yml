@@ -1,39 +1,121 @@
-name: Publish release to Docker Hub
+name: Docker image
+
 on:
   release:
     types: [published]
+  pull_request:
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - docker/**
+      - go.work
+      - go.work.sum
+      - proto/**
+      - backend/**
+      - worker/**
+      - metricraft/**
+      - .github/workflows/docker_repo.yml
+  workflow_dispatch:
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  IMAGE: docker.io/damianek952/metricraft
+  PLATFORMS: linux/amd64,linux/arm64
+
 jobs:
-  push_to_registry:
-    name: Push docker image to Docker Hub
+  docker:
+    name: Build, test and publish
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
+
+      - name: Set up QEMU
+        if: github.event_name == 'release'
+        uses: docker/setup-qemu-action@v4
+
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Extract image metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/metricraft
-          tags: |
-            type=raw,value=latest
-            type=ref,event=tag
-      - name: Build and push Docker image
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build image for smoke test
         uses: docker/build-push-action@v7
         with:
           context: .
+          platforms: linux/amd64
+          load: true
+          tags: metricraft:smoke
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test
+        run: |
+          docker run -d --name metricraft -p 8080:8080 \
+            -e APPNAME=ci \
+            -e SECRET=ci-smoke-test \
+            -e DATABASE_USERS='postgresql://postgres:password@127.0.0.1:5432/postgres?sslmode=disable' \
+            -e GOOGLE_MAIL_ADDRESS=ci@example.com \
+            -e GOOGLE_APP_PASSWORD=unused \
+            metricraft:smoke
+          # Wait for the image HEALTHCHECK (postgres + frontend)
+          for _ in $(seq 1 40); do
+            status=$(docker inspect -f '{{.State.Health.Status}}' metricraft)
+            echo "health: $status"
+            [ "$status" = healthy ] || [ "$status" = unhealthy ] && break
+            sleep 5
+          done
+          # The API must answer on :8080 (any HTTP status means the backend is up)
+          code=$(curl -s -o /dev/null -w '%{http_code}' -H 'Authorization: ci-smoke-test' http://127.0.0.1:8080/welcome || true)
+          echo "api: $code"
+          if [ "$status" != healthy ] || [ "$code" = 000 ]; then
+            docker logs metricraft
+            exit 1
+          fi
+
+      - name: Extract image metadata
+        if: github.event_name == 'release'
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.IMAGE }}
+          flavor: latest=false
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=ref,event=tag
+            type=raw,value=latest,enable=${{ !github.event.release.prerelease }}
+
+      - name: Log in to Docker Hub
+        if: github.event_name == 'release'
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push multi-arch image
+        if: github.event_name == 'release'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: ${{ env.PLATFORMS }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            SECRET=${{ secrets.SECRET }}
-            DATABASE_USERS=${{ secrets.DATABASE_USERS }}
-            GOOGLE_APP_PASSWORD=${{ secrets.GOOGLE_APP_PASSWORD }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: mode=max
+          sbom: true
+
+      - name: Sync README to Docker Hub
+        if: github.event_name == 'release' && !github.event.release.prerelease
+        uses: peter-evans/dockerhub-description@v5
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: damianek952/metricraft
+          short-description: Self-hosted log observability with visual dashboards
+          readme-filepath: ./README.md
