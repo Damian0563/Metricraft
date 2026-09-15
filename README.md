@@ -1,11 +1,12 @@
-# Metricraft (https://hub.docker.com/repository/docker/damianek952/metricraft/general)
+# Metricraft (
 
 <div align="center">
   <img src="metricraft/public/logo.svg" alt="Metricraft" width="400" />
+	
 </div>
 
 An analytics platform for log observability, focused on visual dashboards and reporting capabilities.
-
+[https://hub.docker.com/repository/docker/damianek952/metricraft/general]
 <div align="center">
   <img src="images/dashboard.png" alt="Metricraft dashboard" width="900" />
 </div>
