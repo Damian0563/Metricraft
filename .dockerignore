@@ -1,6 +1,13 @@
 **/.env
 **/.git
 **/node_modules
-metricraft/.nuxt
-metricraft/.output
 **/*.log
+**/.nuxt
+**/.output
+**/cmd/tmp
+.github
+others
+tmp
+*.md
+docker-compose.yml
+images

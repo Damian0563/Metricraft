@@ -6,6 +6,32 @@
 
 An analytics platform for log observability, focused on visual dashboards and reporting capabilities.
 
+<div align="center">
+  <img src="images/dashboard.png" alt="Metricraft dashboard" width="900" />
+</div>
+
+<table>
+  <tr>
+    <td width="50%"><img src="images/overwatch.png" alt="Overwatch custom metrics" /><p align="center"><b>Overwatch</b>: custom metrics from your API</p></td>
+    <td width="50%"><img src="images/custom-layout.png" alt="Custom dashboard layout" /><p align="center"><b>Custom layouts</b>: drag and drop your dashboard</p></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="images/workers.png" alt="Workers and uptime" /><p align="center"><b>Workers</b>: uptime and downtime alerts</p></td>
+    <td width="50%"><img src="images/rules-grouping.png" alt="Grouping rules" /><p align="center"><b>Rules</b>: group and blacklist routes</p></td>
+  </tr>
+</table>
+
+<details>
+<summary>More screenshots</summary>
+
+| Landing page | Settings |
+|:---:|:---:|
+| <img src="images/landing.png" alt="Landing page" /> | <img src="images/settings.png" alt="Settings" /> |
+| **Sign in** | **Documentation** |
+| <img src="images/sign-in.png" alt="Sign in" /> | <img src="images/documentation.png" alt="Documentation" /> |
+
+</details>
+
 Key benefits:
 - **Self-hosted**: No data leaves your infrastructure
 - **Privacy-first**: Your logs and metrics stay on your servers
@@ -18,7 +44,6 @@ Key benefits:
 - **Visual Dashboards**: Interactive charts and visualizations for data analysis
 - **Real-time Metrics**: Live HTTP request/response tracking with performance insights
 - **User Authentication**: Secure account management for team collaboration
-- **Serverless Mailing Integration**: Send reports and alerts via email using serverless functions
 - **gRPC Backend-Worker Communication**: High-performance gRPC communication between backend and worker proxy for efficient metric streaming
 
 ## Architecture
@@ -88,34 +113,53 @@ Key benefits:
 | User Database | Supabase (external) |
 | Containerization | Docker Compose |
 
-## Getting Started
+## Self-Hosting
 
-Metricraft is designed to run from the prebuilt all-in-one Docker image. The image bundles PostgreSQL for logs/metrics, Redis, the Go backend, the Go worker proxy, and the Nuxt frontend under `supervisord`, so deployment only needs a Docker Compose file, the app-specific runtime variables, and a volume for PostgreSQL data.
+Metricraft ships as a single Docker image that bundles the frontend, API, worker proxy, PostgreSQL and Redis. Everything, including user accounts, can stay on your own server.
 
-### Docker Compose Deployment
+### Requirements
 
-Create a `.env` file next to your Compose file:
+- A Linux server with Docker Engine and the Compose plugin (`docker compose version`)
+- A Gmail account with an [app password](https://support.google.com/accounts/answer/185833). Sign-up sends a verification code by email.
+- Optional: a domain name, if you want HTTPS
 
-```dotenv
-APPNAME=my-app
-METRICRAFT_PUBLIC_URL=http://localhost:8080
-DEST_PORT=3000
+### 1. Create the configuration
+
+```bash
+mkdir metricraft && cd metricraft
 ```
 
-Then run the prebuilt image:
+Create `.env` and fill in your values:
+
+```dotenv
+# Name of the app you are monitoring
+APPNAME=my-app
+# Port your app listens on; the worker proxy forwards traffic here
+DEST_PORT=3000
+# API URL as the browser reaches it (port 8080, or your API domain)
+NUXT_PUBLIC_HTTPHOST=http://localhost:8080
+# Generate with: openssl rand -hex 32
+SECRET=
+# Users database. The bundled PostgreSQL works; any PostgreSQL (e.g. Supabase) does too
+DATABASE_USERS=postgresql://postgres:password@127.0.0.1:5432/postgres?sslmode=disable
+# Gmail account that sends verification, invite and alert emails
+GOOGLE_MAIL_ADDRESS=you@gmail.com
+GOOGLE_APP_PASSWORD=
+```
+
+Create `compose.yaml`:
 
 ```yaml
 services:
   metricraft:
-    image: damianek952/metricraft:latest
-    environment:
-      APPNAME: ${APPNAME}
-      DEST_PORT: ${DEST_PORT}
-      NUXT_PUBLIC_HTTPHOST: ${METRICRAFT_PUBLIC_URL}
+    image: damianek952/metricraft:latest   # pin a release tag in production
+    restart: unless-stopped
+    stop_grace_period: 30s
+    env_file: .env
     ports:
-      - "8000:8000"
-      - "8080:8080"
-      - "8081:8081"
+      - "127.0.0.1:8000:8000"   # dashboard
+      - "127.0.0.1:8080:8080"   # API
+      - "127.0.0.1:8081:8081"   # worker proxy
     volumes:
       - metricraft-db:/var/lib/postgresql/data
 
@@ -123,111 +167,121 @@ volumes:
   metricraft-db:
 ```
 
-The PostgreSQL data directory is mounted at `/var/lib/postgresql/data`, so captured logs and metrics survive container recreation. The UI is served on `:8000`, the API and WebSocket server on `:8080`, and the worker proxy ingress on `:8081`.
+The ports only listen on `127.0.0.1`, so they are reachable from the server itself or through a reverse proxy (see [step 4](#4-expose-it-on-a-domain)). To expose them directly, remove the `127.0.0.1:` prefix.
 
-## Environment Configuration
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `APPNAME` | yes | Application identifier used when initializing and grouping captured metrics. |
-| `DEST_PORT` | yes | Port of your upstream application that the worker proxy forwards captured traffic to. |
-| `NUXT_PUBLIC_HTTPHOST` | yes | Public HTTP(S) origin the browser uses for API calls, e.g. `https://metrics.example.com`. |
-| `NUXT_PUBLIC_WSSHOST` | yes | Public WebSocket origin the browser uses, e.g. `wss://metrics.example.com`. |
-
-All `.env` files are git-ignored by default (`**.env` in `.gitignore`).
-
-### Deployment modes (`MODE`)
-Set `MODE=local` in `backend/.env` and `worker/.env` for host-based development. Leave it unset when running the all-in-one image because the image sets `MODE=standalone`.
-
-### File locations (local development)
-
-| Service | File path |
-|---------|-----------|
-| API Server | `backend/.env` |
-| Worker Proxy | `worker/.env` |
-| Frontend (Nuxt) | `metricraft/.env` |
-
-### `backend/.env`
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `SECRET` | yes | Shared service token (see above). |
-| `MODE` | yes | `local` for host development; Docker images set `standalone` automatically. |
-| `DATABASE_USERS` | yes | PostgreSQL connection string for the Supabase user database, e.g. `postgresql://postgres.<project>:<password>@<host>:5432/postgres`. See [`users.md`](users.md) for the required table schema. |
-| `DATABASE_LOGS` | yes | PostgreSQL connection string for the metrics/logs database, e.g. `postgresql://postgres:password@localhost:5432/postgres?sslmode=disable`. |
-| `GOOGLE_APP_PASSWORD` | optional | SMTP/app password used to send verification emails. Required only if email delivery is enabled. |
-
-Example:
-
-```dotenv
-SECRET=replace-with-a-long-random-string
-MODE=local
-DATABASE_USERS=postgresql://postgres.supabase_pooler_creds.pooler.supabase.com:5432/postgres
-DATABASE_LOGS=postgresql://postgres:password@localhost:5432/postgres?sslmode=disable
-GOOGLE_APP_PASSWORD=your-smtp-app-password
-```
-
-### `worker/.env`
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `SECRET` | yes | Shared service token (must match `backend/.env`). |
-| `APPNAME` | yes | Application identifier (must match the other services). Used when bootstrapping the logs database. |
-| `MODE` | yes | `local` for host development; Docker images set `standalone` automatically. |
-| `DATABASE_LOGS` | yes | PostgreSQL connection string for writing captured request/response metrics. Must point to the same database as the backend. |
-| `DEST_PORT` | optional | Port the worker proxy forwards captured traffic to (your upstream application). Defaults to the port present in the request `Host` header when unset. |
-| `GOOGLE_APP_PASSWORD` | optional | SMTP/app password used to send verification emails. Required only if email delivery is enabled. |
-
-Example:
-
-```dotenv
-SECRET=replace-with-a-long-random-string
-APPNAME=my-app
-MODE=local
-DATABASE_LOGS=postgresql://postgres:password@localhost:5432/postgres?sslmode=disable
-DEST_PORT=3000
-```
-
-### `metricraft/.env`
-
-The frontend reads `SECRET`, `NUXT_PUBLIC_HTTPHOST`, and `NUXT_PUBLIC_WSSHOST` at build/dev time (`nuxt.config.ts`). The public host values are the API and WebSocket origins the **browser** uses through the reverse proxy.
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `SECRET` | yes | Shared service token (must match `backend/.env`); exposed to the client through Nuxt's `runtimeConfig.public`. |
-| `NUXT_PUBLIC_HTTPHOST` | yes | Public HTTP(S) backend URL as seen by the browser **through the reverse proxy**, e.g. `http://localhost` or `https://metrics.example.com`. |
-| `NUXT_PUBLIC_WSSHOST` | optional | Public WebSocket backend URL as seen by the browser, e.g. `ws://localhost` or `wss://metrics.example.com`. Defaults by replacing the HTTP scheme when unset. |
-| `PORT` | optional | Port the Nuxt dev server binds to. Defaults to `8000`. |
-
-Example:
-
-```dotenv
-SECRET=replace-with-a-long-random-string
-NUXT_PUBLIC_HTTPHOST=http://localhost
-NUXT_PUBLIC_WSSHOST=ws://localhost
-PORT=8000
-```
-
-### Notes & best practices
-
-- **Never commit `.env` files.** Rotate any secret that is accidentally pushed.
-- **`NUXT_PUBLIC_HTTPHOST` and `NUXT_PUBLIC_WSSHOST` must match the public API/WebSocket URL the browser can reach**, not an internal Docker hostname.
-- Worker ingress can stay on the Docker network (`metricraft:8081`) when your upstream app runs in the same compose stack; publish `:8081` only when traffic enters from outside Docker.
-- For local development, run PostgreSQL and Redis yourself (`docker-compose.yml` starts only those services) and point `DATABASE_LOGS` at your local Postgres instance.
-- For production, prefer injecting secrets through your orchestrator's secret store rather than committing them to `.env` files.
-
-## Useful Commands
+### 2. Start Metricraft
 
 ```bash
-# Compile proto files
-protoc -I=./proto --go_out=proto proto/service.proto
+docker compose up -d
+docker compose logs -f metricraft
+```
+
+### 3. Create the users tables
+
+Metricraft creates its log tables automatically, but you create the account tables once in the database `DATABASE_USERS` points to. For the bundled PostgreSQL:
+
+```bash
+docker compose exec -T metricraft psql -U postgres -d postgres <<'SQL'
+CREATE TABLE IF NOT EXISTS public.users (
+  created_at    timestamptz NOT NULL DEFAULT now(),
+  app_name      text,
+  mail          text PRIMARY KEY,
+  secret        text NOT NULL,
+  uuid          uuid,
+  allowed_users jsonb DEFAULT '[]'::jsonb,
+  pending_users jsonb DEFAULT '[]'::jsonb,
+  owner         boolean DEFAULT false
+);
+CREATE TABLE IF NOT EXISTS public.workers (
+  id         bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  app_name   text,
+  workers    json DEFAULT '[]'::json
+);
+SQL
+docker compose restart metricraft
+```
+
+If you use Supabase or another external database, run the same SQL there. Column details are in [`others/users.md`](others/users.md) and [`others/workers.md`](others/workers.md).
+
+Open http://localhost:8000 and sign up.
+
+### 4. Expose it on a domain
+
+Put a reverse proxy in front of Metricraft for HTTPS. For example, a `Caddyfile` for [Caddy](https://caddyserver.com), which issues certificates automatically:
+
+```caddyfile
+metrics.example.com {
+	reverse_proxy 127.0.0.1:8000
+}
+
+api.metrics.example.com {
+	reverse_proxy 127.0.0.1:8080
+}
+
+app.example.com {
+	reverse_proxy 127.0.0.1:8081
+}
+```
+
+Then set `NUXT_PUBLIC_HTTPHOST=https://api.metrics.example.com` in `.env` and run `docker compose up -d`. No rebuild is needed.
+
+### 5. Route your app's traffic through the worker proxy
+
+The worker proxy on `:8081` records each request and forwards it to `http://<request host>:<DEST_PORT>`. In the example above, a request to `app.example.com` is forwarded to `http://app.example.com:3000`, so:
+
+- your app must be reachable on `DEST_PORT` at that hostname from inside the container
+- the proxy must pass the original `Host` header without a port (Caddy does by default; for nginx use `proxy_set_header Host $host;`)
+
+### Configuration reference
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `APPNAME` | yes | Name of the monitored app. Metrics and accounts are grouped under it. |
+| `SECRET` | yes | Token shared by the frontend and API. It is visible to the browser, so treat it as an API key, not a password. |
+| `DATABASE_USERS` | yes | PostgreSQL connection string for the users database. |
+| `NUXT_PUBLIC_HTTPHOST` | yes | Public API URL the browser uses. Must not be an internal Docker hostname. |
+| `GOOGLE_MAIL_ADDRESS` | yes | Gmail address that sends verification, invite, recovery and alert emails. |
+| `GOOGLE_APP_PASSWORD` | yes | App password for `GOOGLE_MAIL_ADDRESS`. |
+| `DEST_PORT` | no | Port the worker proxy forwards to. Default: `3000`. |
+
+### Updating
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+Logs and metrics live in the `metricraft-db` volume and survive updates. The image bundles PostgreSQL 16, so read the release notes before upgrading across a PostgreSQL major version.
+
+### Backup and restore
+
+Restore into a fresh `metricraft-db` volume.
+
+```bash
+docker compose exec -T metricraft pg_dump -U postgres postgres > metricraft-backup.sql
+docker compose exec -T metricraft psql -U postgres -d postgres < metricraft-backup.sql
+```
+
+## Local Development
+
+1. Start PostgreSQL, Redis and pgAdmin: `docker compose up -d` (uses the repo's `docker-compose.yml`).
+2. Create `backend/.env` and `worker/.env` with `MODE=local`, `SECRET`, `APPNAME`, `DATABASE_USERS`, `GOOGLE_MAIL_ADDRESS`, `GOOGLE_APP_PASSWORD` and `DATABASE_LOGS=postgresql://postgres:password@localhost:5432/postgres?sslmode=disable`.
+3. Create `metricraft/.env` with the same `SECRET` and `NUXT_PUBLIC_HTTPHOST=http://localhost:8080`.
+4. Run each service in its own terminal:
+
+```bash
+cd backend && go run ./cmd
+cd worker && go run ./cmd
+cd metricraft && npm install && npm run dev
+```
+
+Regenerate the gRPC code after changing `proto/service.proto`:
+
+```bash
 protoc -I=./proto --go_out=proto --go-grpc_out=proto proto/service.proto
 ```
-```
-# Run dev container
-docker-compose up -d
 
-```
 ## License
 
 Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for details.
